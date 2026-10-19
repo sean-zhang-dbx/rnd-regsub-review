@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button, Textarea } from '@databricks/appkit-ui/react';
 import { postGenieAsk } from '../data/api';
-import type { GenieAnswer, ImpactRow, WordingCheckResult } from '../data/types';
-import { docLabel, formatClock, formatDay, WORDING_SERVICE } from '../lib/format';
+import type { GenieAnswer, WordingCheckResult } from '../data/types';
+import { formatClock, formatDay, WORDING_SERVICE } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 import type { AsyncState } from '../lib/useAsync';
@@ -24,7 +24,9 @@ export function MarginComment({
   tone = 'neutral',
   children,
   links,
+  id,
 }: {
+  id?: string;
   author: string;
   via?: string;
   tone?: Tone;
@@ -32,7 +34,7 @@ export function MarginComment({
   links?: ReactNode;
 }) {
   return (
-    <article className={`rounded-[var(--radius)] border border-border border-l-4 bg-page p-3.5 ${TONE[tone]}`}>
+    <article id={id} className={`rounded-[var(--radius)] border border-border border-l-4 bg-page p-3.5 ${TONE[tone]}`}>
       <header className="mb-2">
         <h2 className="text-sm font-semibold text-ink">{author}</h2>
         {via ? <p className="text-xs text-ink-muted">{via}</p> : null}
@@ -40,67 +42,6 @@ export function MarginComment({
       <div className="space-y-2 text-sm text-ink [&_p]:leading-5">{children}</div>
       {links ? <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">{links}</div> : null}
     </article>
-  );
-}
-
-/* Rows for the other documents. Label row moves to "Sent to Labelling" on recompute. */
-export function OtherDocuments({
-  rows,
-  all,
-  recomputed,
-  approved,
-}: {
-  rows: ImpactRow[];
-  all: ImpactRow[];
-  recomputed: boolean;
-  approved: boolean;
-}) {
-  if (rows.length === 0) return null;
-  return (
-    <MarginComment author="Same table, other sections" via="Sentences that cite efficacy_primary" tone={recomputed ? 'recomputed' : 'neutral'}>
-      <ul className="divide-y divide-border">
-        {rows.map((r) => {
-          const figs = all.filter((x) => x.sentence_id === r.sentence_id);
-          const first = figs[0];
-          const more = figs.length - 1;
-          const status =
-            r.kind === 'label'
-              ? recomputed
-                ? { text: 'Sent to Labelling', cls: 'text-attention' }
-                : { text: 'Goes to Labelling', cls: 'text-ink-muted' }
-              : approved
-                ? { text: 'Approved', cls: 'text-recomputed' }
-                : recomputed
-                  ? { text: 'Recomputed', cls: 'text-recomputed' }
-                  : { text: 'Can be recomputed', cls: 'text-cited' };
-          const label = r.doc_type === 'label' ? `Label ${r.section}` : r.section;
-          return (
-            <li
-              key={r.sentence_id}
-              className="flex items-baseline gap-2 py-1.5 first:pt-0 last:pb-0"
-              title={`${docLabel(r.doc_type, r.section)}, sentence ${r.seq}`}
-            >
-              <span className="shrink-0 font-medium">
-                {label} s{r.seq}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-ink-muted">
-                {first ? (
-                  recomputed ? (
-                    <>
-                      <s className="text-unchanged">{first.old_value}</s> {first.new_value}
-                    </>
-                  ) : (
-                    first.old_value
-                  )
-                ) : null}
-                {more > 0 ? ` +${more}` : ''}
-              </span>
-              <span className={`shrink-0 whitespace-nowrap ${status.cls}`}>{status.text}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </MarginComment>
   );
 }
 
@@ -157,7 +98,7 @@ export function WordingComment({
       </p>
       {flagged.map((r) => (
         <div key={r.sentence_id} id={flaggedId === r.sentence_id ? 'flag' : undefined} className="space-y-1">
-          <p className="line-clamp-1 font-serif text-[15px] italic leading-snug text-ink-muted">{quote(r.sentence_id)}</p>
+          <p className="font-serif text-[15px] italic leading-snug text-ink-muted">{quote(r.sentence_id)}</p>
           <p>
             {r.reason}
           </p>
@@ -260,7 +201,7 @@ export function GenieComment({ onAnswered }: { onAnswered: () => void }) {
       {parts && answer.data ? (
         <div className="space-y-1.5">
           <p className="text-lg font-semibold leading-tight">{parts.head}</p>
-          {parts.note ? <p className="line-clamp-3 text-[13px] leading-snug text-ink-muted">{parts.note}</p> : null}
+          {parts.note ? <p className="text-[13px] leading-snug text-ink-muted">{parts.note}</p> : null}
           <details>
             <summary className="cursor-pointer text-xs text-cited underline underline-offset-4">Show SQL</summary>
             <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed">
@@ -297,7 +238,7 @@ export function ApproveComment({
 
   if (approved) {
     return (
-      <MarginComment author="Sign-off" tone="recomputed" links={links}>
+      <MarginComment id="signoff" author="Sign-off" tone="recomputed" links={links}>
         <p className="font-medium">
           Approved by {approved.reviewer} at {formatClock(approved.signed_at)} on {formatDay(approved.signed_at)}
           {version !== null ? `, against table version ${version}` : ''}.
@@ -307,7 +248,7 @@ export function ApproveComment({
   }
   const ready = recomputed && answered;
   return (
-    <MarginComment author="Sign-off" links={links}>
+    <MarginComment id="signoff" author="Sign-off" links={links}>
       <p className="text-ink-muted">
         {!recomputed
           ? 'Recompute the figures from source before you approve them.'

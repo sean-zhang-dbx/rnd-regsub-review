@@ -2,7 +2,7 @@ import { createContext, Fragment, useContext } from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger, Skeleton } from '@databricks/appkit-ui/react';
 import { useCitationDetail } from '../data/queries';
 import type { DocumentSectionRow, WordingCheckResult } from '../data/types';
-import { formatDateUtc } from '../lib/format';
+import { formatDateUtc, tlfName } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { ErrorNote } from './QueryBoundary';
 
@@ -44,12 +44,13 @@ interface DocumentSentenceProps {
   recomputed: Record<string, string> | null;
   /** True from the click on "Recompute from source": figure widths are reserved so nothing jumps. */
   reserve: boolean;
+  animate: boolean;
   sourceVersion: number | null;
   flipIndex: Map<string, number>;
   verdict: WordingCheckResult | undefined;
 }
 
-export function DocumentSentence({ sentence, recomputed, reserve, sourceVersion, flipIndex, verdict }: DocumentSentenceProps) {
+export function DocumentSentence({ sentence, recomputed, reserve, animate, sourceVersion, flipIndex, verdict }: DocumentSentenceProps) {
   const parts = sentence.template.split(/(\{\w+\})/g);
   const flagged = verdict?.verdict === 'needs_writer';
 
@@ -63,6 +64,7 @@ export function DocumentSentence({ sentence, recomputed, reserve, sourceVersion,
         row={row}
         next={recomputed ? (recomputed[row.fig_key] ?? row.value_curr) : null}
         reserve={reserve}
+        animate={animate}
         order={flipIndex.get(row.citation_id) ?? 0}
         sourceVersion={sourceVersion}
       />
@@ -99,12 +101,14 @@ function Figure({
   row,
   next,
   reserve,
+  animate,
   order,
   sourceVersion,
 }: {
   row: DocumentSectionRow;
   next: string | null;
   reserve: boolean;
+  animate: boolean;
   order: number;
   sourceVersion: number | null;
 }) {
@@ -113,7 +117,7 @@ function Figure({
   const changed = row.value_prev !== target;
   const flipped = next !== null && changed;
   /* Old and new are both in the layout from the click, so the flip never moves the text. */
-  const pending = changed && reserve && !flipped;
+  const pending = changed && reserve && animate && !flipped;
 
   let face;
   if (changed && (flipped || reserve)) {
@@ -121,15 +125,17 @@ function Figure({
       <span className="whitespace-nowrap">
         <s
           className={
-            flipped ? 'figure-old-out text-unchanged decoration-unchanged' : 'border-b border-cited no-underline'
+            flipped
+              ? `${animate ? 'figure-old-out ' : ''}text-unchanged decoration-unchanged`
+              : 'border-b border-cited no-underline'
           }
-          style={flipped ? { animationDelay: `${order * 260}ms` } : { textDecoration: 'none' }}
+          style={flipped ? (animate ? { animationDelay: `${order * 260}ms` } : undefined) : { textDecoration: 'none' }}
         >
           {row.value_prev}
         </s>
         <span
-          className={flipped ? 'figure-new-in font-semibold text-recomputed' : 'invisible'}
-          style={flipped ? { animationDelay: `${order * 260}ms` } : undefined}
+          className={flipped ? `${animate ? 'figure-new-in ' : ''}font-semibold text-recomputed` : 'invisible'}
+          style={flipped && animate ? { animationDelay: `${order * 260}ms` } : undefined}
         >
           {' '}
           {flipped ? next : row.value_curr}
@@ -185,16 +191,14 @@ function CitationCard({ citationId, sourceVersion }: { citationId: string; sourc
       </p>
     );
   }
-  const table = d.source_table.split('.').pop() ?? d.source_table;
   const version = sourceVersion ?? d.table_version;
   return (
     <div className="space-y-2.5">
       <h3 className="text-sm font-semibold text-ink">
-        <span className="font-mono text-[0.95em]">{table}</span>, version {version}
+        {tlfName(d.source_table)}, version {version}
       </h3>
       <p className="text-sm text-ink-muted">
-        Row <span className="font-mono text-xs text-ink">{d.row_key}</span>, column{' '}
-        <span className="font-mono text-xs text-ink">{d.column_name}</span>
+        Row {d.row_key}, column {d.column_name}
       </p>
       <p className="text-sm text-ink">
         Certified by {d.certified_by}, {formatDateUtc(d.certified_at)}
@@ -204,5 +208,26 @@ function CitationCard({ citationId, sourceVersion }: { citationId: string; sourc
       </pre>
       <DbxLink linkKey="beat2" label="Table lineage in Databricks" />
     </div>
+  );
+}
+
+/** Old figure struck through, new figure after it. Used in the QC log, where the flip happens. */
+export function FlipPair({ prev, next, order, animate }: { prev: string; next: string | null; order: number; animate: boolean }) {
+  if (next === null || next === prev) return <span>{prev}</span>;
+  return (
+    <span className="whitespace-nowrap">
+      <s
+        className={`${animate ? 'figure-old-out ' : ''}text-unchanged`}
+        style={animate ? { animationDelay: `${order * 200}ms` } : undefined}
+      >
+        {prev}
+      </s>{' '}
+      <span
+        className={`${animate ? 'figure-new-in ' : ''}font-semibold text-recomputed`}
+        style={animate ? { animationDelay: `${order * 200}ms` } : undefined}
+      >
+        {next}
+      </span>
+    </span>
   );
 }

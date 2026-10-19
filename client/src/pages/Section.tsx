@@ -1,80 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button, Skeleton } from '@databricks/appkit-ui/react';
-import { postWordingCheck } from '../data/api';
 import { useReview } from '../data/review';
-import { useDocumentSection, useImpactList, useRecomputeFigures } from '../data/queries';
-import type { ImpactRow, RecomputeRow } from '../data/types';
+import { useDocumentSection } from '../data/queries';
 import { DocumentSentence, PageBoundary, sentenceText, toSentences } from '../components/Document';
-import { ApproveComment, GenieComment, OtherDocuments, WordingComment } from '../components/Margin';
+import { ApproveComment, GenieComment, WordingComment } from '../components/Margin';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
-import { docLabel } from '../lib/format';
-import { useAsync } from '../lib/useAsync';
-
-type Phase = 'idle' | 'recomputing' | 'done' | 'failed';
-
-/* Mounted only while recomputing, so the query runs when the reviewer clicks. */
-function RecomputeRunner({ onDone, onFail }: { onDone: (rows: RecomputeRow[]) => void; onFail: (msg: string) => void }) {
-  const q = useRecomputeFigures();
-  useEffect(() => {
-    if (q.error) onFail(q.error);
-    else if (q.data && !q.loading) onDone(q.data);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q.data, q.error, q.loading]);
-  return null;
-}
+import { docLabel, docTitle, DRAFT_LABEL, STUDY } from '../lib/format';
 
 export function Section() {
   const { section = '11.4.1' } = useParams();
   const doc = useDocumentSection(section);
-  const impact = useImpactList();
+  const review = useReview();
 
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [failure, setFailure] = useState<string | null>(null);
-  const [recomputeRows, setRecomputeRows] = useState<RecomputeRow[] | null>(null);
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
-  const review = useReview();
   const [answered, setAnswered] = useState(false);
   const [pageEl, setPageEl] = useState<HTMLElement | null>(null);
 
-  const affected: ImpactRow[] = useMemo(() => {
-    const seen = new Map<string, ImpactRow>();
-    for (const r of impact.data ?? []) if (!seen.has(r.sentence_id)) seen.set(r.sentence_id, r);
-    return [...seen.values()];
-  }, [impact.data]);
+  const { phase, values, sourceVersion, wording, verdicts, affected } = review;
+  const done = phase === 'done';
   const affectedIds = affected.map((r) => r.sentence_id);
   const figureIds = affected.filter((r) => r.kind === 'figure').map((r) => r.sentence_id);
-  const labelIds = affected.filter((r) => r.kind === 'label').map((r) => r.sentence_id);
-  const others = affected.filter((r) => !(r.doc_type === 'csr' && r.section === section));
-
-  const recomputed = useMemo(() => {
-    if (!recomputeRows) return null;
-    return Object.fromEntries(recomputeRows.map((r) => [r.fig_key, r.value]));
-  }, [recomputeRows]);
-  const sourceVersion = recomputeRows?.[0]?.source_version ?? null;
-
-  const done = phase === 'done';
-  const wording = useAsync(() => postWordingCheck(affectedIds), done && affectedIds.length > 0);
-  const verdicts = new Map((wording.data ?? []).map((r) => [r.sentence_id, r]));
-
-  /* Record the hand-offs the moment they happen. The route names the reviewer. */
-  useEffect(() => {
-    if (!done || labelIds.length === 0 || review.loading || review.recomputed) return;
-    review.record(labelIds, 'sent_to_labelling').catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [done, review.loading]);
-  useEffect(() => {
-    const ids = (wording.data ?? []).filter((r) => r.verdict === 'needs_writer').map((r) => r.sentence_id);
-    if (ids.length > 0 && !review.withWriter) review.record(ids, 'sent_to_writer').catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wording.data]);
-
-  /* After a reload the review table already says the figures were recomputed: show that state. */
-  useEffect(() => {
-    if (review.recomputed && phase === 'idle') setPhase('recomputing');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [review.recomputed]);
 
   const sentences = useMemo(() => toSentences(doc.data ?? []), [doc.data]);
   const flipIndex = useMemo(() => {
@@ -85,16 +32,17 @@ export function Section() {
     return m;
   }, [sentences]);
 
-  const title = impact.data?.find((r) => r.section === section);
-  const heading = title ? `${section} ${title.section_title}` : section;
-  const headerLabel = title ? docLabel(title.doc_type, section) : `Section ${section}`;
-
+  const here = affected.find((r) => r.section === section);
+  const docType = here?.doc_type ?? 'csr';
+  const heading = here ? `${section} ${here.section_title}` : section;
+  const headerLabel = docLabel(docType, section);
 
   async function approve() {
     setApproving(true);
     setApproveError(null);
     try {
       await review.record(figureIds, 'approved');
+      requestAnimationFrame(() => document.getElementById('signoff')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
     } catch (e) {
       setApproveError(e instanceof Error ? e.message : 'The request failed.');
     } finally {
@@ -102,57 +50,45 @@ export function Section() {
     }
   }
 
+  useEffect(() => {
+    if (review.approved) document.getElementById('signoff')?.scrollIntoView({ block: 'nearest' });
+  }, [review.approved]);
+
   const quote = (id: string) => {
     const s = sentences.find((x) => x.sentenceId === id);
-    return s ? sentenceText(s, recomputed ?? {}) : id;
+    return s ? sentenceText(s, values ?? {}) : id;
   };
   const flaggedId = (wording.data ?? []).find((r) => r.verdict === 'needs_writer')?.sentence_id;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6 md:px-10">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-4">
+        <div>
           <Link to="/" className="text-sm text-cited underline underline-offset-4">
-            Overview
+            QC log
           </Link>
-          <h1 className="text-lg font-semibold text-ink">
-            {headerLabel}
-            {title ? <span className="ml-2 font-normal text-ink-muted">{title.section_title}</span> : null}
+          <h1 className="mt-1 text-lg font-semibold text-ink">
+            {STUDY} {docTitle(docType, section)}, {DRAFT_LABEL}
           </h1>
+          <p className="text-sm text-ink-muted">
+            {headerLabel}
+            {here ? `, ${here.section_title}` : ''}
+          </p>
         </div>
-        <Button
-          size="lg"
-          onClick={() => {
-            setFailure(null);
-            setPhase('recomputing');
-          }}
-          disabled={phase === 'recomputing' || done}
-        >
+        <Button size="lg" onClick={review.start} disabled={phase === 'recomputing' || done}>
           {phase === 'recomputing'
             ? 'Recomputing from source'
             : done
               ? `Recomputed from version ${sourceVersion ?? ''}`.trim()
               : phase === 'failed'
                 ? 'Recompute again'
-                : 'Recompute from source'}
+                : 'Recompute from version 4'}
         </Button>
       </div>
 
-      {phase === 'recomputing' ? (
-        <RecomputeRunner
-          onDone={(rows) => {
-            setRecomputeRows(rows);
-            setPhase('done');
-          }}
-          onFail={(msg) => {
-            setFailure(msg);
-            setPhase('failed');
-          }}
-        />
-      ) : null}
       {phase === 'failed' ? (
         <div className="mb-4">
-          <ErrorNote title="The figures could not be recomputed from source." detail={failure} />
+          <ErrorNote title="The figures could not be recomputed from source." detail={review.failure} />
         </div>
       ) : null}
 
@@ -174,7 +110,7 @@ export function Section() {
             }
             failed="This section could not be read."
             emptyTitle={`No text for section ${section}`}
-            emptyHint="The section has no sentences in the document store yet. Go back to the overview and open CSR 11.4.1."
+            emptyHint="The section has no sentences in the document store yet. Go back to the QC log and open another row."
           >
             {() => (
               <PageBoundary.Provider value={pageEl}>
@@ -184,8 +120,9 @@ export function Section() {
                     <DocumentSentence
                       key={s.sentenceId}
                       sentence={s}
-                      recomputed={recomputed}
+                      recomputed={values}
                       reserve={phase !== 'idle'}
+                      animate={review.animated}
                       sourceVersion={sourceVersion}
                       flipIndex={flipIndex}
                       verdict={verdicts.get(s.sentenceId)}
@@ -199,7 +136,7 @@ export function Section() {
 
         <aside
           aria-label="Review comments"
-          className="space-y-4 lg:sticky lg:top-14 lg:max-h-[calc(100vh-4.5rem)] lg:self-start lg:overflow-y-auto"
+          className="space-y-4 pt-2 lg:sticky lg:top-14 lg:max-h-[calc(100vh-72px)] lg:self-start lg:overflow-y-auto"
         >
           {done && affectedIds.length > 0 ? (
             <WordingComment check={wording} quote={quote} flaggedId={flaggedId} />
@@ -215,13 +152,6 @@ export function Section() {
             approved={review.approved}
             version={sourceVersion}
           />
-          {impact.loading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : impact.error ? (
-            <ErrorNote title="The other sections could not be listed." detail={impact.error} />
-          ) : (
-            <OtherDocuments rows={others} all={impact.data ?? []} recomputed={done} approved={review.approved !== null} />
-          )}
         </aside>
       </div>
     </div>

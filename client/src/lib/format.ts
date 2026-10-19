@@ -43,3 +43,35 @@ export function formatDay(iso: string): string {
 export function formatClock(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
+
+/** TLF IDs for the certified tables. The tables play the role of the TLFs (tables, listings, figures). */
+export const TLF: Record<string, string> = {
+  efficacy_primary: 'Table 14.2.1',
+  safety_overview: 'Table 14.3.1',
+};
+
+export function tlfName(table: string): string {
+  const t = table.split('.').pop() ?? table;
+  return TLF[t] ? `${TLF[t]} (${t})` : t;
+}
+
+/** Cell behind each efficacy figure key (the contract's fig_key to row key and column). */
+export const FIG_CELL: Record<string, { row: string; column: string }> = {
+  trt_resp: { row: 'TRT', column: 'responders' },
+  trt_n: { row: 'TRT', column: 'n' },
+  trt_rate: { row: 'TRT', column: 'rate_pct' },
+  pbo_resp: { row: 'PBO', column: 'responders' },
+  pbo_n: { row: 'PBO', column: 'n' },
+  pbo_rate: { row: 'PBO', column: 'rate_pct' },
+  diff: { row: 'DIFF', column: 'diff_pct' },
+  ci_low: { row: 'DIFF', column: 'ci_low' },
+  ci_high: { row: 'DIFF', column: 'ci_high' },
+};
+
+export const DRAFT_LABEL = 'Draft 0.4, In review';
+
+export function docTitle(docType: string, section: string): string {
+  if (docType === 'csr') return 'Clinical Study Report';
+  if (docType === 'label') return 'Prescribing Information';
+  return `Module ${section}`;
+}
