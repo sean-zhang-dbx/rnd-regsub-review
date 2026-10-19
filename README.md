@@ -27,6 +27,7 @@ Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026,
 | AI Search (hybrid, Delta Sync index on `sz-shared-vs`) | Finding documents that still quote the old result | GA |
 | Unity Gateway model service with an inference table, routing to `databricks-claude-sonnet-5-5` | The wording check | GA (Unity Gateway since 4 Aug 2026) |
 | MLflow 3 tracing, through the `mlflow-tracing` Node SDK | Tracing every wording-check call | GA (MLflow 3 tracing); Node SDK status unverified |
+| MLflow 3 GenAI evaluation: a code scorer and an LLM judge (`make_judge`, on `databricks-gpt-5-5`) | Scoring each wording-check trace with `scripts/judge_traces.py` | GA |
 | Genie Agent and Conversation API, on behalf of the user | Beat 4 question | GA |
 | SQL warehouse (AppKit analytics plugin) | Every query in `config/queries/` | GA |
 | Databricks Apps (AppKit) | The app | GA |
@@ -62,3 +63,11 @@ databricks bundle run app -p fe-vm-sean-zhang
 ```
 
 After the first deploy, grant the app's service principal access to the data with `scripts/grant_app_sp.py <client-id>`, and give it EXECUTE on the model service `sean_zhang_catalog.rnd_regsub_review.wording_check`.
+
+After a run through the app, score the new wording-check traces:
+
+```bash
+uv run --python 3.12 --with "mlflow[databricks]>=3.5" --with databricks-sql-connector python scripts/judge_traces.py
+```
+
+Each trace gets 2 assessments on the experiment's Traces tab. `figures_match_source` is a code check that every changed figure equals the current cell of Table 14.2.1. `verdict_supported` is an LLM judge on a different model family from the checker (GPT 5.5 judging Claude Sonnet 5.5) that decides whether the verdict follows from the sentence. The script skips traces it has already scored. Tested on 19 Oct 2026: 10 of 10 traces passed both, and the judge answered "no" when given a wrong `ok` verdict on the "two-thirds" sentence.

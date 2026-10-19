@@ -11,6 +11,10 @@ About 6 minutes, for the regulatory section of the Jiajie Zhang call (Tue 20 Oct
 2. Open the app (https://rnd-regsub-review-7474654216647582.aws.databricksapps.com, or http://localhost:8000 as the fallback) in a browser window about 1440 pixels wide, and wait until the QC log has loaded. This warms the SQL warehouse, so nothing shows "warming up" on the call.
 3. Check that the "Databricks" switch in the top bar is off, and the browser zoom is 100%.
 4. Keep `docs/screenshots/vault/` open in a second window as the fallback.
+5. After the last rehearsal, score its wording checks so the judged traces are ready to show in beat 5 (about 1 minute):
+   ```bash
+   cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with "mlflow[databricks]>=3.5" --with databricks-sql-connector python scripts/judge_traces.py
+   ```
 
 ## The walk
 
@@ -51,7 +55,13 @@ Say: "The sign-off is recorded with a name, a time and the table version."
 ### 5. Close (30 seconds)
 Close the viewer with the X. The QC log now shows the figure rows as Approved, one sentence with the writer and the label sentence sent to Labelling.
 
-If asked where this lives in Databricks: press `D` to show the "See it in Databricks" links (table history, lineage, AI Search index, Unity Gateway inference table, MLflow traces, Genie Agent, sign-off table).
+Then press `D` and open "MLflow traces in Databricks". Open a `wording_check` trace from the rehearsal (the ones with a prompt preview) and point to the 2 assessment columns.
+
+Say: "Each call to the checker is traced, and then checked twice. A code check confirms that every figure equals the cell in Table 14.2.1, and a judge from a different model family checks that the verdict follows from the sentence. That is the same evaluation a team would run before switching to a newer model, which is the next slide."
+
+The trace from the live run has no scores yet, because the judges run after the review. Use one from the rehearsal.
+
+If asked where else this lives in Databricks: the other "See it in Databricks" links cover table history, lineage, the AI Search index, the Unity Gateway inference table, the Genie Agent and the sign-off table.
 
 ## If something goes wrong
 
@@ -62,4 +72,4 @@ If asked where this lives in Databricks: press `D` to show the "See it in Databr
 
 ## After the call
 
-Run the reset command again, so the next run starts clean.
+Run the reset command again, so the next run starts clean. Run `scripts/judge_traces.py` again to score the traces from the call.
