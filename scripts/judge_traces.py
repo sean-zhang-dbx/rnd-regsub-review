@@ -8,6 +8,9 @@ visible as columns on the experiment's Traces tab, and the run is logged as an M
   cell of Table 14.2.1 (efficacy_primary), so no number came from the model.
 - verdict_supported (LLM judge, a different model family from the checker): the checker's verdict
   follows from the sentence before and after the restatement.
+Each draft_section trace gets 1 assessment:
+- figures_bound_to_cells (code): the drafting model wrote every figure as a placeholder, so SQL filled
+  all of them from Table 14.2.1 and the model typed none.
 """
 import os
 import re
@@ -95,19 +98,43 @@ verdict_supported = make_judge(
     model=JUDGE_MODEL,
 )
 
-traces = mlflow.search_traces(experiment_ids=[EXPERIMENT_ID], max_results=500)
-traces = traces[traces["spans"].map(lambda spans: any(s.get("name") == "wording_check" for s in spans or []))]
-scored = traces["assessments"].map(lambda a: any(x.get("assessment_name") == "verdict_supported" for x in a or []))
-print(f"wording_check traces: {len(traces)}, not yet scored: {int((~scored).sum())}")
-traces = traces[~scored]
-if traces.empty:
-    sys.exit("Nothing new to score. Run a wording check in the app first.")
+@scorer
+def figures_bound_to_cells(outputs):
+    typed = (outputs or {}).get("typed_numbers") or []
+    unknown = (outputs or {}).get("unknown_slots") or []
+    count = (outputs or {}).get("figure_count", 0)
+    if typed or unknown:
+        parts = []
+        if typed:
+            parts.append(f"the model typed {', '.join(typed)} itself")
+        if unknown:
+            parts.append(f"unknown placeholders {', '.join(unknown)}")
+        return Feedback(value=False, rationale="; ".join(parts).capitalize() + ".")
+    return Feedback(value=True, rationale=f"All {count} figures are placeholders filled from Table 14.2.1 by SQL.")
 
-with mlflow.start_run(run_name=f"wording_check judges, Table 14.2.1 v{VERSION}"):
-    results = mlflow.genai.evaluate(
-        data=traces,
-        scorers=[figures_match_source, verdict_supported],
-    )
-print("run:", results.run_id)
-for k, v in sorted(results.metrics.items()):
-    print(f"  {k}: {v}")
+
+all_traces = mlflow.search_traces(experiment_ids=[EXPERIMENT_ID], max_results=500)
+
+
+def unscored(span_name: str, assessment: str):
+    t = all_traces[all_traces["spans"].map(lambda spans: any(s.get("name") == span_name for s in spans or []))]
+    done = t["assessments"].map(lambda a: any(x.get("assessment_name") == assessment for x in a or []))
+    print(f"{span_name} traces: {len(t)}, not yet scored: {int((~done).sum())}")
+    return t[~done]
+
+
+jobs = [
+    ("wording_check", unscored("wording_check", "verdict_supported"), [figures_match_source, verdict_supported]),
+    ("draft_section", unscored("draft_section", "figures_bound_to_cells"), [figures_bound_to_cells]),
+]
+if all(t.empty for _, t, _ in jobs):
+    sys.exit("Nothing new to score. Run a wording check or a draft in the app first.")
+
+for name, t, scorers in jobs:
+    if t.empty:
+        continue
+    with mlflow.start_run(run_name=f"{name} judges, Table 14.2.1 v{VERSION}"):
+        results = mlflow.genai.evaluate(data=t, scorers=scorers)
+    print(name, "run:", results.run_id)
+    for k, v in sorted(results.metrics.items()):
+        print(f"  {k}: {v}")

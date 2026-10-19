@@ -91,6 +91,9 @@ Presenter lines for the new order: beat 1 and the hero use the existing beat 1 a
 Copy register still applies: the header and notes name things, and the table rows carry the quantities.
 Visual: keep the section 5 tokens, fonts and the page look for the document. The QC log is a plain, dense table on a white page (a controlled record, not a dashboard): no cards, no KPI tiles, no bars. No sidebar.
 
+### Amendment, 19 Oct 2026 evening (Sean): the drafting beat
+Sean asked for a story in which the AI drafts the dossier. This reverses the cut-list item "Live drafting of a full CSR section". Added as beat 2b in the viewer, after the citation hover and before the hero: "Draft this section" in the Information panel has the model (the same Unity Gateway model service) draft CSR 11.4.1 or Module 2.7.3 from an outline. The model is not given the values and writes a placeholder for each figure. SQL fills them in from Table 14.2.1 version 3, and the route lists any number the model typed itself. Drafts are stored in `section_drafts`, and the last clean draft is the fallback after 25 seconds. The dossier data is unchanged: Draft 0.4 on the page stays the seeded text, and the live draft is shown in the panel. Point for the room: because the model never sees the values, qualitative wording such as "about two-thirds" comes from the writer, which is the sentence the wording check flags in the hero. Judged by `figures_bound_to_cells` in `scripts/judge_traces.py`.
+
 ## 3. Databricks mapping
 Workspace `fe-vm-sean-zhang`, catalog `sean_zhang_catalog`, warehouse `Serverless Starter Warehouse` (`16ad82bead3f55b5`). Statuses come from `~/Projects/gsk/_decks/jiajie/research/databricks_playbook.md` section 6, which was checked against the Azure release notes up to 19 Oct 2026. Recheck any status you are unsure of with `databricks:databricks-docs`.
 

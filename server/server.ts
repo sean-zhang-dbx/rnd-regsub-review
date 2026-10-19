@@ -1,4 +1,5 @@
 import { createApp, analytics, server, serving } from '@databricks/appkit';
+import { registerDraftSection } from './routes/draftSection';
 import { registerGenie } from './routes/genie';
 import { registerSearchUntracked } from './routes/searchUntracked';
 import { registerSignoff } from './routes/signoff';
@@ -12,6 +13,7 @@ createApp({
       registerSearchUntracked(app);
       registerSignoff(app);
       registerGenie(app);
+      registerDraftSection(app);
     });
     void warmWordingCheck();
   },

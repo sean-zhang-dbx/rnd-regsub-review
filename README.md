@@ -27,6 +27,7 @@ Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026,
 | AI Search (hybrid, Delta Sync index on `sz-shared-vs`) | Finding documents that still quote the old result | GA |
 | Unity Gateway model service with an inference table, routing to `databricks-claude-sonnet-5-5` | The wording check | GA (Unity Gateway since 4 Aug 2026) |
 | MLflow 3 tracing, through the `mlflow-tracing` Node SDK | Tracing every wording-check call | GA (MLflow 3 tracing); Node SDK status unverified |
+| Unity Gateway model service (same service), drafting CSR 11.4.1 and Module 2.7.3 with a placeholder for each figure; drafts stored in `section_drafts` | The drafting beat (`/api/draft-section`) | GA (Unity Gateway since 4 Aug 2026) |
 | MLflow 3 GenAI evaluation: a code scorer and an LLM judge (`make_judge`, on `databricks-gpt-5-5`) | Scoring each wording-check trace with `scripts/judge_traces.py` | GA |
 | Genie Agent and Conversation API, on behalf of the user | Beat 4 question | GA |
 | SQL warehouse (AppKit analytics plugin) | Every query in `config/queries/` | GA |
@@ -70,4 +71,4 @@ After a run through the app, score the new wording-check traces:
 uv run --python 3.12 --with "mlflow[databricks]>=3.5" --with databricks-sql-connector python scripts/judge_traces.py
 ```
 
-Each trace gets 2 assessments on the experiment's Traces tab. `figures_match_source` is a code check that every changed figure equals the current cell of Table 14.2.1. `verdict_supported` is an LLM judge on a different model family from the checker (GPT 5.5 judging Claude Sonnet 5.5) that decides whether the verdict follows from the sentence. The script skips traces it has already scored. Tested on 19 Oct 2026: 10 of 10 traces passed both, and the judge answered "no" when given a wrong `ok` verdict on the "two-thirds" sentence.
+Each wording-check trace gets 2 assessments on the experiment's Traces tab, and each drafting trace gets `figures_bound_to_cells`, a code check that the model typed no figure itself. `figures_match_source` is a code check that every changed figure equals the current cell of Table 14.2.1. `verdict_supported` is an LLM judge on a different model family from the checker (GPT 5.5 judging Claude Sonnet 5.5) that decides whether the verdict follows from the sentence. The script skips traces it has already scored. Tested on 19 Oct 2026: 10 of 10 traces passed both, and the judge answered "no" when given a wrong `ok` verdict on the "two-thirds" sentence.

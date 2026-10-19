@@ -1,5 +1,5 @@
 /* Server routes from docs/DEMO_PLAN.md section 4. */
-import type { GenieAnswer, SignoffAction, SignoffResponse, UntrackedHit, WordingCheckResult } from './types';
+import type { DraftResult, GenieAnswer, SignoffAction, SignoffResponse, UntrackedHit, WordingCheckResult } from './types';
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
@@ -33,4 +33,8 @@ export function postSignoff(sentenceIds: string[], action: SignoffAction): Promi
 
 export function postGenieAsk(question: string): Promise<GenieAnswer> {
   return postJson('/api/genie/ask', { question });
+}
+
+export function postDraftSection(section: string): Promise<DraftResult> {
+  return postJson('/api/draft-section', { section });
 }

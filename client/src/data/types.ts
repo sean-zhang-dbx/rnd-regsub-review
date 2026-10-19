@@ -51,3 +51,18 @@ export interface GenieAnswer {
   rows: Record<string, unknown>[];
   conversation_url: string;
 }
+
+export type DraftPart = { text: string } | { slot: string; value: string };
+
+export interface DraftResult {
+  section: string;
+  source_version: number;
+  sentences: { template: string; parts: DraftPart[] }[];
+  figure_count: number;
+  typed_numbers: string[];
+  unknown_slots: string[];
+  model: string;
+  trace_id: string | null;
+  cached: boolean;
+  drafted_at: string;
+}

@@ -1,6 +1,6 @@
 # Run of show: LMN-301 submission review
 
-About 6 minutes, for the regulatory section of the Jiajie Zhang call (Tue 20 Oct 2026, 14:00 UK). All data is synthetic, for the fictional study LMN-301.
+About 7 minutes, for the regulatory section of the Jiajie Zhang call (Tue 20 Oct 2026, 14:00 UK). All data is synthetic, for the fictional study LMN-301.
 
 ## Before the call (10 minutes ahead)
 
@@ -11,7 +11,7 @@ About 6 minutes, for the regulatory section of the Jiajie Zhang call (Tue 20 Oct
 2. Open the app (https://rnd-regsub-review-7474654216647582.aws.databricksapps.com, or http://localhost:8000 as the fallback) in a browser window about 1440 pixels wide, and wait until the QC log has loaded. This warms the SQL warehouse, so nothing shows "warming up" on the call.
 3. Check that the "Databricks" switch in the top bar is off, and the browser zoom is 100%.
 4. Keep `docs/screenshots/vault/` open in a second window as the fallback.
-5. After the last rehearsal, score its wording checks so the judged traces are ready to show in beat 5 (about 1 minute):
+5. After the last rehearsal, score its wording checks and drafts so the judged traces are ready to show in beat 5 (about 1 minute):
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with "mlflow[databricks]>=3.5" --with databricks-sql-connector python scripts/judge_traces.py
    ```
@@ -35,6 +35,15 @@ Click "CSR 11.4.1" in the first row. The CSR page opens next to the Table 14.2.1
 Hover "412" in the text. Its cell lights up in the table, and the citation card shows the table, row, column, version and who released it.
 
 Say: "This is the tick and tie a QC reviewer already does, but every figure is tied to its cell in the table. The yellow cells are the ones that changed, and the text still quotes version 3."
+
+### 2b. How the draft was written (45 seconds)
+In the Information panel, click "Draft this section" under Drafting. In about 5 seconds the model's draft of 11.4.1 appears, and the table pane switches to version 3. Hover a blue figure in the draft to light up its cell.
+
+Say: "The model drafted this section, but it was never given the numbers. It wrote a placeholder for each figure, and SQL filled them in from version 3 of the table, so each figure was tied to its cell from the start. That is why the re-delivery could find every affected sentence."
+
+Then point to the "about two-thirds" sentence on the page.
+
+Say: "The model can't describe a result in words like 'about two-thirds' because it never sees the values. That phrase is the writer's interpretation, and it is the one we'll come back to."
 
 ### 3. Hero: fix the numbers, flag the meaning (1.5 minutes)
 Click "Recompute from Table 14.2.1 v4". The figures flip on the page, the yellow cells turn green, and after a few seconds the "about two-thirds" sentence turns amber with "With the writer".
@@ -67,6 +76,7 @@ If asked where else this lives in Databricks: the other "See it in Databricks" l
 
 - **Warehouse slow on first load:** wait; the toast at the bottom left shows progress. Talk through the QC log layout in the meantime.
 - **Wording check slow:** after 8 seconds the app uses the saved result for each sentence, so the amber flag still appears.
+- **Drafting slow:** after 25 seconds the app shows the last stored draft and says so under the draft.
 - **Genie Agent slow (more than 30 seconds):** say "the agent is still answering" and show `docs/screenshots/vault/3b-genie.png`.
 - **Anything else:** switch to the screenshots in `docs/screenshots/vault/`, in file-name order.
 

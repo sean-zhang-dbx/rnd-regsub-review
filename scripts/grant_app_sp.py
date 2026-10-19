@@ -23,6 +23,7 @@ for stmt in [
     f"GRANT SELECT ON SCHEMA {fq} TO `{sp}`",
     f"GRANT MODIFY ON TABLE {fq}.review_signoffs TO `{sp}`",
     f"GRANT MODIFY ON TABLE {fq}.wording_checks TO `{sp}`",
+    f"GRANT MODIFY ON TABLE {fq}.section_drafts TO `{sp}`",
     f"GRANT READ VOLUME ON VOLUME {fq}.source_docs TO `{sp}`",
 ]:
     q(stmt)

@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react';
 import { useReview } from '../data/review';
 import { useDocumentSection, useRestatementSummary, useTlfTable } from '../data/queries';
 import { DocumentSentence, FigureFocus, FlipPair, PageBoundary, sentenceText, toSentences } from '../components/Document';
-import { ApproveComment, GenieComment, WordingComment } from '../components/Margin';
+import { ApproveComment, DRAFTABLE, DraftComment, GenieComment, WordingComment } from '../components/Margin';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
 import { RecomputeButton } from '../components/RecomputeButton';
 import { TlfPage } from '../components/Tlf';
@@ -312,6 +312,7 @@ export function Viewer() {
               </div>
             ) : null}
             {done && affected.length > 0 ? <WordingComment check={wording} quote={quote} flaggedId={flaggedId} /> : null}
+            {DRAFTABLE.has(section) ? <DraftComment key={section} section={section} onFocus={setFocus} onDrafted={(v) => setTlfVersion(v === 3 ? 3 : 4)} /> : null}
             <div className="px-4 py-4">
               <h2 className="text-sm font-semibold text-ink">Version history, {TLF.efficacy_primary}</h2>
               <table className="mt-2 w-full text-sm">
