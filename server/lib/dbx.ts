@@ -10,7 +10,7 @@ export const GENIE_SPACE_ID =
 export const INDEX_NAME = `${FQ}.doc_chunks_index`;
 /** Unity Gateway model service (custom, with an inference table) that routes to Claude Sonnet 5.5. */
 export const MODEL_SERVICE = `${FQ}.wording_check`;
-export const MODEL_LABEL = 'databricks-claude-sonnet-5-5';
+export const MODEL_LABEL = 'sean_zhang_catalog.rnd_regsub_review.wording_check';
 export const REVIEWER = 'Dr. Amara Okafor, Regulatory Review';
 
 /**

@@ -330,7 +330,7 @@ cit_schema = StructType([
 ])
 spark.createDataFrame(cit_rows, cit_schema).write.mode("overwrite").saveAsTable(f"{FQ}.figure_citations")
 sql(f"""CREATE TABLE {FQ}.review_signoffs (
-  signoff_id STRING, sentence_id STRING, action STRING COMMENT 'approved, sent_to_labelling or sent_to_writer',
+  signoff_id STRING, sentence_id STRING, action STRING COMMENT 'approved, sent_to_labelling, sent_to_writer or notified_owner',
   reviewer STRING, table_version BIGINT, signed_at TIMESTAMP)""")
 sql(f"""CREATE TABLE {FQ}.wording_checks (
   sentence_id STRING, table_version BIGINT, verdict STRING COMMENT 'ok or needs_writer', reason STRING,
