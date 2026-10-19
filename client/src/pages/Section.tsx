@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button, Skeleton } from '@databricks/appkit-ui/react';
 import { postSignoff, postWordingCheck } from '../data/api';
-import { useDocumentSection, useImpactList, useRecomputeFigures, useSignoffs } from '../data/queries';
+import { useDocumentSection, useImpactList, useRecomputeFigures } from '../data/queries';
 import type { ImpactRow, RecomputeRow } from '../data/types';
 import { DocumentSentence, sentenceText, toSentences } from '../components/Document';
 import { ApproveComment, GenieComment, OtherDocuments, WordingComment } from '../components/Margin';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
 import { docLabel } from '../lib/format';
+import { useSignoffReadback } from '../data/Signoffs';
 import { useAsync } from '../lib/useAsync';
 
 type Phase = 'idle' | 'recomputing' | 'done' | 'failed';
@@ -33,8 +34,7 @@ export function Section() {
   const [recomputeRows, setRecomputeRows] = useState<RecomputeRow[] | null>(null);
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
-  const [refresh, setRefresh] = useState(0);
-  const signoffs = useSignoffs(refresh);
+  const readback = useSignoffReadback();
 
   const affected: ImpactRow[] = useMemo(() => {
     const seen = new Map<string, ImpactRow>();
@@ -80,14 +80,14 @@ export function Section() {
   const heading = title ? `${section} ${title.section_title}` : section;
   const headerLabel = title ? docLabel(title.doc_type, section) : `Section ${section}`;
 
-  const approvedRow = refresh > 0 ? ((signoffs.data ?? []).filter((r) => r.action === 'approved').at(-1) ?? null) : null;
+  const approvedRow = readback.result?.rows?.find((r) => r.action === 'approved') ?? null;
 
   async function approve() {
     setApproving(true);
     setApproveError(null);
     try {
       await postSignoff(figureIds, 'approved');
-      setRefresh((n) => n + 1);
+      readback.read();
     } catch (e) {
       setApproveError(e instanceof Error ? e.message : 'The request failed.');
     } finally {
@@ -103,6 +103,7 @@ export function Section() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6 md:px-10">
+      {readback.probe}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-4">
           <Link to="/" className="text-sm text-cited underline underline-offset-4">
@@ -198,7 +199,7 @@ export function Section() {
           ) : impact.error ? (
             <ErrorNote title="The other documents could not be listed." detail={impact.error} />
           ) : (
-            <OtherDocuments rows={others} recomputed={done} />
+            <OtherDocuments rows={others} all={impact.data ?? []} recomputed={done} />
           )}
           <GenieComment />
           <ApproveComment
@@ -208,8 +209,8 @@ export function Section() {
             approveError={approveError}
             onApprove={() => void approve()}
             signoff={approvedRow}
-            signoffLoading={refresh > 0 && (signoffs.loading || (!signoffs.data && !signoffs.error))}
-            signoffError={signoffs.error}
+            signoffLoading={readback.result?.loading === true}
+            signoffError={readback.result?.error ?? null}
           />
         </aside>
       </div>

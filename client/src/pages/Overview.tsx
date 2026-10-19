@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Button, Skeleton } from '@databricks/appkit-ui/react';
-import { postSearchUntracked } from '../data/api';
+import { postSearchUntracked, postSignoff } from '../data/api';
 import { useImpactList, useRestatementSummary, useUnchangedSentences } from '../data/queries';
-import type { ImpactKind, ImpactRow, UnchangedRow, UntrackedHit } from '../data/types';
+import type { ImpactRow, UnchangedRow, UntrackedHit } from '../data/types';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
-import { docLabel, formatClockUtc, formatDateUtc, plural } from '../lib/format';
+import type { QueryState } from '../components/QueryBoundary';
+import { useSignoffReadback } from '../data/Signoffs';
+import { docLabel, formatClockUtc, formatDateUtc, formatSignedAt, plural } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 
-const KIND_STYLE: Record<ImpactKind, { bar: string; tag: string }> = {
+const KIND_STYLE: Record<string, { bar: string; tag: string }> = {
   figure: { bar: 'bg-recomputed-soft border-recomputed', tag: 'Recomputed' },
   prose: { bar: 'bg-attention-soft border-attention', tag: 'Needs the writer' },
   label: { bar: 'bg-attention-soft border-attention', tag: 'Sent to Labelling' },
@@ -22,6 +24,10 @@ function bySentence(rows: ImpactRow[]): ImpactRow[] {
   return [...seen.values()].sort((a, b) => a.seq - b.seq);
 }
 
+function styleOf(kind: string) {
+  return KIND_STYLE[kind] ?? KIND_STYLE.figure;
+}
+
 function barWidth(seq: number): string {
   return `${62 + ((seq * 23) % 36)}%`;
 }
@@ -29,6 +35,7 @@ function barWidth(seq: number): string {
 export function Overview() {
   const summary = useRestatementSummary();
   const impact = useImpactList();
+  const unchanged = useUnchangedSentences();
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 md:px-10">
@@ -83,11 +90,11 @@ export function Overview() {
           emptyTitle="No sentences are affected"
           emptyHint="No cited figure changed between the two table versions."
         >
-          {(rows) => <MiniPages rows={bySentence(rows)} />}
+          {(rows) => <MiniPages rows={bySentence(rows)} unchanged={unchanged.data ?? []} />}
         </QueryBoundary>
       </section>
 
-      <Unchanged />
+      <Unchanged q={unchanged} />
 
       {impact.data && impact.data.length > 0 ? (
         <Untracked oldValues={[...new Set(impact.data.map((r) => r.old_value))]} />
@@ -117,8 +124,8 @@ function ImpactSentence({ rows }: { rows: ImpactRow[] }) {
   );
 }
 
-function MiniPages({ rows }: { rows: ImpactRow[] }) {
-  const order: ImpactRow['doc_type'][] = ['csr', 'm27', 'm25', 'label'];
+function MiniPages({ rows, unchanged }: { rows: ImpactRow[]; unchanged: UnchangedRow[] }) {
+  const order: string[] = ['csr', 'm27', 'm25', 'label'];
   const groups = useMemo(() => {
     const m = new Map<string, ImpactRow[]>();
     for (const r of rows) {
@@ -128,6 +135,9 @@ function MiniPages({ rows }: { rows: ImpactRow[] }) {
     return [...m.values()].sort((a, b) => order.indexOf(a[0].doc_type) - order.indexOf(b[0].doc_type));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
+
+  const unchangedIn = (r: ImpactRow) =>
+    unchanged.filter((u) => u.doc_type === r.doc_type && u.section === r.section);
 
   return (
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -144,17 +154,31 @@ function MiniPages({ rows }: { rows: ImpactRow[] }) {
               {g.map((r) => (
                 <li key={r.sentence_id}>
                   <div
-                    className={`h-2.5 border-l-2 ${KIND_STYLE[r.kind].bar}`}
+                    className={`h-2.5 border-l-2 ${styleOf(r.kind).bar}`}
                     style={{ width: barWidth(r.seq) }}
                     aria-hidden="true"
                   />
                   <div className={`mt-1 text-xs ${r.kind === 'figure' ? 'text-recomputed' : 'text-attention'}`}>
-                    {KIND_STYLE[r.kind].tag}
+                    {styleOf(r.kind).tag}
                   </div>
                 </li>
               ))}
+              {unchangedIn(first).map((u, i) => (
+                <li key={u.sentence_id}>
+                  <div
+                    className="h-2.5 border-l-2 border-unchanged bg-muted"
+                    style={{ width: barWidth(i + 3) }}
+                    aria-hidden="true"
+                  />
+                </li>
+              ))}
             </ul>
-            <div className="text-xs text-ink-muted">{plural(g.length, 'sentence', 'sentences')}</div>
+            {unchangedIn(first).length > 0 ? (
+              <div className="text-xs text-unchanged">
+                {plural(unchangedIn(first).length, 'safety sentence', 'safety sentences')} unchanged
+              </div>
+            ) : null}
+            <div className="text-xs text-ink-muted">{plural(g.length, 'affected sentence', 'affected sentences')}</div>
           </div>
         );
         return (
@@ -177,8 +201,7 @@ function MiniPages({ rows }: { rows: ImpactRow[] }) {
   );
 }
 
-function Unchanged() {
-  const q = useUnchangedSentences();
+function Unchanged({ q }: { q: QueryState<UnchangedRow> }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -246,7 +269,23 @@ function highlight(snippet: string, olds: string[]) {
 
 function Untracked({ oldValues }: { oldValues: string[] }) {
   const search = useAsync(() => postSearchUntracked(oldValues));
-  const [notified, setNotified] = useState(false);
+  const [notifying, setNotifying] = useState(false);
+  const [notifyError, setNotifyError] = useState<string | null>(null);
+  const readback = useSignoffReadback();
+  const notifiedRow = readback.result?.rows?.find((r) => r.action === 'notified_owner') ?? null;
+
+  async function notify(paths: string[]) {
+    setNotifying(true);
+    setNotifyError(null);
+    try {
+      await postSignoff(paths, 'notified_owner');
+      readback.read();
+    } catch (e) {
+      setNotifyError(e instanceof Error ? e.message : 'The request failed.');
+    } finally {
+      setNotifying(false);
+    }
+  }
 
   const docs = useMemo(() => {
     const m = new Map<string, UntrackedHit[]>();
@@ -293,12 +332,34 @@ function Untracked({ oldValues }: { oldValues: string[] }) {
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex items-center gap-4">
-            <Button variant="outline" size="sm" disabled={notified} onClick={() => setNotified(true)}>
-              {notified ? 'Owners notified' : 'Notify owners'}
-            </Button>
+          {notifyError ? (
+            <div className="mt-3">
+              <ErrorNote title="Owners were not notified." detail={notifyError} />
+            </div>
+          ) : null}
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            {notifiedRow ? (
+              <p className="text-sm font-medium text-recomputed">
+                Owners notified. {notifiedRow.reviewer}, {formatSignedAt(notifiedRow.signed_at)}.
+              </p>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={notifying || readback.result?.loading === true}
+                onClick={() => void notify([...new Set((search.data ?? []).map((h) => h.file_path))])}
+              >
+                {notifying || readback.result?.loading ? 'Notifying owners' : 'Notify owners'}
+              </Button>
+            )}
             <p className="text-sm text-ink-muted">Nothing outside the dossier is rewritten.</p>
           </div>
+          {readback.result?.error ? (
+            <div className="mt-2">
+              <ErrorNote title="The notification was written but could not be read back." detail={readback.result.error} />
+            </div>
+          ) : null}
+          {readback.probe}
           <div className="mt-2">
             <DbxLink linkKey="beat1_search" label="AI Search index in Databricks" />
           </div>

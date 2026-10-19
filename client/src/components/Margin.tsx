@@ -44,7 +44,7 @@ export function MarginComment({
 }
 
 /* Rows for the other documents. Label row moves to "Sent to Labelling" on recompute. */
-export function OtherDocuments({ rows, recomputed }: { rows: ImpactRow[]; recomputed: boolean }) {
+export function OtherDocuments({ rows, all, recomputed }: { rows: ImpactRow[]; all: ImpactRow[]; recomputed: boolean }) {
   if (rows.length === 0) return null;
   return (
     <MarginComment author="Other documents" via="Sentences that cite the same table" tone={recomputed ? 'recomputed' : 'neutral'}>
@@ -65,14 +65,20 @@ export function OtherDocuments({ rows, recomputed }: { rows: ImpactRow[]; recomp
                 </span>
               )}
             </div>
-            <div className="mt-0.5 text-ink-muted">
-              {recomputed ? (
-                <>
-                  <s className="text-unchanged">{r.old_value}</s> <span className="text-ink">{r.new_value}</span>
-                </>
-              ) : (
-                r.old_value
-              )}
+            <div className="mt-0.5 flex flex-wrap gap-x-3 text-ink-muted">
+              {all
+                .filter((x) => x.sentence_id === r.sentence_id)
+                .map((x) => (
+                  <span key={x.fig_key}>
+                    {recomputed ? (
+                      <>
+                        <s className="text-unchanged">{x.old_value}</s> <span className="text-ink">{x.new_value}</span>
+                      </>
+                    ) : (
+                      x.old_value
+                    )}
+                  </span>
+                ))}
             </div>
           </li>
         ))}

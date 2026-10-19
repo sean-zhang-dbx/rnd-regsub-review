@@ -8,7 +8,12 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from '@databricks/appkit-ui/react';
-import type { QueryState } from '../data/queries';
+
+export interface QueryState<T> {
+  data: T[] | null;
+  loading: boolean;
+  error: string | null;
+}
 
 interface Props<T> {
   query: QueryState<T>;
