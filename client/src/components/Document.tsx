@@ -9,6 +9,12 @@ import { ErrorNote } from './QueryBoundary';
 /** The page element, so citation cards stay on the page and never cover the margin. */
 export const PageBoundary = createContext<HTMLElement | null>(null);
 
+/** Tick and tie: the figure under the pointer, shared by the document page and the TLF page. */
+export const FigureFocus = createContext<{ focus: string | null; setFocus: (k: string | null) => void }>({
+  focus: null,
+  setFocus: () => undefined,
+});
+
 export interface SentenceModel {
   sentenceId: string;
   seq: number;
@@ -48,9 +54,11 @@ interface DocumentSentenceProps {
   sourceVersion: number | null;
   flipIndex: Map<string, number>;
   verdict: WordingCheckResult | undefined;
+  /** The finding open in the viewer. */
+  current?: boolean;
 }
 
-export function DocumentSentence({ sentence, recomputed, reserve, animate, sourceVersion, flipIndex, verdict }: DocumentSentenceProps) {
+export function DocumentSentence({ sentence, recomputed, reserve, animate, sourceVersion, flipIndex, verdict, current }: DocumentSentenceProps) {
   const parts = sentence.template.split(/(\{\w+\})/g);
   const flagged = verdict?.verdict === 'needs_writer';
 
@@ -71,7 +79,14 @@ export function DocumentSentence({ sentence, recomputed, reserve, animate, sourc
     );
   });
 
-  const text = <span className={flagged ? 'bg-attention-soft' : undefined}>{body}</span>;
+  const text = (
+    <span
+      id={`s-${sentence.sentenceId}`}
+      className={`box-decoration-clone ${flagged ? 'bg-attention-soft' : current ? 'bg-cited-soft/70' : ''}`}
+    >
+      {body}
+    </span>
+  );
 
   return (
     <>
@@ -113,6 +128,7 @@ function Figure({
   sourceVersion: number | null;
 }) {
   const boundary = useContext(PageBoundary);
+  const { focus, setFocus } = useContext(FigureFocus);
   const target = next ?? row.value_curr;
   const changed = row.value_prev !== target;
   const flipped = next !== null && changed;
@@ -151,7 +167,11 @@ function Figure({
       <HoverCardTrigger asChild>
         <span
           tabIndex={0}
-          className={`cursor-help border-b decoration-cited hover:bg-cited-soft focus-visible:bg-cited-soft ${pending ? 'border-transparent' : 'border-cited'}`}
+          onMouseEnter={() => setFocus(row.fig_key)}
+          onMouseLeave={() => setFocus(null)}
+          onFocus={() => setFocus(row.fig_key)}
+          onBlur={() => setFocus(null)}
+          className={`cursor-help border-b decoration-cited hover:bg-cited-soft focus-visible:bg-cited-soft ${focus === row.fig_key ? 'bg-cited-soft' : ''} ${pending ? 'border-transparent' : 'border-cited'}`}
         >
           {face}
         </span>
@@ -170,7 +190,7 @@ function Figure({
 }
 
 /* Mounted only while the hover card is open, so it queries on demand. */
-function CitationCard({ citationId, sourceVersion }: { citationId: string; sourceVersion: number | null }) {
+export function CitationCard({ citationId, sourceVersion }: { citationId: string; sourceVersion: number | null }) {
   const q = useCitationDetail(citationId);
 
   if (q.loading) {

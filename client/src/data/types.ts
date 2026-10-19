@@ -10,6 +10,14 @@ export type CitationDetailRow = Row<'citation_detail'>;
 export type RecomputeRow = Row<'recompute_figures'>;
 export type SignoffRow = Row<'signoffs'>;
 
+/** `tlf_table`: one row per cell of Table 14.2.1 (typed here, typegen reports it as unknown). */
+export interface TlfCell {
+  row_key: string;
+  column_name: string;
+  value_prev: string | null;
+  value_curr: string | null;
+}
+
 /** Values the queries return as plain strings. */
 export type DocType = string;
 export type ImpactKind = 'figure' | 'label' | 'prose';

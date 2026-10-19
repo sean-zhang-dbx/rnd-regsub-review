@@ -8,20 +8,24 @@
  * Raw hex lives only in this block. Components use the semantic utilities below.
  */
 :root {
-  --desk: #e8ecf1;
+  --bar: #0e1f3a;
+  --bar-muted: #a9b6c8;
+  --desk: #eef1f5;
   --page: #ffffff;
+  --line: #d5dbe3;
   --ink: #1a2330;
   --ink-muted: #5a6575;
   --cited: #1f5fae;
   --cited-soft: #e5edf8;
   --recomputed: #0e7a5c;
   --recomputed-soft: #e2f3ec;
-  --attention: #a86400;
-  --attention-soft: #fff2d9;
+  --attention: #8a5300;
+  --attention-soft: #fff0c2;
+  --open-soft: #e6eaf0;
   --unchanged: #8b95a3;
 
   --radius: 4px;
-  --radius-page: 2px;
+  --radius-page: 0px;
   --shadow-page: 0 1px 2px rgba(16, 24, 40, 0.08), 0 8px 24px rgba(16, 24, 40, 0.06);
 
   /* shadcn variables */
@@ -46,7 +50,7 @@
   --success-foreground: var(--page);
   --warning: var(--attention);
   --warning-foreground: var(--page);
-  --border: color-mix(in srgb, var(--ink) 14%, transparent);
+  --border: var(--line);
   --input: color-mix(in srgb, var(--ink) 20%, transparent);
   --ring: var(--cited);
   --chart-1: var(--cited);
@@ -69,6 +73,10 @@
   --font-serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
 
+  --color-bar: var(--bar);
+  --color-bar-muted: var(--bar-muted);
+  --color-line: var(--line);
+  --color-open-soft: var(--open-soft);
   --color-desk: var(--desk);
   --color-page: var(--page);
   --color-ink: var(--ink);
@@ -102,7 +110,15 @@
   }
 }
 
-/* The page: the document is the interface. */
+/* Rendered document page and rendered TLF output. In a layer, so utilities still win. */
+@layer components {
+  .tlf {
+    font-family: "Courier New", Courier, ui-monospace, monospace;
+    font-size: 12.5px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+}
 .doc-body {
   font-family: var(--font-serif);
   font-size: 17px;

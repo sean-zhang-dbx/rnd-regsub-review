@@ -182,93 +182,81 @@ Copy register (Sean, 19 Oct 2026): UI copy and presenter lines name documents an
 
 ## 5. UI direction
 
-**Setting:** a regulatory reviewer at a desk, in the last week before a filing. They work in tracked-changes review mode and think in sections and sentences, not tables. The pressure is to be certain nothing was missed.
+Revised 19 Oct 2026 (Sean): the app must look like an existing regulatory workflow, not a prototype. Reference: the Veeva SiteVault monitoring review viewer (https://sites.veevavault.help/gr/sitevault/monitoring/mon-review/), where a reviewer steps through a queue of documents in a viewer with an Information panel, a status pill and a version history. The earlier direction (document on a desk with margin comments and mini-page cards) is in git history.
 
-**Shape** (different from earlier GSK demos, which used a left rail with a dark "under the hood" column, and a two-sided split screen): the document is the interface. Pages sit on a cool desk, the right margin holds review comments the way Word's review pane does, and the Genie Agent and the wording check both appear as margin comments from named authors. There are no dashboards, sidebars or KPI cards.
+**Setting:** a regulatory reviewer at a desk, in the last week before a filing, doing numerical QC ("tick and tie"): every figure in the text is checked against the TLF it came from. They already live in a Vault-style document management system, so the screen must feel familiar on first sight.
+
+**Shape:** an enterprise document-management shell.
+- A dark product bar with a dossier search box (AI Search), the study, the presenter switch and the reviewer.
+- The QC log screen: a dossier tree on the left (eCTD modules, with a count of open findings per section and the reference documents outside the dossier), and a QC log grid with filter tabs and status pills on the right. A change notice for Table 14.2.1 sits above the grid.
+- The review viewer opens over the log, the way the Vault viewer does: close button and breadcrumb, "Finding 1 of 7" with previous and next arrows. Three panes: the CSR (or Module 2, or label) page rendered as a PDF page, the Table 14.2.1 output rendered as a TLF page, and an Information panel (finding, QC status, wording check, Genie Agent, sign-off, version history).
+- Tick and tie: hovering a figure on the document page highlights its cell in the TLF. Before recompute, changed cells are marked as not matching the text. After recompute they match.
 
 **Tokens**
 | Role | Hex |
 |---|---|
-| Desk background | `#E8ECF1` |
-| Page surface | `#FFFFFF` |
+| Product bar | `#0E1F3A` |
+| Body background | `#EEF1F5` |
+| Surface | `#FFFFFF` |
+| Border | `#D5DBE3` |
 | Text | `#1A2330` |
 | Muted text | `#5A6575` |
-| Accent: cited figure (underline, hover fill `#E5EDF8`) | `#1F5FAE` |
-| Status: recomputed (fill `#E2F3EC`) | `#0E7A5C` |
-| Status: needs a person (fill `#FFF2D9`) | `#A86400` |
-| Status: unchanged | `#8B95A3` |
+| Accent: links, cited figure, linked cell (fill `#E5EDF8`) | `#1F5FAE` |
+| Status: recomputed, matches (fill `#E2F3EC`) | `#0E7A5C` |
+| Status: needs a person, does not match (fill `#FFF0C2`, the Vault yellow pill) | `#8A5300` |
+| Status: open, unchanged | `#8B95A3` |
 
-- **Fonts:**
-  - UI chrome: Public Sans (Google Fonts), the US government design system face, which reads as regulatory and sober.
-  - Document body: Source Serif 4, 17px with a 1.6 line height, because it is a document. Serif is used only on the page, never for app headings.
-  - Figures: tabular-nums. SQL and citation fields: JetBrains Mono, only where the content is code.
-- **Radius:** 4px for UI and 2px for the page.
-- **Shadow:** none, except on the page: `0 1px 2px rgba(16,24,40,.08), 0 8px 24px rgba(16,24,40,.06)`.
+- **Fonts:** Public Sans for the app. Source Serif 4 only inside the rendered document page. Courier New (system) only inside the rendered TLF page, because SAS TLF output is Courier, so it reads as the real artefact. JetBrains Mono only for SQL.
+- **Radius:** 4px for UI, 0 for rendered pages. **Shadow:** only on rendered pages and the viewer sheet.
 
-**Wireframe, opening screen (beat 1)**
+**Wireframe, QC log (beat 1)**
 ```
 +--------------------------------------------------------------------------------+
-| LMN-301  Submission review                        Databricks [ ]   A. Okafor   |
+| [D] Dossier Review   [Search dossier and reference documents]  LMN-301  AO     |
 +--------------------------------------------------------------------------------+
-|  efficacy_primary was restated by Biostatistics at 09:12 (version 3 to 4).     |
-|  7 sentences in 4 sections use the changed figures. 5 figures can be          |
-|  recomputed from source, 1 label sentence goes to Labelling, 1 may need the    |
-|  writer.  (after recompute: 5 recomputed and waiting for approval, ...)        |
-|                                                                                |
-|  +-----------+  +-----------+  +-----------+  +-----------+                    |
-|  | CSR       |  | Module    |  | Module    |  | Label     |  <- mini pages,    |
-|  | 11.4.1    |  | 2.7.3     |  | 2.5       |  | 14        |     sentence bars  |
-|  | ===  ==   |  | ==        |  | =         |  | =         |     colored by     |
-|  | =====     |  | ====      |  | ===       |  | ==        |     state, others  |
-|  | ==  (amb) |  | ==        |  |           |  |  (purple) |     grey           |
-|  +-----------+  +-----------+  +-----------+  +-----------+                    |
-|  6 safety sentences cite other tables and are unchanged.  [show]               |
-|  Outside the dossier, AI Search found 2 documents quoting the old result:      |
-|    Investigator's Brochure v7, p.4  "...412 of 618 (66.7%) responded..."     |
-|    Advisory briefing book, p.11     "...about two-thirds of participants..." |
-|    [Notify owners]                                                             |
-|                                                [ Open CSR 11.4.1 ]             |
-+--------------------------------------------------------------------------------+
+| LMN-301 / Sequence 0003 / Numerical QC                     [In review] 30 Oct  |
++--------------+-----------------------------------------------------------------+
+| DOSSIER      | Change notice  Table 14.2.1 re-delivered by Biostatistics       |
+| Module 1     | v3 Superseded -> v4 Current, 19 Oct 2026 09:12   [Recompute]    |
+|  1.14 Label 1|-----------------------------------------------------------------|
+| Module 2     | [All 7] [Open] [Needs a person] [Recomputed] [Approved]         |
+|  2.5       1 | Location        Text says          Source cell  Owner  Status   |
+|  2.7.3     2 | CSR 11.4.1 s2   responders 412...  T14.2.1 TRT  Writer (Open) |
+| Module 5     | ...                                                             |
+|  CSR 11.4.1 3|-----------------------------------------------------------------|
+| REFERENCE    | Outside the dossier: AI Search found the old result in          |
+|  IB v7       |  IB v7 p.4, Advisory briefing book p.6        [Notify owners]   |
++--------------+-----------------------------------------------------------------+
 ```
-(The label bar uses the "needs a person" amber with a "Labelling" text tag, so no extra colour is introduced.)
 
-**Wireframe, hero (beats 2 to 4, one screen)**
+**Wireframe, review viewer (beats 2 to 4)**
 ```
 +--------------------------------------------------------------------------------+
-| < Overview   CSR 11.4.1 Primary efficacy endpoint      [Recompute from source] |
-+-------------------------------------------------------+------------------------+
-|  (white page, serif)                                  |  margin comments       |
-|  In the primary analysis, 412 409 of 618 participants |  [Wording check]       |
-|  (66.7% 66.2%) in the LMN-4471 arm met the primary    |  Claude Sonnet 5.5 via |
-|  endpoint, compared with 287 of 609 (47.1%) on        |  Unity Gateway:        |
-|  placebo, a difference of 19.5 19.1 percentage points |  "66.2% is below two-  |
-|  (95% CI 14.1 13.6 to 25.0 24.5).                     |  thirds, so the wording|
-|  [amber] About two-thirds of participants responded   |  may no longer hold."  |
-|  by Week 52 ...                                       |  [Genie Agent]         |
-|                                                       |  Q: How many ... ?     |
-|  hover on a figure -> citation card:                  |  409 of 618  [SQL v]   |
-|  efficacy_primary, row TRT, column responders,        |                        |
-|  version 4, certified by Biostatistics, 19 Oct 2026   |  [Approve 5 figures]   |
-+-------------------------------------------------------+------------------------+
+| X  QC log / LMN-301 CSR, Draft 0.4 [In review]   [Recompute]  Finding 1 of 7 < >|
++---------------------------+-----------------------+----------------------------+
+| p.62 of 214   - 100% +    | Table 14.2.1  v4 Current | Information             |
+| +-----------------------+ | +-------------------+ | CSR 11.4.1, sentence 2     |
+| | LMN-301 CSR Draft 0.4 | | | Table 14.2.1      | | QC status (Recomputed)     |
+| | 11.4.1 Primary ...    | | | Responders, n (%) | | Source cell ...            |
+| | ... 412 409 of 618 .. | | |  409 (66.2) 287.. | | Wording check ...          |
+| | [About two-thirds...] | | | Diff 19.1 (13.6,  | | Genie Agent ...            |
+| +-----------------------+ | +-------------------+ | Sign-off   Version history |
++---------------------------+-----------------------+----------------------------+
 ```
-Old values are struck through in muted grey, and new values appear in green. The figure flip is the only animation in the app.
 
 **Principles**
-1. Everything happens on the page or in its margin, the way a reviewer already works.
-2. Changed figures are the loudest thing on screen, and the prose stays plain black.
-3. Colour only ever means a state: blue for cited, green for recomputed, amber for needs a person.
+1. It must look like the tool the reviewer already uses: a queue, a viewer, an Information panel, status pills.
+2. The proof is side by side: the sentence and the certified cell it came from, visibly matching or not.
+3. Colour only means a state: blue for linked, green for matches or recomputed, yellow for needs a person.
 
-**Blacklist check:** each slop-blacklist item checked against this direction, with any change made.
-- **#1 (cream, serif, terracotta):** the background is a cool desk, not cream, and there is no terracotta. Serif is used only for the document body, which is real document content.
-- **#3 (broadsheet):** there is one page with normal margins and no column grid.
-- **#4 and #7 (card grid, KPI cards):** the counts are written as a sentence. The mini pages are the only repeated element, and they carry real content.
-- **#5 (template chrome):** there are no caps eyebrows and no middle dots. Mono is used only for SQL.
-- **#8 (sidebar):** the app has 2 screens and no sidebar.
-- **#11 (AI badges):** the model check is labelled with its model and route, with no sparkle icon.
-- **#12 (animation):** the only motion is the figure flip on the hero.
-- **#14 (round numbers):** values such as 409/618 and 66.2 are not round.
-
-One change came out of this check: the first idea used a dark top banner, which was dropped because it matched the "dark under the hood" look of the earlier demos.
+**Blacklist check**
+- **#8 (sidebar):** the left tree is the dossier structure with open-finding counts, which is content, not an 8-item nav. It appears only on the QC log; the viewer is full width.
+- **#5 (template chrome, mono as decoration):** Courier appears only in the TLF page, where it is the real format of the artefact, and mono only for SQL. No caps eyebrows except the tree group labels, which Vault also uses; kept to 2.
+- **#4 and #7 (card grid, KPI cards):** none. Counts appear as filter-tab badges and tree badges, as in a real queue.
+- **#11 (AI badges):** the wording check names its model and route, no sparkle.
+- **#12 (animation):** the figure flip and the cell match are the only motion.
+- **#14 (round numbers):** values such as 409/618, 66.2 and page 62 of 214 are not round.
+- Changed from the first sketch: no fake nav menu (Home, Documents, Reporting) under the bar, because those links would lead nowhere in the demo. A breadcrumb with the sequence replaces it.
 
 ## 6. Tasks
 ### demo-backend (owns `config/`, `server/`, `scripts/`, workspace objects)

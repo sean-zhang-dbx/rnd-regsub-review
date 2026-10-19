@@ -12,12 +12,12 @@ import { ErrorNote } from './QueryBoundary';
 type Tone = 'neutral' | 'recomputed' | 'attention';
 
 const TONE: Record<Tone, string> = {
-  neutral: 'border-l-border',
+  neutral: 'border-l-transparent',
   recomputed: 'border-l-recomputed',
   attention: 'border-l-attention',
 };
 
-/** A comment in the review margin: named author, short body, links at the bottom. */
+/** A section of the viewer's Information panel: named author, short body, links at the bottom. */
 export function MarginComment({
   author,
   via,
@@ -34,7 +34,7 @@ export function MarginComment({
   links?: ReactNode;
 }) {
   return (
-    <article id={id} className={`rounded-[var(--radius)] border border-border border-l-4 bg-page p-3.5 ${TONE[tone]}`}>
+    <article id={id} className={`scroll-mt-2 border-b border-l-[3px] border-b-line px-4 py-4 ${TONE[tone]}`}>
       <header className="mb-2">
         <h2 className="text-sm font-semibold text-ink">{author}</h2>
         {via ? <p className="text-xs text-ink-muted">{via}</p> : null}
@@ -99,10 +99,8 @@ export function WordingComment({
       {flagged.map((r) => (
         <div key={r.sentence_id} id={flaggedId === r.sentence_id ? 'flag' : undefined} className="space-y-1">
           <p className="font-serif text-[15px] italic leading-snug text-ink-muted">{quote(r.sentence_id)}</p>
-          <p>
-            {r.reason}
-          </p>
-                  </div>
+          <p>{r.reason}</p>
+        </div>
       ))}
       <p className="text-xs text-ink-muted">
         <span className="font-mono" title={WORDING_SERVICE}>

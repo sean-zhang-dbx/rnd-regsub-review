@@ -97,3 +97,17 @@ export function docTitle(docType: string, section: string): string {
   if (docType === 'label') return 'Prescribing Information';
   return `Module ${section}`;
 }
+
+/** How each document appears in the dossier and the viewer. Page numbers are part of the fiction. */
+export const DOC_META: Record<string, { title: string; draft: string; page: string; module: string }> = {
+  csr: { title: 'LMN-301 Clinical Study Report', draft: 'Draft 0.4', page: '62 of 214', module: 'Module 5' },
+  m27: { title: 'Module 2.7.3 Summary of Clinical Efficacy', draft: 'Draft 0.3', page: '18 of 96', module: 'Module 2' },
+  m25: { title: 'Module 2.5 Clinical Overview', draft: 'Draft 0.3', page: '31 of 58', module: 'Module 2' },
+  label: { title: 'Prescribing Information', draft: 'Draft 0.2', page: '9 of 24', module: 'Module 1' },
+};
+
+export function docMeta(docType: string) {
+  return DOC_META[docType] ?? DOC_META.csr;
+}
+
+export const SEQUENCE = 'Sequence 0003';
