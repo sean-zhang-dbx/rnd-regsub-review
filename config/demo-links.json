@@ -1,0 +1,11 @@
+{
+  "beat1": { "label": "efficacy_primary table history", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/efficacy_primary?activeTab=history" },
+  "beat1_search": { "label": "AI Search index doc_chunks_index", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/doc_chunks_index" },
+  "beat1_volume": { "label": "Volume source_docs", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/volumes/sean_zhang_catalog/rnd_regsub_review/source_docs" },
+  "beat2": { "label": "efficacy_primary lineage", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/efficacy_primary?activeTab=lineage" },
+  "beat3_endpoint": { "label": "Serving endpoint databricks-claude-sonnet-5-5", "url": "https://fevm-sean-zhang.cloud.databricks.com/ml/endpoints/databricks-claude-sonnet-5-5" },
+  "beat3_traces": { "label": "MLflow experiment rnd_regsub_review", "url": "https://fevm-sean-zhang.cloud.databricks.com/ml/experiments" },
+  "beat4_genie": { "label": "Genie Agent", "url": "https://fevm-sean-zhang.cloud.databricks.com/genie" },
+  "beat4_signoffs": { "label": "review_signoffs table", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/review_signoffs" },
+  "app": { "label": "App rnd-regsub-review", "url": "https://fevm-sean-zhang.cloud.databricks.com/apps/rnd-regsub-review" }
+}
