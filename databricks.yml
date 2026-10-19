@@ -6,6 +6,12 @@ variables:
     description: SQL Warehouse ID
   serving_endpoint_name:
     description: Serving endpoint name
+  genie_space_id:
+    description: Genie Agent (space) id
+  genie_space_name:
+    description: Genie Agent title
+  mlflow_experiment_id:
+    description: MLflow experiment id for wording-check traces
 
 resources:
   apps:
@@ -19,6 +25,8 @@ resources:
         started: true
       user_api_scopes:
         - serving.serving-endpoints
+        - dashboards.genie
+        - sql
 
       # The resources which this app has access to.
       resources:
@@ -30,6 +38,15 @@ resources:
           serving_endpoint:
             name: ${var.serving_endpoint_name}
             permission: CAN_QUERY
+        - name: genie-space
+          genie_space:
+            name: ${var.genie_space_name}
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN
+        - name: mlflow-experiment
+          experiment:
+            experiment_id: ${var.mlflow_experiment_id}
+            permission: CAN_EDIT
 
 targets:
   default:
@@ -40,3 +57,6 @@ targets:
     variables:
       sql_warehouse_id: 16ad82bead3f55b5
       serving_endpoint_name: databricks-claude-sonnet-5-5
+      genie_space_id: 01f1cbc34f071871a047d7a3489ce6d3
+      genie_space_name: "Regsub Review: LMN-301 certified tables"
+      mlflow_experiment_id: "1752849192687853"
