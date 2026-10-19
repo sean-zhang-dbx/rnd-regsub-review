@@ -1,31 +1,44 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Button, Skeleton } from '@databricks/appkit-ui/react';
-import { postSearchUntracked, postSignoff } from '../data/api';
+import { postSearchUntracked } from '../data/api';
+import { useReview } from '../data/review';
 import { useImpactList, useRestatementSummary, useUnchangedSentences } from '../data/queries';
 import type { ImpactRow, UnchangedRow, UntrackedHit } from '../data/types';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
 import type { QueryState } from '../components/QueryBoundary';
-import { useSignoffReadback } from '../data/Signoffs';
-import { docLabel, formatClockUtc, formatDateUtc, formatSignedAt, plural } from '../lib/format';
+import { docLabel, formatClockUtc, formatDateUtc, formatClock, plural } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 
-const KIND_STYLE: Record<string, { bar: string; tag: string }> = {
-  figure: { bar: 'bg-recomputed-soft border-recomputed', tag: 'Recomputed' },
-  prose: { bar: 'bg-attention-soft border-attention', tag: 'Needs the writer' },
-  label: { bar: 'bg-attention-soft border-attention', tag: 'Sent to Labelling' },
-};
+interface BarState {
+  bar: string;
+  tag: string;
+  tagClass: string;
+}
+
+const CITED: BarState = { bar: 'bg-cited-soft border-cited', tag: 'Can be recomputed', tagClass: 'text-cited' };
+const GREEN = (tag: string): BarState => ({ bar: 'bg-recomputed-soft border-recomputed', tag, tagClass: 'text-recomputed' });
+const AMBER = (tag: string): BarState => ({ bar: 'bg-attention-soft border-attention', tag, tagClass: 'text-attention' });
+
+interface Stage {
+  recomputed: boolean;
+  approved: boolean;
+  withWriter: boolean;
+}
+
+function stateOf(kind: string, st: Stage): BarState {
+  if (kind === 'label') return AMBER(st.recomputed ? 'Sent to Labelling' : 'Goes to Labelling');
+  if (kind === 'prose') return AMBER(st.withWriter ? 'With the writer' : 'May need the writer');
+  if (st.approved) return GREEN('Approved');
+  return st.recomputed ? GREEN('Recomputed') : CITED;
+}
 
 /* Sentences, deduplicated: the query may return one row per cited figure. */
 function bySentence(rows: ImpactRow[]): ImpactRow[] {
   const seen = new Map<string, ImpactRow>();
   for (const r of rows) if (!seen.has(r.sentence_id)) seen.set(r.sentence_id, r);
   return [...seen.values()].sort((a, b) => a.seq - b.seq);
-}
-
-function styleOf(kind: string) {
-  return KIND_STYLE[kind] ?? KIND_STYLE.figure;
 }
 
 function barWidth(seq: number): string {
@@ -36,6 +49,7 @@ export function Overview() {
   const summary = useRestatementSummary();
   const impact = useImpactList();
   const unchanged = useUnchangedSentences();
+  const review = useReview();
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 md:px-10">
@@ -67,6 +81,8 @@ export function Overview() {
             </div>
           ) : impact.error ? (
             <ErrorNote title="The affected sentences could not be listed." detail={impact.error} />
+          ) : review.loading ? (
+            <Skeleton className="h-6 w-full" />
           ) : (
             <ImpactSentence rows={bySentence(impact.data ?? [])} />
           )}
@@ -110,21 +126,33 @@ export function Overview() {
 }
 
 function ImpactSentence({ rows }: { rows: ImpactRow[] }) {
+  const review = useReview();
   const sections = new Set(rows.map((r) => `${r.doc_type}:${r.section}`)).size;
   const figures = rows.filter((r) => r.kind === 'figure').length;
   const writer = rows.filter((r) => r.kind === 'prose').length;
   const labelling = rows.filter((r) => r.kind === 'label').length;
+  const f = review.approved
+    ? `${figures} ${figures === 1 ? 'figure is' : 'figures are'} approved`
+    : review.recomputed
+      ? `${figures} ${figures === 1 ? 'figure is' : 'figures are'} recomputed and waiting for approval`
+      : `${figures} ${figures === 1 ? 'figure' : 'figures'} can be recomputed from source`;
+  const l = review.recomputed
+    ? `${labelling} label ${labelling === 1 ? 'sentence has' : 'sentences have'} been sent to Labelling`
+    : `${labelling} label ${labelling === 1 ? 'sentence goes' : 'sentences go'} to Labelling`;
+  const w = review.withWriter
+    ? `${writer} ${writer === 1 ? 'sentence is' : 'sentences are'} with the writer`
+    : `${writer} ${writer === 1 ? 'sentence' : 'sentences'} may need the writer`;
   return (
     <p>
       {plural(rows.length, 'sentence', 'sentences')} in {plural(sections, 'section', 'sections')} use the changed
-      figures. {figures} {figures === 1 ? 'is' : 'are'} recomputed and waiting for approval, {writer}{' '}
-      {writer === 1 ? 'needs' : 'need'} the writer, and {labelling} {labelling === 1 ? 'has' : 'have'} been sent to
-      Labelling.
+      figures. {f}, {l}, and {w}.
     </p>
   );
 }
 
 function MiniPages({ rows, unchanged }: { rows: ImpactRow[]; unchanged: UnchangedRow[] }) {
+  const review = useReview();
+  const stage: Stage = { recomputed: review.recomputed, approved: review.approved !== null, withWriter: review.withWriter };
   const order: string[] = ['csr', 'm27', 'm25', 'label'];
   const groups = useMemo(() => {
     const m = new Map<string, ImpactRow[]>();
@@ -151,18 +179,21 @@ function MiniPages({ rows, unchanged }: { rows: ImpactRow[]; unchanged: Unchange
               <div className="text-xs text-ink-muted">{first.section_title}</div>
             </div>
             <ul className="flex flex-1 flex-col gap-2.5">
-              {g.map((r) => (
+              {g.map((r) => {
+                const bar = stateOf(r.kind, stage);
+                return (
                 <li key={r.sentence_id}>
                   <div
-                    className={`h-2.5 border-l-2 ${styleOf(r.kind).bar}`}
+                    className={`h-2.5 border-l-2 ${bar.bar}`}
                     style={{ width: barWidth(r.seq) }}
                     aria-hidden="true"
                   />
-                  <div className={`mt-1 text-xs ${r.kind === 'figure' ? 'text-recomputed' : 'text-attention'}`}>
-                    {styleOf(r.kind).tag}
+                  <div className={`mt-1 text-xs ${bar.tagClass}`}>
+                    {bar.tag}
                   </div>
                 </li>
-              ))}
+                );
+              })}
               {unchangedIn(first).map((u, i) => (
                 <li key={u.sentence_id}>
                   <div
@@ -269,17 +300,15 @@ function highlight(snippet: string, olds: string[]) {
 
 function Untracked({ oldValues }: { oldValues: string[] }) {
   const search = useAsync(() => postSearchUntracked(oldValues));
+  const review = useReview();
   const [notifying, setNotifying] = useState(false);
   const [notifyError, setNotifyError] = useState<string | null>(null);
-  const readback = useSignoffReadback();
-  const notifiedRow = readback.result?.rows?.find((r) => r.action === 'notified_owner') ?? null;
 
   async function notify(paths: string[]) {
     setNotifying(true);
     setNotifyError(null);
     try {
-      await postSignoff(paths, 'notified_owner');
-      readback.read();
+      await review.record(paths, 'notified_owner');
     } catch (e) {
       setNotifyError(e instanceof Error ? e.message : 'The request failed.');
     } finally {
@@ -338,30 +367,25 @@ function Untracked({ oldValues }: { oldValues: string[] }) {
             </div>
           ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-4">
-            {notifiedRow ? (
+            {review.notified ? (
               <p className="text-sm font-medium text-recomputed">
-                Owners notified. {notifiedRow.reviewer}, {formatSignedAt(notifiedRow.signed_at)}.
+                {plural(review.notified.count, 'owner', 'owners')} notified, {formatClock(review.notified.at)}.
               </p>
             ) : (
               <Button
                 variant="outline"
                 size="sm"
-                disabled={notifying || readback.result?.loading === true}
+                disabled={notifying}
                 onClick={() => void notify([...new Set((search.data ?? []).map((h) => h.file_path))])}
               >
-                {notifying || readback.result?.loading ? 'Notifying owners' : 'Notify owners'}
+                {notifying ? 'Notifying owners' : 'Notify owners'}
               </Button>
             )}
             <p className="text-sm text-ink-muted">Nothing outside the dossier is rewritten.</p>
           </div>
-          {readback.result?.error ? (
-            <div className="mt-2">
-              <ErrorNote title="The notification was written but could not be read back." detail={readback.result.error} />
-            </div>
-          ) : null}
-          {readback.probe}
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
             <DbxLink linkKey="beat1_search" label="AI Search index in Databricks" />
+            <DbxLink linkKey="beat1_volume" label="Source documents volume in Databricks" />
           </div>
         </>
       )}
