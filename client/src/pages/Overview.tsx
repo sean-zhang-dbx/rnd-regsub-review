@@ -7,7 +7,7 @@ import { useImpactList, useRestatementSummary, useUnchangedSentences } from '../
 import type { ImpactRow, UnchangedRow, UntrackedHit } from '../data/types';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
 import type { QueryState } from '../components/QueryBoundary';
-import { docLabel, formatClockUtc, formatDateUtc, formatClock, plural } from '../lib/format';
+import { docLabel, formatClockUtc, formatDateUtc, formatClock } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 
@@ -129,27 +129,32 @@ export function Overview() {
   );
 }
 
+/* Names the documents rather than counting them; the mini pages below show the sentences. */
+function joinNames(names: string[]): string {
+  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 function ImpactSentence({ rows }: { rows: ImpactRow[] }) {
   const review = useReview();
-  const sections = new Set(rows.map((r) => `${r.doc_type}:${r.section}`)).size;
-  const figures = rows.filter((r) => r.kind === 'figure').length;
-  const writer = rows.filter((r) => r.kind === 'prose').length;
-  const labelling = rows.filter((r) => r.kind === 'label').length;
-  const f = review.approved
-    ? `${figures} ${figures === 1 ? 'figure is' : 'figures are'} approved`
-    : review.recomputed
-      ? `${figures} ${figures === 1 ? 'figure is' : 'figures are'} recomputed and waiting for approval`
-      : `${figures} ${figures === 1 ? 'figure' : 'figures'} can be recomputed from source`;
-  const l = review.recomputed
-    ? `${labelling} label ${labelling === 1 ? 'sentence has' : 'sentences have'} been sent to Labelling`
-    : `${labelling} label ${labelling === 1 ? 'sentence goes' : 'sentences go'} to Labelling`;
-  const w = review.withWriter
-    ? `${writer} ${writer === 1 ? 'sentence is' : 'sentences are'} with the writer`
-    : `${writer} ${writer === 1 ? 'sentence' : 'sentences'} may need the writer`;
+  const order: string[] = ['csr', 'm27', 'm25', 'label'];
+  const places = [...new Map(rows.map((r) => [`${r.doc_type}:${r.section}`, r])).values()]
+    .sort((a, b) => order.indexOf(a.doc_type) - order.indexOf(b.doc_type))
+    .map((r) => (r.doc_type === 'label' ? 'the label' : docLabel(r.doc_type, r.section)));
+  const prose = rows.find((r) => r.kind === 'prose');
+  const writerLine = prose
+    ? ` The writer has a sentence in ${docLabel(prose.doc_type, prose.section)} whose wording may no longer hold.`
+    : '';
+
+  if (!review.recomputed) {
+    return <p>The changed figures appear in {joinNames(places)}.</p>;
+  }
   return (
     <p>
-      {plural(rows.length, 'sentence', 'sentences')} in {plural(sections, 'section', 'sections')} use the changed
-      figures. {f}, {l}, and {w}.
+      {review.approved
+        ? 'The recomputed figures are approved.'
+        : 'The recomputed figures are waiting for your approval.'}{' '}
+      Labelling has the label sentence.
+      {review.withWriter ? writerLine : ' The wording is being checked against the new figures.'}
     </p>
   );
 }
@@ -210,10 +215,9 @@ function MiniPages({ rows, unchanged }: { rows: ImpactRow[]; unchanged: Unchange
             </ul>
             {unchangedIn(first).length > 0 ? (
               <div className="text-xs text-unchanged">
-                {plural(unchangedIn(first).length, 'safety sentence', 'safety sentences')} unchanged
+                Safety sentences unchanged
               </div>
             ) : null}
-            <div className="text-xs text-ink-muted">{plural(g.length, 'affected sentence', 'affected sentences')}</div>
           </div>
         );
         return (
@@ -250,8 +254,7 @@ function Unchanged({ q }: { q: QueryState<UnchangedRow> }) {
       ) : (
         <>
           <p className="text-unchanged">
-            {plural(q.data.length, 'safety sentence', 'safety sentences')} cite other tables and{' '}
-            {q.data.length === 1 ? 'is' : 'are'} unchanged.{' '}
+            Safety sentences cite other tables and are unchanged.{' '}
             <Button
               variant="link"
               className="h-auto p-0 align-baseline text-cited"
@@ -279,13 +282,21 @@ function UnchangedList({ rows }: { rows: UnchangedRow[] }) {
       {[...groups.values()].map((g) => (
         <li key={`${g[0].doc_type}:${g[0].section}`} className="flex items-baseline justify-between px-3 py-2">
           <span>
-            {docLabel(g[0].doc_type, g[0].section)}, {plural(g.length, 'sentence', 'sentences')}
+            {docLabel(g[0].doc_type, g[0].section)}
           </span>
           <span className="font-mono text-xs">{g[0].source_table}</span>
         </li>
       ))}
     </ul>
   );
+}
+
+/* Snippets arrive cut mid-word and sometimes with their own dots; start and end on whole words. */
+function trimSnippet(snippet: string): string {
+  const t = snippet.replace(/^[.\s…]+|[.\s…]+$/g, '');
+  const start = /^\S*\s/.exec(t)?.[0].length ?? 0;
+  const end = t.lastIndexOf(' ');
+  return t.slice(start, end > start ? end : undefined);
 }
 
 function highlight(snippet: string, olds: string[]) {
@@ -347,8 +358,7 @@ function Untracked({ oldValues }: { oldValues: string[] }) {
       ) : (
         <>
           <p className="text-lg leading-relaxed text-ink">
-            Outside the dossier, AI Search found {plural(docs.length, 'document', 'documents')} that still{' '}
-            {docs.length === 1 ? 'quotes' : 'quote'} the old result.
+            AI Search found the old result quoted in documents outside the dossier.
           </p>
           <ul className="mt-3 space-y-3">
             {docs.map(([title, hits]) => (
@@ -358,7 +368,7 @@ function Untracked({ oldValues }: { oldValues: string[] }) {
                   <div key={`${h.file_path}:${h.page}`} className="mt-2 border-l-2 border-border pl-3">
                     <div className="text-xs text-ink-muted">Page {h.page}</div>
                     <p className="font-serif text-[15px] leading-relaxed text-ink">
-                      ...{highlight(h.snippet, oldValues)}...
+                      ...{highlight(trimSnippet(h.snippet), oldValues)}...
                     </p>
                   </div>
                 ))}
@@ -373,7 +383,7 @@ function Untracked({ oldValues }: { oldValues: string[] }) {
           <div className="mt-3 flex flex-wrap items-center gap-4">
             {review.notified ? (
               <p className="text-sm font-medium text-recomputed">
-                {plural(review.notified.count, 'owner', 'owners')} notified, {formatClock(review.notified.at)}.
+                Owners notified at {formatClock(review.notified.at)}.
               </p>
             ) : (
               <Button

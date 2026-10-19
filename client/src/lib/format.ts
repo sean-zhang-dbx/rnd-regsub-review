@@ -36,6 +36,10 @@ export const REVIEWER_FULL = 'Dr. Amara Okafor, Regulatory Review';
 /** Unity Gateway model service behind the wording check. Single place to change it. */
 export const WORDING_SERVICE = 'sean_zhang_catalog.rnd_regsub_review.wording_check';
 
+export function formatDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export function formatClock(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }

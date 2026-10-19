@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Button, Textarea } from '@databricks/appkit-ui/react';
 import { postGenieAsk } from '../data/api';
 import type { GenieAnswer, ImpactRow, WordingCheckResult } from '../data/types';
-import { docLabel, formatSignedAt, plural, WORDING_SERVICE } from '../lib/format';
+import { docLabel, formatClock, formatDay, WORDING_SERVICE } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 import type { AsyncState } from '../lib/useAsync';
@@ -152,14 +152,14 @@ export function WordingComment({
   return (
     <MarginComment author="Wording check" via={via} tone={flagged.length > 0 ? 'attention' : 'recomputed'} links={links}>
       <p>
-        {plural(results.length, 'sentence', 'sentences')} checked against the new figures.{' '}
-        {flagged.length === 0 ? 'The wording still holds in all of them.' : `${flagged.length} may no longer hold.`}
+        Wording checked against the new figures.
+        {flagged.length === 0 ? ' It still holds wherever a figure changed.' : null}
       </p>
       {flagged.map((r) => (
         <div key={r.sentence_id} id={flaggedId === r.sentence_id ? 'flag' : undefined} className="space-y-1">
           <p className="line-clamp-1 font-serif text-[15px] italic leading-snug text-ink-muted">{quote(r.sentence_id)}</p>
           <p>
-            {r.reason} <span className="text-ink-muted">Sent to the writer.</span>
+            {r.reason}
           </p>
                   </div>
       ))}
@@ -299,8 +299,8 @@ export function ApproveComment({
     return (
       <MarginComment author="Sign-off" tone="recomputed" links={links}>
         <p className="font-medium">
-          Approved by {approved.reviewer}, {formatSignedAt(approved.signed_at)}
-          {version !== null ? `, table version ${version}` : ''}, {plural(figureCount, 'figure', 'figures')}.
+          Approved by {approved.reviewer} at {formatClock(approved.signed_at)} on {formatDay(approved.signed_at)}
+          {version !== null ? `, against table version ${version}` : ''}.
         </p>
       </MarginComment>
     );
@@ -317,7 +317,7 @@ export function ApproveComment({
       </p>
       {approveError ? <ErrorNote title="The sign-off was not recorded." detail={approveError} /> : null}
       <Button size="sm" disabled={!ready || approving || figureCount === 0} onClick={onApprove}>
-        {approving ? 'Recording sign-off' : `Approve ${plural(figureCount, 'figure', 'figures')}`}
+        {approving ? 'Recording sign-off' : 'Approve the recomputed figures'}
       </Button>
     </MarginComment>
   );

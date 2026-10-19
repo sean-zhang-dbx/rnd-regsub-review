@@ -8,7 +8,7 @@ The full plan is in `docs/DEMO_PLAN.md`, and every workspace object is listed in
 
 ## The beats
 
-1. **What did this change break?** The opening screen shows that Biostatistics restated `efficacy_primary` (version 3 to 4). The restatement touches 7 sentences in 4 sections, and 6 safety sentences stay unchanged. AI Search also finds 2 documents outside the dossier that still quote the old result. "Notify owners" records a hand-off for each one.
+1. **What did this change break?** The opening screen shows that Biostatistics restated `efficacy_primary` (version 3 to 4), and where the changed figures appear: CSR 11.4.1, Module 2.7.3, Module 2.5 and the label. Safety sentences cite other tables and stay unchanged. AI Search also finds the old result quoted in the Investigator's Brochure and the advisory briefing book, which sit outside the dossier. "Notify owners" records a hand-off for each.
 2. **Where did this number come from?** Open CSR 11.4.1 and hover a figure. The citation card shows the certified table, row, column, version and certification.
 3. **Hero: fix the numbers, but tell me where the meaning changed.** Click "Recompute from source". SQL recomputes every figure (412 of 618 becomes 409 of 618, and 66.7% becomes 66.2%). A traced model call through Unity Gateway reads each updated sentence and flags "about two-thirds" for the writer. The label sentence goes to Labelling.
 4. **Can I trust the fix?** Ask the Genie Agent "How many participants in the treatment arm met the primary endpoint after the restatement?" It answers 409 of 618 and shows its SQL. Approve the figures, and a named sign-off is written to `review_signoffs`.
