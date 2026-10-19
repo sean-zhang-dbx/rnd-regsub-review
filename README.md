@@ -1,183 +1,64 @@
 # rnd-regsub-review
 
-A Databricks App powered by [AppKit](https://developers.databricks.com/docs/appkit/v0/), featuring React, TypeScript, and Tailwind CSS.
+A regulatory reviewer can't tell which sentences in the CSR, Module 2 and the label carry wrong numbers after a certified analysis table is restated, and finding them costs days of manual cross-checking on the critical path to submission. This demo shows that with Databricks they see every affected sentence within seconds. The corrected figures are recomputed from the certified source, and the single wording change that still needs a person is flagged for them.
 
-**Enabled plugins:**
-- **Analytics** -- SQL query execution against Databricks SQL Warehouses
-- **Server** -- Express HTTP server with static file serving and Vite dev mode
+All data is synthetic. The demo uses 1 fictional Phase III study, `LMN-301` (LMN-4471 400 mg once daily vs placebo, 52 weeks), so no GSK product or data appears.
 
-## Prerequisites
+The full plan is in `docs/DEMO_PLAN.md`, and every workspace object is listed in `docs/RESOURCES.md`.
 
-- Node.js v22+ and pnpm
-- Databricks CLI (for deployment)
-- Access to a Databricks workspace
+## The beats
 
-## Databricks Authentication
+1. **What did this change break?** The opening screen shows that Biostatistics restated `efficacy_primary` (version 3 to 4). The restatement touches 7 sentences in 4 sections, and 6 safety sentences stay unchanged. AI Search also finds 2 documents outside the dossier that still quote the old result. "Notify owners" records a hand-off for each one.
+2. **Where did this number come from?** Open CSR 11.4.1 and hover a figure. The citation card shows the certified table, row, column, version and certification.
+3. **Hero: fix the numbers, but tell me where the meaning changed.** Click "Recompute from source". SQL recomputes every figure (412 of 618 becomes 409 of 618, and 66.7% becomes 66.2%). A traced model call through Unity Gateway reads each updated sentence and flags "about two-thirds" for the writer. The label sentence goes to Labelling.
+4. **Can I trust the fix?** Ask the Genie Agent "How many participants in the treatment arm met the primary endpoint after the restatement?" It answers 409 of 618 and shows its SQL. Approve the figures, and a named sign-off is written to `review_signoffs`.
 
-### Local Development
+Presenter toggle: press `D`, or use the "Databricks" switch at the top right, to show the "See it in Databricks" links. They are hidden by default.
 
-For local development, configure your environment variables by creating a `.env` file:
+## Databricks features used
 
-```bash
-cp .env.example .env
-```
+Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026, unless an item is marked unverified.
 
-Edit `.env` and set the environment variables you need:
+| Feature | Used for | Status |
+|---|---|---|
+| Delta table version history (`DESCRIBE HISTORY`, `VERSION AS OF`) on a Unity Catalog table | Comparing version 3 and version 4 of `efficacy_primary` | GA |
+| Unity Catalog certification tag and column lineage | The certified tables and the citation card | GA |
+| Unity Catalog volume, `ai_parse_document` | Storing and parsing the 6 PDFs outside the dossier | GA |
+| AI Search (hybrid, Delta Sync index on `sz-shared-vs`) | Finding documents that still quote the old result | GA |
+| Unity Gateway model service with an inference table, routing to `databricks-claude-sonnet-5-5` | The wording check | GA (Unity Gateway since 4 Aug 2026) |
+| MLflow 3 tracing, through the `mlflow-tracing` Node SDK | Tracing every wording-check call | GA (MLflow 3 tracing); Node SDK status unverified |
+| Genie Agent and Conversation API, on behalf of the user | Beat 4 question | GA |
+| SQL warehouse (AppKit analytics plugin) | Every query in `config/queries/` | GA |
+| Databricks Apps (AppKit) | The app | GA |
 
-```env
-DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
-DATABRICKS_APP_PORT=8000
-# ... other environment variables, depending on the plugins you use
-```
+No Preview feature is on the main path. The model service rejects `temperature`, so the wording check doesn't set it. It relies on a JSON-only prompt instead, and its verdicts were stable over 3 runs.
 
-### CLI Authentication
+## Run it
 
-The Databricks CLI requires authentication to deploy and manage apps. Configure authentication using one of these methods:
-
-#### OAuth U2M
-
-Interactive browser-based authentication with short-lived tokens:
-
-```bash
-databricks auth login --host https://your-workspace.cloud.databricks.com
-```
-
-This will open your browser to complete authentication. The CLI saves credentials to `~/.databrickscfg`.
-
-#### Configuration Profiles
-
-Use multiple profiles for different workspaces:
-
-```ini
-[DEFAULT]
-host = https://dev-workspace.cloud.databricks.com
-
-[production]
-host = https://prod-workspace.cloud.databricks.com
-client_id = prod-client-id
-client_secret = prod-client-secret
-```
-
-Deploy using a specific profile:
+Workspace profile `fe-vm-sean-zhang`. Global pnpm 12 breaks installs on this Mac, so use a pnpm 11 shim:
 
 ```bash
-databricks bundle deploy --profile production
-```
-
-**Note:** Personal Access Tokens (PATs) are legacy authentication. OAuth is strongly recommended for better security.
-
-## Getting Started
-
-### Install Dependencies
-
-```bash
+mkdir -p /tmp/shim && printf '#!/bin/bash\nexec npx -y pnpm@11.0.8 "$@"\n' > /tmp/shim/pnpm && chmod +x /tmp/shim/pnpm
+export PATH=/tmp/shim:$PATH DATABRICKS_CONFIG_PROFILE=fe-vm-sean-zhang
 pnpm install
+pnpm run dev          # http://localhost:8000
 ```
 
-### Development
+Set `DATABRICKS_CONFIG_PROFILE`, because 2 profiles share this host and typegen reports every query as OFFLINE without it.
 
-Run the app in development mode with hot reload:
+## Rebuild and check the data
 
 ```bash
-pnpm run dev
+uv run --python 3.12 --with databricks-sql-connector --with databricks-sdk python scripts/check_must_be_true.py
 ```
 
-The app will be available at the URL shown in the console output.
+This prints PASS or FAIL for the 9 must-be-true checks in plan section 4. Checks 6 to 8 call the running app (`APP_URL`, default `http://localhost:8000`). The data, PDFs, search index and Genie Agent are built by `scripts/generate_data.py`, `make_pdfs.py`, `build_search.py` and `create_genie.py`.
 
-### Build
-
-Build both client and server for production:
+## Deploy
 
 ```bash
-pnpm run build
+databricks bundle deploy -p fe-vm-sean-zhang
+databricks bundle run app -p fe-vm-sean-zhang
 ```
 
-This creates:
-
-- `dist/server.js` - Compiled server bundle
-- `client/dist/` - Bundled client assets
-
-### Production
-
-Run the production build:
-
-```bash
-pnpm start
-```
-
-## Code Quality
-
-There are a few commands to help you with code quality:
-
-```bash
-# Type checking
-pnpm run typecheck
-
-# Linting
-pnpm run lint
-pnpm run lint:fix
-
-# Formatting
-pnpm run format
-pnpm run format:fix
-```
-
-## Deployment with Databricks Asset Bundles
-
-### 1. Configure Bundle
-
-Update `databricks.yml` with your workspace settings:
-
-```yaml
-targets:
-  default:
-    workspace:
-      host: https://your-workspace.cloud.databricks.com
-```
-
-Make sure to replace all placeholder values in `databricks.yml` with your actual resource IDs.
-
-### 2. Deploy
-
-Deploy and start the app with a single command:
-
-```bash
-databricks apps deploy
-```
-
-`databricks apps deploy` validates the project, deploys it, starts the app, and prints its URL.
-
-### Deploy to Production
-
-1. Configure the production target in `databricks.yml`
-2. Deploy to production:
-
-```bash
-databricks apps deploy -t prod
-```
-
-> **Restarting a stopped app:** apps stop after a period of inactivity. To start one again without redeploying, run `databricks apps start <APP_NAME>`.
-
-## Project Structure
-
-```
-* client/          # React frontend
-  * src/           # Source code
-  * public/        # Static assets
-* server/          # Express backend
-  * server.ts      # Server entry point
-  * routes/        # Routes
-* shared/          # Shared types
-* config/          # Configuration
-  * queries/       # SQL query files
-* databricks.yml   # Bundle configuration
-* app.yaml         # App configuration
-* .env.example     # Environment variables example
-```
-
-## Tech Stack
-
-- **Backend**: Node.js, Express
-- **Frontend**: React.js, TypeScript, Vite, Tailwind CSS, React Router
-- **UI Components**: Radix UI, shadcn/ui
-- **Databricks**: AppKit SDK
+After the first deploy, grant the app's service principal access to the data with `scripts/grant_app_sp.py <client-id>`, and give it EXECUTE on the model service `sean_zhang_catalog.rnd_regsub_review.wording_check`.
