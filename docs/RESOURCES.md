@@ -2,6 +2,7 @@
 
 Every workspace object this demo creates. "See it in Databricks" links and teardown both come from this file.
 Workspace: `fe-vm-sean-zhang` (https://fevm-sean-zhang.cloud.databricks.com)
+Repo: https://github.com/sean-zhang-dbx/rnd-regsub-review (private, topics `account-gsk`, `app`, `demo`, `domain-rnd`, created 2026-10-19)
 
 | Type | Name | ID | URL | Created |
 |---|---|---|---|---|
