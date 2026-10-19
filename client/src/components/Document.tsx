@@ -1,10 +1,13 @@
-import { Fragment } from 'react';
+import { createContext, Fragment, useContext } from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger, Skeleton } from '@databricks/appkit-ui/react';
 import { useCitationDetail } from '../data/queries';
 import type { DocumentSectionRow, WordingCheckResult } from '../data/types';
 import { formatDateUtc } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { ErrorNote } from './QueryBoundary';
+
+/** The page element, so citation cards stay on the page and never cover the margin. */
+export const PageBoundary = createContext<HTMLElement | null>(null);
 
 export interface SentenceModel {
   sentenceId: string;
@@ -39,26 +42,27 @@ export function sentenceText(s: SentenceModel, values: Record<string, string>): 
 interface DocumentSentenceProps {
   sentence: SentenceModel;
   recomputed: Record<string, string> | null;
+  /** True from the click on "Recompute from source": figure widths are reserved so nothing jumps. */
+  reserve: boolean;
   sourceVersion: number | null;
   flipIndex: Map<string, number>;
-  checking: boolean;
   verdict: WordingCheckResult | undefined;
 }
 
-export function DocumentSentence({ sentence, recomputed, sourceVersion, flipIndex, checking, verdict }: DocumentSentenceProps) {
+export function DocumentSentence({ sentence, recomputed, reserve, sourceVersion, flipIndex, verdict }: DocumentSentenceProps) {
   const parts = sentence.template.split(/(\{\w+\})/g);
   const flagged = verdict?.verdict === 'needs_writer';
 
   const body = parts.map((part, i) => {
     const m = /^\{(\w+)\}$/.exec(part);
-    if (!m) return <Fragment key={i}>{part}</Fragment>;
-    const row = sentence.cites.get(m[1]);
-    if (!row) return <Fragment key={i}>{part}</Fragment>;
+    const row = m ? sentence.cites.get(m[1]) : undefined;
+    if (!row) return <Fragment key={`${sentence.sentenceId}-${i}`}>{part}</Fragment>;
     return (
       <Figure
-        key={i}
+        key={`${sentence.sentenceId}-${row.citation_id}`}
         row={row}
         next={recomputed ? (recomputed[row.fig_key] ?? row.value_curr) : null}
+        reserve={reserve}
         order={flipIndex.get(row.citation_id) ?? 0}
         sourceVersion={sourceVersion}
       />
@@ -72,29 +76,21 @@ export function DocumentSentence({ sentence, recomputed, sourceVersion, flipInde
       {flagged && verdict ? (
         <HoverCard openDelay={100}>
           <HoverCardTrigger asChild>
-            <span tabIndex={0} className="cursor-help rounded-[var(--radius)] decoration-attention">
+            <span tabIndex={0} className="cursor-help rounded-[var(--radius)]">
               {text}
               <span className="ml-1.5 inline-block rounded-[var(--radius)] bg-attention-soft px-1.5 align-middle font-sans text-xs font-medium text-attention">
-                Needs the writer
+                With the writer
               </span>
             </span>
           </HoverCardTrigger>
           <HoverCardContent className="w-80 font-sans text-sm" side="bottom" align="start">
             <p className="text-ink">{verdict.reason}</p>
-            <p className="mt-2 text-xs text-ink-muted">
-              Wording check, <span className="font-mono">{verdict.model}</span>
-              {verdict.cached ? ', cached result' : ''}
-            </p>
+            <p className="mt-2 text-xs text-ink-muted">Wording check{verdict.cached ? ', cached result' : ''}</p>
           </HoverCardContent>
         </HoverCard>
       ) : (
         text
-      )}
-      {checking && sentence.affected ? (
-        <span className="ml-1.5 inline-block rounded-[var(--radius)] border border-border px-1.5 align-middle font-sans text-xs text-ink-muted">
-          Checking wording
-        </span>
-      ) : null}{' '}
+      )}{' '}
     </>
   );
 }
@@ -102,35 +98,52 @@ export function DocumentSentence({ sentence, recomputed, sourceVersion, flipInde
 function Figure({
   row,
   next,
+  reserve,
   order,
   sourceVersion,
 }: {
   row: DocumentSectionRow;
   next: string | null;
+  reserve: boolean;
   order: number;
   sourceVersion: number | null;
 }) {
-  const changed = row.value_prev !== (next ?? row.value_curr);
+  const boundary = useContext(PageBoundary);
+  const target = next ?? row.value_curr;
+  const changed = row.value_prev !== target;
   const flipped = next !== null && changed;
+  /* Old value, a space, new value: reserve that width before the values arrive. */
+  const widthCh = row.value_prev.length + 0.5 + row.value_curr.length;
 
-  const face = flipped ? (
-    <span className="whitespace-nowrap">
-      <s
-        className="figure-old-out text-unchanged decoration-unchanged"
-        style={{ animationDelay: `${order * 260}ms` }}
-      >
-        {row.value_prev}
-      </s>{' '}
-      <span
-        className="figure-new-in rounded-[2px] px-0.5 font-semibold text-recomputed"
-        style={{ animationDelay: `${300 + order * 260}ms` }}
-      >
-        {next}
+  let face;
+  if (changed && (flipped || reserve)) {
+    face = (
+      <span className="inline-block whitespace-nowrap" style={{ minWidth: `${widthCh}ch` }}>
+        <s
+          className={flipped ? 'figure-old-out text-unchanged decoration-unchanged' : undefined}
+          style={flipped ? { animationDelay: `${order * 260}ms` } : undefined}
+        >
+          {row.value_prev}
+        </s>{' '}
+        <span
+          className={flipped ? 'figure-new-in rounded-[2px] px-0.5 font-semibold text-recomputed' : 'invisible'}
+          style={flipped ? { animationDelay: `${300 + order * 260}ms` } : undefined}
+        >
+          {flipped ? next : row.value_curr}
+        </span>
       </span>
-    </span>
-  ) : (
-    <span>{next ?? row.value_prev}</span>
-  );
+    );
+  } else {
+    face = <span>{next ?? row.value_prev}</span>;
+  }
+  /* The reserved, not yet flipped state shows the old value as plain text, not struck through. */
+  if (changed && reserve && !flipped) {
+    face = (
+      <span className="inline-block whitespace-nowrap" style={{ minWidth: `${widthCh}ch` }}>
+        {row.value_prev}
+      </span>
+    );
+  }
 
   return (
     <HoverCard openDelay={120} closeDelay={80}>
@@ -142,19 +155,16 @@ function Figure({
           {face}
         </span>
       </HoverCardTrigger>
-      <HoverCardContent className="w-96 font-sans" side="bottom" align="start">
-        <CitationCard citationId={row.citation_id} sourceVersion={flipped ? sourceVersion : null} />
+      <HoverCardContent
+        className="w-[22rem] font-sans"
+        side="bottom"
+        align="start"
+        collisionBoundary={boundary ?? undefined}
+        collisionPadding={12}
+      >
+        <CitationCard citationId={row.citation_id} sourceVersion={sourceVersion} />
       </HoverCardContent>
     </HoverCard>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[6.5rem_1fr] gap-2 text-sm">
-      <dt className="text-ink-muted">{label}</dt>
-      <dd className="min-w-0 text-ink">{children}</dd>
-    </div>
   );
 }
 
@@ -181,32 +191,19 @@ function CitationCard({ citationId, sourceVersion }: { citationId: string; sourc
     );
   }
   const table = d.source_table.split('.').pop() ?? d.source_table;
+  const version = sourceVersion ?? d.table_version;
   return (
-    <div className="space-y-3">
-      <dl className="space-y-1.5">
-        <Field label="Table">
-          <span className="font-mono text-xs" title={d.source_table}>
-            {table}
-          </span>
-        </Field>
-        <Field label="Row, column">
-          <span className="font-mono text-xs">
-            {d.row_key}, {d.column_name}
-          </span>
-        </Field>
-        <Field label="Table version">
-          {sourceVersion !== null && sourceVersion !== d.table_version ? (
-            <>
-              {sourceVersion} <span className="text-ink-muted">(cited at {d.table_version})</span>
-            </>
-          ) : (
-            d.table_version
-          )}
-        </Field>
-        <Field label="Certified">
-          by {d.certified_by}, {formatDateUtc(d.certified_at)}
-        </Field>
-      </dl>
+    <div className="space-y-2.5">
+      <h3 className="text-sm font-semibold text-ink">
+        <span className="font-mono text-[0.95em]">{table}</span>, version {version}
+      </h3>
+      <p className="text-sm text-ink-muted">
+        Row <span className="font-mono text-xs text-ink">{d.row_key}</span>, column{' '}
+        <span className="font-mono text-xs text-ink">{d.column_name}</span>
+      </p>
+      <p className="text-sm text-ink">
+        Certified by {d.certified_by}, {formatDateUtc(d.certified_at)}
+      </p>
       <pre className="whitespace-pre-wrap break-all rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed text-ink">
         {d.query_sql}
       </pre>

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button, Skeleton, Textarea } from '@databricks/appkit-ui/react';
+import { Button, Textarea } from '@databricks/appkit-ui/react';
 import { postGenieAsk } from '../data/api';
-import type { ImpactRow, SignoffRow, WordingCheckResult } from '../data/types';
-import { docLabel, formatSignedAt, plural } from '../lib/format';
+import type { GenieAnswer, ImpactRow, WordingCheckResult } from '../data/types';
+import { docLabel, formatSignedAt, plural, WORDING_SERVICE } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 import type { AsyncState } from '../lib/useAsync';
@@ -44,7 +44,17 @@ export function MarginComment({
 }
 
 /* Rows for the other documents. Label row moves to "Sent to Labelling" on recompute. */
-export function OtherDocuments({ rows, all, recomputed }: { rows: ImpactRow[]; all: ImpactRow[]; recomputed: boolean }) {
+export function OtherDocuments({
+  rows,
+  all,
+  recomputed,
+  approved,
+}: {
+  rows: ImpactRow[];
+  all: ImpactRow[];
+  recomputed: boolean;
+  approved: boolean;
+}) {
   if (rows.length === 0) return null;
   return (
     <MarginComment author="Other documents" via="Sentences that cite the same table" tone={recomputed ? 'recomputed' : 'neutral'}>
@@ -56,12 +66,12 @@ export function OtherDocuments({ rows, all, recomputed }: { rows: ImpactRow[]; a
                 {docLabel(r.doc_type, r.section)}, sentence {r.seq}
               </span>
               {r.kind === 'label' ? (
-                <span className={recomputed ? 'text-attention' : 'text-ink-muted'}>
-                  {recomputed ? 'Sent to Labelling' : 'Not yet sent'}
+                <span className={`shrink-0 whitespace-nowrap ${recomputed ? 'text-attention' : 'text-ink-muted'}`}>
+                  {recomputed ? 'Sent to Labelling' : 'Goes to Labelling'}
                 </span>
               ) : (
-                <span className={recomputed ? 'text-recomputed' : 'text-ink-muted'}>
-                  {recomputed ? 'Recomputed' : 'Old figure'}
+                <span className={`shrink-0 whitespace-nowrap ${recomputed ? 'text-recomputed' : 'text-cited'}`}>
+                  {approved ? 'Approved' : recomputed ? 'Recomputed' : 'Can be recomputed'}
                 </span>
               )}
             </div>
@@ -108,7 +118,6 @@ export function WordingComment({
     return (
       <MarginComment author="Wording check" via={via} links={links}>
         <p className="text-ink-muted">Checking wording</p>
-        <Skeleton className="h-4 w-4/5" />
       </MarginComment>
     );
   }
@@ -147,7 +156,7 @@ export function WordingComment({
         </div>
       ))}
       <p className="text-xs text-ink-muted">
-        <span className="font-mono">{results[0].model}</span>
+        <span className="break-all font-mono">{WORDING_SERVICE}</span> via Unity Gateway
         {cached ? ', cached result' : ''}
       </p>
     </MarginComment>
@@ -157,10 +166,49 @@ export function WordingComment({
 export const SAMPLE_QUESTION =
   'How many participants in the treatment arm met the primary endpoint after the restatement?';
 
-export function GenieComment() {
+function stripMarkdown(t: string): string {
+  return t
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/(\*\*|__|\*|`)/g, '')
+    .replace(/^\s*[-*]\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* Headline: the figure the reviewer asked for. Falls back to the first sentence of the answer. */
+function scalar(v: unknown): string | null {
+  return typeof v === 'string' || typeof v === 'number' ? String(v) : null;
+}
+
+function answerParts(a: GenieAnswer): { head: string; note: string } {
+  const text = stripMarkdown(a.answer_text);
+  const r = a.rows[0];
+  const resp = scalar(r?.responders);
+  const n = scalar(r?.n);
+  if (resp !== null && n !== null) {
+    const pct = Number(scalar(r?.rate_pct));
+    const rate = Number.isNaN(pct) || scalar(r?.rate_pct) === null ? '' : ` (${pct.toFixed(1)}%)`;
+    return { head: `${resp} of ${n}${rate}`, note: text };
+  }
+  const m = /(\d+) of (\d+)(?: participants)?(?: \(([\d.]+)%\))?/.exec(text);
+  if (m) return { head: m[3] ? `${m[1]} of ${m[2]} (${m[3]}%)` : `${m[1]} of ${m[2]}`, note: text };
+  const first = text.split(/(?<=[.!?])\s/)[0] ?? text;
+  return { head: first, note: text === first ? '' : text };
+}
+
+export function GenieComment({ onAnswered }: { onAnswered: () => void }) {
   const [question, setQuestion] = useState(SAMPLE_QUESTION);
   const [asked, setAsked] = useState<string | null>(null);
   const answer = useAsync(() => postGenieAsk(asked ?? ''), asked !== null);
+  const hasAnswer = !!answer.data && answer.data.answer_text.trim() !== '';
+
+  useEffect(() => {
+    if (hasAnswer) onAnswered();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAnswer]);
+
+  const parts = answer.data && hasAnswer ? answerParts(answer.data) : null;
 
   return (
     <MarginComment
@@ -195,23 +243,21 @@ export function GenieComment() {
           </Button>
         </>
       ) : null}
-      {answer.data ? (
-        answer.data.answer_text.trim() === '' ? (
-          <p className="text-ink-muted">The Genie Agent returned no answer. Rephrase the question and ask again.</p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-base font-semibold">{answer.data.answer_text}</p>
-            <details className="group">
-              <summary className="cursor-pointer text-xs text-cited underline underline-offset-4">Show SQL</summary>
-              <pre className="mt-2 overflow-x-auto rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed">
-                {answer.data.sql}
-              </pre>
-            </details>
-            <p className="text-xs text-ink-muted">
-              Generated from the certified tables. Check the SQL before you rely on it.
-            </p>
-          </div>
-        )
+      {answer.data && !hasAnswer ? (
+        <p className="text-ink-muted">The Genie Agent returned no answer. Rephrase the question and ask again.</p>
+      ) : null}
+      {parts && answer.data ? (
+        <div className="space-y-1.5">
+          <p className="text-lg font-semibold leading-tight">{parts.head}</p>
+          {parts.note ? <p className="text-xs text-ink-muted">{parts.note}</p> : null}
+          <details>
+            <summary className="cursor-pointer text-xs text-cited underline underline-offset-4">Show SQL</summary>
+            <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed">
+              {answer.data.sql}
+            </pre>
+          </details>
+          <p className="text-xs text-ink-muted">Generated from the certified tables. Check the SQL before you rely on it.</p>
+        </div>
       ) : null}
     </MarginComment>
   );
@@ -219,52 +265,46 @@ export function GenieComment() {
 
 export function ApproveComment({
   figureCount,
-  ready,
+  recomputed,
+  answered,
   approving,
   approveError,
   onApprove,
-  signoff,
-  signoffLoading,
-  signoffError,
+  approved,
+  version,
 }: {
   figureCount: number;
-  ready: boolean;
+  recomputed: boolean;
+  answered: boolean;
   approving: boolean;
   approveError: string | null;
   onApprove: () => void;
-  signoff: SignoffRow | null;
-  signoffLoading: boolean;
-  signoffError: string | null;
+  approved: { reviewer: string; signed_at: string } | null;
+  version: number | null;
 }) {
   const links = <DbxLink linkKey="beat4_signoffs" label="Sign-off table in Databricks" />;
 
-  if (signoffLoading) {
-    return (
-      <MarginComment author="Sign-off" links={links}>
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-      </MarginComment>
-    );
-  }
-  if (signoff) {
+  if (approved) {
     return (
       <MarginComment author="Sign-off" tone="recomputed" links={links}>
-        <p className="font-medium">Approved {plural(figureCount, 'figure', 'figures')}.</p>
-        <p className="text-ink-muted">
-          {signoff.reviewer}, {formatSignedAt(signoff.signed_at)}
+        <p className="font-medium">
+          Approved by {approved.reviewer}, {formatSignedAt(approved.signed_at)}
+          {version !== null ? `, table version ${version}` : ''}, {plural(figureCount, 'figure', 'figures')}.
         </p>
       </MarginComment>
     );
   }
+  const ready = recomputed && answered;
   return (
     <MarginComment author="Sign-off" links={links}>
       <p className="text-ink-muted">
-        {ready
-          ? 'Approve the recomputed figures once the Genie Agent answer matches.'
-          : 'Recompute the figures from source before you approve them.'}
+        {!recomputed
+          ? 'Recompute the figures from source before you approve them.'
+          : !answered
+            ? 'Ask the Genie Agent to confirm the figures, then approve them.'
+            : 'The Genie Agent has answered. Approve the recomputed figures.'}
       </p>
       {approveError ? <ErrorNote title="The sign-off was not recorded." detail={approveError} /> : null}
-      {signoffError ? <ErrorNote title="The sign-off could not be read back." detail={signoffError} /> : null}
       <Button size="sm" disabled={!ready || approving || figureCount === 0} onClick={onApprove}>
         {approving ? 'Recording sign-off' : `Approve ${plural(figureCount, 'figure', 'figures')}`}
       </Button>

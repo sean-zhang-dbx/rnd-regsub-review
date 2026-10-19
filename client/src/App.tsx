@@ -3,6 +3,7 @@ import { Kbd, Label, Switch } from '@databricks/appkit-ui/react';
 import { Overview } from './pages/Overview';
 import { Section } from './pages/Section';
 import { REVIEWER_SHORT, STUDY } from './lib/format';
+import { ReviewProvider } from './data/review';
 import { PRESENTER_KEY, PresenterProvider, usePresenter } from './lib/presenter';
 
 function PresenterSwitch() {
@@ -50,7 +51,9 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <PresenterProvider>
-      <RouterProvider router={router} />
+      <ReviewProvider>
+        <RouterProvider router={router} />
+      </ReviewProvider>
     </PresenterProvider>
   );
 }

@@ -29,3 +29,13 @@ export function formatSignedAt(iso: string): string {
 export function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
+
+/** The reviewer as the sign-off route records them. */
+export const REVIEWER_FULL = 'Dr. Amara Okafor, Regulatory Review';
+
+/** Unity Gateway model service behind the wording check. Single place to change it. */
+export const WORDING_SERVICE = 'sean_zhang_catalog.rnd_regsub_review.wording_check';
+
+export function formatClock(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
