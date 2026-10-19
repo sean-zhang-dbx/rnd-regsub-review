@@ -4,7 +4,7 @@ Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mik
 
 Jiajie is VP of AI/ML for R&D and previously led AI/ML at Sanofi R&D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.
 
-**Timing: about 13 and a half minutes.** Slides 1 to 6 take about 3 and a half minutes, the demo about 8, and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
+**Timing: about 13 and a half minutes.** Slides 1 to 6 take about 3 and a half minutes, the demo about 8 (in 4 workflow steps), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
 
 Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
@@ -25,7 +25,7 @@ Earlier in the day:
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py
    ```
-2. Open the app in a window about 1440 pixels wide and wait for the QC log to load. This warms the SQL warehouse.
+2. Open the app in a window about 1440 pixels wide and wait for the QC log to load. This warms the SQL warehouse. Then click "1 Parse sources" so the demo starts there.
 3. Check that the "Databricks" switch in the top bar is off and the browser zoom is 100%.
 4. Open the deck in presenter view, and keep `docs/screenshots/vault/` open as the fallback.
 
@@ -67,39 +67,27 @@ Switch to the app.
 
 ## Demo
 
-### Step 1. QC log, and how the documents are parsed (1 minute 30 seconds)
+The demo follows the workflow bar across the top of the app: **1 Parse sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off**. "Next" at the right of the bar moves to the following step.
 
-**On screen:** the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.
+### Step 1. Parse sources (1 minute)
 
-**Say:** "Before anyone opens a document, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, because each figure carries its citation."
+**Do:** click "1 Parse sources" in the workflow bar. Document parsing opens on the SAP, page 2: the page on the left with a coloured box for each element, and the parsed content on the right. Hover the text block.
 
-**Do:** scroll to "Reference documents outside the dossier".
+**Say:** "Before anything is drafted, the source documents are parsed. ai_parse_document turns each PDF into elements with their type, position on the page and confidence, and the content as text and tables. This is the SAP section the draft will use."
 
-**Say:** "The Investigator's Brochure and the briefing book were written outside this workflow, so they have no citation records. AI Search finds the old result in their text, on page 4 and page 6, and the app notifies their owners without editing either document."
+**Do:** in the document picker, choose the advisory briefing book, then go to page 9. Hover the chart.
 
-**Do:** click "Open the parsed page" under the briefing book row. Document parsing opens at page 6, with each element boxed and "412" highlighted on the right.
+**Say:** "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1."
 
-**Say:** "This is what ai_parse_document gives us for each PDF: every element with its type, position and confidence, and the content as text and tables."
+**Do:** optionally switch to JSON for a second, then back to Rendered.
 
-**Do:** click the next-page arrow through to page 9, and hover the chart.
+### Step 2. Draft (1 minute 15 seconds)
 
-**Say:** "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1, so the old result is in this chart as well as in the text."
+**Do:** click "Next: Draft". CSR 11.4.1 opens as it was drafted against Table 14.2.1 version 3, with the Drafting workflow outlined in the Information panel. Click "Draft this section". 5 steps stream in over about 12 seconds.
 
-**Do:** optionally switch to JSON for a second, then press the back arrow.
+**When step 1 finishes,** the SAP page opens in the middle pane with the passage the draft uses outlined in blue.
 
-### Step 2. Where the number came from (45 seconds)
-
-**Do:** click "CSR 11.4.1" in the first row. The CSR page opens next to the Table 14.2.1 output, with the Information panel on the right. Hover "412" in the text.
-
-**Say:** "This is the tick and tie a QC reviewer already does, with each figure tied to its cell. The yellow cells are the ones that changed, and the text still quotes version 3."
-
-### Step 3. How the section is drafted (1 minute 15 seconds)
-
-**Do:** in the Information panel, click "Draft this section" under Drafting workflow. 5 steps stream in over about 12 seconds.
-
-**When step 1 finishes,** the SAP page opens in the middle pane with its parsed layout. Hover the blue outline.
-
-**Say:** "The workflow starts where a writer would, with the protocol and the SAP. ai_parse_document has turned those PDFs into elements with their position on the page, so the workflow can take the endpoint definition from the SAP and show exactly where it came from."
+**Say:** "The workflow starts where a writer would, with the protocol and the SAP we just saw parsed, so it takes the endpoint definition from the SAP and shows where it came from."
 
 **When step 3 appears,** point to the grey placeholders.
 
@@ -107,37 +95,49 @@ Switch to the app.
 
 **When step 5 finishes,** the table pane is back at version 3. Hover a blue figure in the draft to light up its cell.
 
-**Say:** "SQL filled each placeholder from version 3 of the certified table, so each figure is tied to its cell from the start. A code check confirms the model typed no number itself, and a judge from a different model family checks the draft against the protocol and the SAP. Each step is a span in one MLflow trace, and that's why the re-delivery could find the affected sentences without anyone reading the documents again."
+**Say:** "SQL filled each placeholder from version 3 of the certified table, so each figure is tied to its cell from the start. A code check confirms the model typed no number itself, and a judge from a different model family checks the draft against the protocol and the SAP. Each step is a span in one MLflow trace."
 
 **Do:** point to the "about two-thirds" sentence on the CSR page.
 
-**Say:** "Because the model never sees the values, it can't describe them in words like 'about two-thirds'. That phrase is the writer's interpretation, and it's the sentence we'll come back to."
+**Say:** "Because the model never sees the values, it can't describe them in words like 'about two-thirds'. That phrase is the writer's interpretation, and we'll come back to it."
 
 Wording to avoid here: "this page was written by the model". The draft on the page is the seeded Draft 0.4, and the live draft appears in the panel.
 
-### Step 4. Fix the figures, flag the wording (1 minute 15 seconds)
+### Step 3. Re-delivery and QC (1 minute)
+
+**Do:** click "Next: Re-delivery and QC". The QC log opens with the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.
+
+**Say:** "Then Biostatistics re-delivers the primary efficacy table after a late data correction. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."
+
+**Do:** scroll to "Reference documents outside the dossier".
+
+**Say:** "The Investigator's Brochure and the briefing book were written outside this workflow, so they have no citation records. AI Search finds the old result in their parsed text, on page 4 and page 6, and the app notifies their owners without editing either document. The chart we saw a minute ago is in the same briefing book."
+
+**Optional:** click "Open the parsed page" under the briefing book row to show page 6 with 412 highlighted, then press the back arrow.
+
+### Step 4. Review and sign-off (2 minutes 45 seconds)
+
+**Do:** click "Next: Review and sign-off". The CSR page opens next to the Table 14.2.1 output. Hover "412" in the text.
+
+**Say:** "This is the tick and tie a QC reviewer already does, with each figure tied to its cell. The yellow cells are the ones that changed, and the text still quotes version 3."
 
 **Do:** click "Recompute from Table 14.2.1 v4". The figures flip on the page, the yellow cells turn green, and after a few seconds the "about two-thirds" sentence turns amber with "With the writer". Hover the amber tag to show the reason.
 
 **Say:** "SQL recomputed the figures from the released table, so no number was retyped. A model then read each updated sentence against its new figures, and it flagged the one whose wording may no longer hold, because 66.2% is below two-thirds. The writer decides what to do with it. The label sentence went to Labelling, because label text has its own review."
 
-### Step 5. Ask the data and the documents, then sign off (1 minute 30 seconds)
-
-**Do:** in the Information panel, click "Open the assistant". Click the first suggested question, about the treatment arm after the restatement. It takes about 20 seconds, so say the line below while it runs. The answer gives 409 of 618 (66.2%) from the Genie Agent, with the SQL, and notes that the brochure and the briefing book still quote 412 of 618.
+**Do:** in the Information panel, click "Open the assistant", then the first suggested question. It takes about 20 seconds; say the line below while it runs. The answer gives 409 of 618 (66.2%) from the Genie Agent with the SQL, and notes that the brochure and the briefing book still quote 412 of 618.
 
 **Say:** "The reviewer can ask in plain language. For figures, the assistant asks a Genie Agent over the certified tables and shows the SQL it ran. For anything the documents say, it searches the parsed PDFs with AI Search and cites the page, and here it did both."
 
-**If there is time:** click the second suggestion, about missing Week 52 assessments, then click citation 1. The SAP page opens in the middle pane with the cited passage outlined.
+**If there is time:** click the second suggestion, about missing Week 52 assessments, then citation 1. The SAP page opens with the cited passage outlined.
 
 **Do:** close the assistant with the X, then click "Approve the recomputed figures".
 
 **Say:** "The sign-off is stored with a name, a time and the table version it was approved against."
 
-### Step 6. Close, and the trail in Databricks (45 seconds)
-
 **Do:** close the viewer with the X. The QC log shows the figure rows as Approved, 1 sentence with the writer and the label sentence with Labelling. Press `D`, open "MLflow traces in Databricks", and open a `wording_check` trace from the rehearsal.
 
-**Say:** "Each model call is traced, and each trace is then checked twice. A code check confirms that the figures match Table 14.2.1, and a judge from a different model family checks that the verdict follows from the sentence. The drafts get the same treatment, with a check that the model typed no figure itself. That's the same kind of evaluation a team would run before switching to a newer model."
+**Say:** "Each model call is traced, and each trace is checked again after the review. A code check confirms that the figures match Table 14.2.1, and a judge from a different model family checks that the verdict follows from the sentence. That's the same kind of evaluation a team would run before switching to a newer model."
 
 The trace from the live run has no scores yet, because the judges run after the review, so open one from the rehearsal. Switch back to the deck.
 
@@ -165,9 +165,9 @@ The trace from the live run has no scores yet, because the judges run after the 
 ## If time is short
 
 Cut in this order, about 3 minutes in total:
-1. Skip the optional second question in demo step 5, and the JSON view in step 1.
-2. Skip the MLflow traces in demo step 6, and say the slide 7 line instead.
-3. In step 1, open page 9 of the briefing book directly from the page picker instead of stepping through.
+1. Skip the optional second assistant question in demo step 4, and the JSON view in step 1.
+2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
+3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
 4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.
 
 ## If something breaks

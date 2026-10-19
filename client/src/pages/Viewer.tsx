@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Button, Skeleton } from '@databricks/appkit-ui/react';
 import { ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react';
 import { useReview } from '../data/review';
@@ -32,6 +32,9 @@ const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25];
 export function Viewer() {
   const { sentenceId = '' } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  /* Workflow step 2 shows the section as drafted against version 3, before the re-delivery and QC. */
+  const drafting = searchParams.get('step') === 'draft';
   const review = useReview();
   const statusOf = useStatusOf();
   const { phase, values, sourceVersion, wording, verdicts, affected } = review;
@@ -48,7 +51,7 @@ export function Viewer() {
   const [focus, setFocus] = useState<string | null>(null);
   const focusValue = useMemo(() => ({ focus, setFocus }), [focus]);
   const [zoom, setZoom] = useState(2);
-  const [tlfVersion, setTlfVersion] = useState<3 | 4>(4);
+  const [tlfVersion, setTlfVersion] = useState<3 | 4>(drafting ? 3 : 4);
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -80,6 +83,17 @@ export function Viewer() {
   useEffect(() => {
     if (review.approved) document.getElementById('signoff')?.scrollIntoView({ block: 'nearest' });
   }, [review.approved]);
+
+  useEffect(() => {
+    setTlfVersion(drafting ? 3 : 4);
+    if (drafting) {
+      const t = setTimeout(() => {
+        document.getElementById('drafting')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }, 400);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [drafting]);
 
   async function approve() {
     setApproving(true);
@@ -128,10 +142,14 @@ export function Viewer() {
               {meta.title}, {meta.draft}
             </span>
           </nav>
-          <span className="rounded-full bg-attention-soft px-2.5 py-0.5 text-xs font-medium text-attention">In review</span>
+          {drafting ? (
+            <span className="rounded-full bg-cited-soft px-2.5 py-0.5 text-xs font-medium text-cited">Drafting, against Table 14.2.1 v3</span>
+          ) : (
+            <span className="rounded-full bg-attention-soft px-2.5 py-0.5 text-xs font-medium text-attention">In review</span>
+          )}
           <div className="flex-1" />
-          <RecomputeButton size="default" />
-          <div className="flex items-center gap-1 rounded-[var(--radius)] border border-line pl-3 text-sm text-ink">
+          {drafting ? null : <RecomputeButton size="default" />}
+          <div className={`items-center gap-1 rounded-[var(--radius)] border border-line pl-3 text-sm text-ink ${drafting ? 'hidden' : 'flex'}`}>
             <span className="pr-1 whitespace-nowrap">
               Finding {idx + 1} of {affected.length || '-'}
             </span>
@@ -302,7 +320,7 @@ export function Viewer() {
           <aside aria-label="Information" className="flex min-h-0 flex-col bg-page">
             <div className="flex h-10 shrink-0 items-center border-b border-line px-4 text-[15px] font-semibold text-ink">Information</div>
             <div className="min-h-0 flex-1 overflow-y-auto">
-            {finding ? (
+            {finding && !drafting ? (
               <div className="border-b border-line px-4 py-4">
                 <h2 className="text-sm font-semibold text-ink">Finding</h2>
                 <dl className="mt-2 grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2 text-sm">
@@ -339,7 +357,7 @@ export function Viewer() {
               </div>
             ) : null}
             {done && affected.length > 0 ? <WordingComment check={wording} quote={quote} flaggedId={flaggedId} /> : null}
-            {DRAFTABLE.has(section) ? <DraftRun key={section} section={section} onFocus={setFocus} onShowSource={setSourcePage} onFilled={(v) => setTlfVersion(v === 3 ? 3 : 4)} /> : null}
+            {DRAFTABLE.has(section) && drafting ? <DraftRun key={section} highlight={drafting} section={section} onFocus={setFocus} onShowSource={setSourcePage} onFilled={(v) => setTlfVersion(v === 3 ? 3 : 4)} /> : null}
             <div className="px-4 py-4">
               <h2 className="text-sm font-semibold text-ink">Version history, {TLF.efficacy_primary}</h2>
               <table className="mt-2 w-full text-sm">
@@ -374,8 +392,8 @@ export function Viewer() {
               </div>
             </div>
             </div>
-            {/* Ask and approve stay in view while the panel above scrolls. */}
-            <div className="max-h-[60%] shrink-0 overflow-y-auto border-t border-line shadow-[0_-6px_12px_-8px_rgba(16,24,40,0.18)]">
+            {/* Ask and approve stay in view while the panel above scrolls (not while drafting). */}
+            <div className={`max-h-[60%] shrink-0 overflow-y-auto border-t border-line shadow-[0_-6px_12px_-8px_rgba(16,24,40,0.18)] ${drafting ? 'hidden' : ''}`}>
               <MarginComment author="Reviewer assistant" via="Genie Agent and AI Search">
                 <p className="text-ink-muted">Ask about the results in the certified tables or about what the source documents say.</p>
                 <Button size="sm" variant="outline" onClick={() => setAssistantOpen(true)}>

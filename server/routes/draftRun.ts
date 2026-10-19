@@ -27,7 +27,7 @@ import type { DraftResult } from './draftSection';
  */
 
 const JUDGE_ENDPOINT = 'databricks-gpt-5-5';
-const JUDGE_LABEL = 'GPT 5.5 (judge)';
+const JUDGE_LABEL = 'GPT 5.5';
 const TIMEOUT_MS = 25_000;
 
 /** The passages the draft must agree with: chosen by content, located by ai_parse_document. */

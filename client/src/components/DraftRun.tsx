@@ -55,11 +55,13 @@ function Placeholders({ template }: { template: string }) {
  */
 export function DraftRun({
   section,
+  highlight = false,
   onFocus,
   onShowSource,
   onFilled,
 }: {
   section: string;
+  highlight?: boolean;
   onFocus: (figKey: string | null) => void;
   onShowSource: (page: SourcePage | null) => void;
   onFilled: (sourceVersion: number) => void;
@@ -114,6 +116,8 @@ export function DraftRun({
 
   return (
     <MarginComment
+      id="drafting"
+      highlight={highlight}
       author="Drafting workflow"
       via="Claude Sonnet 5.5 via Unity Gateway, checked by GPT 5.5"
       tone={tone}

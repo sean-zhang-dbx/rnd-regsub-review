@@ -25,8 +25,10 @@ export function MarginComment({
   children,
   links,
   id,
+  highlight = false,
 }: {
   id?: string;
+  highlight?: boolean;
   author: string;
   via?: string;
   tone?: Tone;
@@ -34,7 +36,7 @@ export function MarginComment({
   links?: ReactNode;
 }) {
   return (
-    <article id={id} className={`scroll-mt-2 border-b border-l-[3px] border-b-line px-4 py-4 ${TONE[tone]}`}>
+    <article id={id} className={`scroll-mt-2 border-b border-l-[3px] border-b-line px-4 py-4 ${TONE[tone]} ${highlight ? 'bg-cited-soft/40 ring-2 ring-inset ring-cited' : ''}`}>
       <header className="mb-2">
         <h2 className="text-sm font-semibold text-ink">{author}</h2>
         {via ? <p className="text-xs text-ink-muted">{via}</p> : null}

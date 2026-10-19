@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider, useNavigate, useParams } from 'react-router';
 import { Kbd, Label, Switch } from '@databricks/appkit-ui/react';
 import { Search } from 'lucide-react';
+import { Stepper } from './components/Stepper';
 import { Documents } from './pages/Documents';
 import { Overview } from './pages/Overview';
 import { Viewer } from './pages/Viewer';
@@ -82,6 +83,7 @@ function Layout() {
           </div>
         </div>
       </header>
+      <Stepper />
       <main className="min-h-0 flex-1">
         <Outlet />
       </main>
