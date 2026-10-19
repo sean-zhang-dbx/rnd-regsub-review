@@ -4,7 +4,7 @@ Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mik
 
 Jiajie is VP of AI/ML for R&D and previously led AI/ML at Sanofi R&D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.
 
-**Timing: about 12 and a half minutes.** Slides 1 to 6 take about 3 and a half minutes, the demo about 7, and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
+**Timing: about 13 and a half minutes.** Slides 1 to 6 take about 3 and a half minutes, the demo about 8, and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
 
 Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
@@ -67,7 +67,7 @@ Switch to the app.
 
 ## Demo
 
-### Step 1. QC log (45 seconds)
+### Step 1. QC log, and how the documents are parsed (1 minute 30 seconds)
 
 **On screen:** the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.
 
@@ -76,6 +76,16 @@ Switch to the app.
 **Do:** scroll to "Reference documents outside the dossier".
 
 **Say:** "The Investigator's Brochure and the briefing book were written outside this workflow, so they have no citation records. AI Search finds the old result in their text, on page 4 and page 6, and the app notifies their owners without editing either document."
+
+**Do:** click "Open the parsed page" under the briefing book row. Document parsing opens at page 6, with each element boxed and "412" highlighted on the right.
+
+**Say:** "This is what ai_parse_document gives us for each PDF: every element with its type, position and confidence, and the content as text and tables."
+
+**Do:** click the next-page arrow through to page 9, and hover the chart.
+
+**Say:** "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1, so the old result is in this chart as well as in the text."
+
+**Do:** optionally switch to JSON for a second, then press the back arrow.
 
 ### Step 2. Where the number came from (45 seconds)
 
@@ -154,10 +164,10 @@ The trace from the live run has no scores yet, because the judges run after the 
 
 ## If time is short
 
-Cut in this order, about 2 and a half minutes in total:
-1. Skip the optional second question in demo step 5.
+Cut in this order, about 3 minutes in total:
+1. Skip the optional second question in demo step 5, and the JSON view in step 1.
 2. Skip the MLflow traces in demo step 6, and say the slide 7 line instead.
-3. Skip the scroll to documents outside the dossier in step 1, and mention it in one sentence.
+3. In step 1, open page 9 of the briefing book directly from the page picker instead of stepping through.
 4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.
 
 ## If something breaks
