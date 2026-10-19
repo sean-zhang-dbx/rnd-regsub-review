@@ -28,9 +28,10 @@ Context: the demo supports Sean's regulatory section on the Jiajie Zhang call (T
 
 ## 2. Experience
 - **Opening screen (last thing first):** a restatement alert for study LMN-301. Biostatistics restated `efficacy_primary` at 09:12. That restatement affects **7 sentences in 4 sections**:
-  - 5 figures are already recomputed from source, waiting for approval.
-  - 1 label sentence has been sent to Labelling.
-  - 1 sentence needs the writer, because its wording may no longer hold.
+  - 5 figures can be recomputed from source.
+  - 1 label sentence goes to Labelling.
+  - 1 sentence may need the writer, because its wording may no longer hold.
+  - The overview reflects the review state. Before "Recompute from source" it uses the wording above, with blue (cited) bars for figures and amber for the 2 hand-offs. After the recompute it reads "5 recomputed and waiting for approval, 1 sent to Labelling, 1 with the writer", with green bars. (Decision: Sean, 19 Oct 2026, after review round 1, so the overview and the section view never contradict each other.)
   - 6 safety sentences that cite other tables are listed as "unchanged".
   - Below the dossier, a second line reads: **AI Search found 2 documents outside the dossier that still quote the old result**, the Investigator's Brochure and the advisory briefing book. They are sent to their owners. Nothing outside the dossier is rewritten.
 
@@ -193,8 +194,9 @@ All tables are in `sean_zhang_catalog.rnd_regsub_review`. The data is synthetic,
 | LMN-301  Submission review                        Databricks [ ]   A. Okafor   |
 +--------------------------------------------------------------------------------+
 |  efficacy_primary was restated by Biostatistics at 09:12 (version 3 to 4).     |
-|  7 sentences in 4 sections use the changed figures. 5 are recomputed and       |
-|  waiting for approval, 1 needs the writer, 1 has been sent to Labelling.       |
+|  7 sentences in 4 sections use the changed figures. 5 figures can be          |
+|  recomputed from source, 1 label sentence goes to Labelling, 1 may need the    |
+|  writer.  (after recompute: 5 recomputed and waiting for approval, ...)        |
 |                                                                                |
 |  +-----------+  +-----------+  +-----------+  +-----------+                    |
 |  | CSR       |  | Module    |  | Module    |  | Label     |  <- mini pages,    |
