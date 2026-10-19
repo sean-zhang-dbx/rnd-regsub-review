@@ -10,6 +10,8 @@ import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
 import {
   docLabel,
   FIG_CELL,
+  FIG_LABEL,
+  CELL_LABEL,
   formatClock,
   formatClockUtc,
   formatDateUtc,
@@ -109,7 +111,7 @@ function QcTable() {
   const done = review.phase === 'done';
   const approved = review.approved !== null;
 
-  const order = Object.keys(FIG_CELL);
+  const order = Object.keys(FIG_LABEL);
   const figsOf = (id: string) =>
     review.impact.rows
       .filter((r) => r.sentence_id === id)
@@ -163,7 +165,39 @@ function QcRow({
 
   const first = figs[0];
   const cell = first ? FIG_CELL[first.fig_key] : undefined;
-  const source = cell ? `${TLF.efficacy_primary}, ${cell.row}, ${cell.column}` : TLF.efficacy_primary;
+  const source = cell
+    ? `${TLF.efficacy_primary}, ${cell.row}, ${CELL_LABEL[cell.column] ?? cell.column}`
+    : TLF.efficacy_primary;
+  const flip = (f: ImpactRow, i: number) => (
+    <FlipPair
+      prev={f.old_value}
+      next={done ? (review.values?.[f.fig_key] ?? f.new_value) : null}
+      order={i}
+      animate={review.animated}
+    />
+  );
+  const byKey = new Map(figs.map((f, i) => [f.fig_key, { f, i }]));
+  const ciLow = byKey.get('ci_low');
+  const ciHigh = byKey.get('ci_high');
+  const parts = figs
+    .filter((f) => f.fig_key !== 'ci_low' && f.fig_key !== 'ci_high')
+    .map((f) => {
+      const i = byKey.get(f.fig_key)?.i ?? 0;
+      const pct = f.fig_key.endsWith('_rate') ? '%' : '';
+      const ci =
+        f.fig_key === 'diff' && ciLow && ciHigh ? (
+          <>
+            {' '}(95% CI {flip(ciLow.f, ciLow.i)} to {flip(ciHigh.f, ciHigh.i)})
+          </>
+        ) : null;
+      return (
+        <span key={f.fig_key} className="whitespace-nowrap">
+          {FIG_LABEL[f.fig_key] ?? f.fig_key} {flip(f, i)}
+          {pct}
+          {ci}
+        </span>
+      );
+    });
 
   let finding = 'Value changed';
   if (row.kind === 'label') finding = 'Label text';
@@ -208,24 +242,19 @@ function QcRow({
         </Link>
       </td>
       <td className={TD}>
-        {figs.map((f, i) => (
-          <span key={f.fig_key}>
-            {i > 0 ? ', ' : ''}
-            <FlipPair
-              prev={f.old_value}
-              next={done ? (review.values?.[f.fig_key] ?? f.new_value) : null}
-              order={i}
-              animate={review.animated}
-            />
+        {parts.map((p, i) => (
+          <span key={i}>
+            {i > 0 ? '; ' : ''}
+            {p}
           </span>
         ))}
       </td>
       <td className={`${TD} text-ink-muted`}>
         {source}
-        {figs.length > 1 ? ` +${figs.length - 1}` : ''}
+        {figs.length > 1 ? `, and ${figs.length - 1} more` : ''}
       </td>
       <td className={TD}>
-        <span className={flagged ? 'font-medium text-attention' : undefined}>{finding}</span>
+        <span className={`whitespace-nowrap ${flagged ? 'font-medium text-attention' : ''}`}>{finding}</span>
         {flagged && verdict ? <p className="mt-1 max-w-xs text-[13px] leading-snug text-ink">{verdict.reason}</p> : null}
       </td>
       <td className={TD}>{row.kind === 'label' ? 'Labelling' : 'Writer'}</td>

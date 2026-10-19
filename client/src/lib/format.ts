@@ -68,6 +68,28 @@ export const FIG_CELL: Record<string, { row: string; column: string }> = {
   ci_high: { row: 'DIFF', column: 'ci_high' },
 };
 
+/** Reading order and plain labels for figures in the QC log ("Text says" and "Source cell"). */
+export const FIG_LABEL: Record<string, string> = {
+  trt_resp: 'responders',
+  trt_n: 'participants',
+  trt_rate: 'rate',
+  pbo_resp: 'placebo responders',
+  pbo_n: 'placebo participants',
+  pbo_rate: 'placebo rate',
+  diff: 'difference',
+  ci_low: 'CI lower',
+  ci_high: 'CI upper',
+};
+
+export const CELL_LABEL: Record<string, string> = {
+  responders: 'responders',
+  n: 'n',
+  rate_pct: 'rate (%)',
+  diff_pct: 'difference (points)',
+  ci_low: '95% CI lower',
+  ci_high: '95% CI upper',
+};
+
 export const DRAFT_LABEL = 'Draft 0.4, In review';
 
 export function docTitle(docType: string, section: string): string {
