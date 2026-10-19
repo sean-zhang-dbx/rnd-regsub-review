@@ -51,7 +51,7 @@ for r in rows:
     for e in d["document"]["elements"]:
         b = e["bbox"][0]
         x0, y0, x1, y1 = b["coord"]
-        elements.append((path, title, b["page_id"] + 1, e["id"], e["type"], e.get("content") or "", e.get("description") or "", x0, y0, x1, y1))
+        elements.append((path, title, b["page_id"] + 1, e["id"], e["type"], float(e.get("confidence") or 0), e.get("content") or "", e.get("description") or "", x0, y0, x1, y1))
     print(f"{title}: {len(d['document']['pages'])} pages, {len(d['document']['elements'])} elements")
 
 
@@ -65,7 +65,7 @@ q(f"""CREATE OR REPLACE TABLE {FQ}.doc_pages (file_path STRING, doc_title STRING
       COMMENT 'Pages of the source PDFs, with the page image written by ai_parse_document (version 2.0)'""")
 q(f"INSERT INTO {FQ}.doc_pages VALUES " + ", ".join("(" + ", ".join(lit(v) for v in p) + ")" for p in pages))
 q(f"""CREATE OR REPLACE TABLE {FQ}.doc_elements (file_path STRING, doc_title STRING, page INT, element_id INT, element_type STRING,
-        content STRING, description STRING, x0 INT, y0 INT, x1 INT, y1 INT)
+        confidence DOUBLE, content STRING, description STRING, x0 INT, y0 INT, x1 INT, y1 INT)
       COMMENT 'Layout elements of the source PDFs from ai_parse_document (version 2.0); bounding boxes are in page-image pixels'""")
 for i in range(0, len(elements), 200):
     q(f"INSERT INTO {FQ}.doc_elements VALUES " + ", ".join("(" + ", ".join(lit(v) for v in e) + ")" for e in elements[i:i + 200]))

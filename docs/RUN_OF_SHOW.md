@@ -27,6 +27,10 @@ Then scroll to "Reference documents outside the dossier".
 
 Say: "The Investigator's Brochure and the briefing book were written outside this workflow, so they carry no links to the data. AI Search finds the old result in their text, and the owners are notified. Nothing outside the dossier is rewritten."
 
+Then click "Open the parsed page" under the briefing book row. Document parsing opens at page 6: the page on the left with a coloured box for each element ai_parse_document found, and the parsed content on the right, with "412" highlighted. Click the next-page arrow to page 9. The chart is detected as a figure (confidence 0.94), with a description and the values read from the chart, 66.7 and 47.1. Switch to JSON to show the raw output, then press the back arrow.
+
+Say: "This is what ai_parse_document gives us for each PDF: the layout, the text, tables as HTML, and figures with a description and the values read off the chart. The old result is in this chart too, not just in the text."
+
 Optional: click "Notify owners", or type `412` in the search box in the top bar.
 
 ### 2. Viewer: where did this number come from? (1 minute)

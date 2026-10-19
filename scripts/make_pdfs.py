@@ -6,6 +6,9 @@ Writes HTML to OUT_DIR/html and PDFs to OUT_DIR/pdf (default /tmp/regsub_docs), 
 PDF converter of the databricks-unstructured-pdf-generation skill. Only the Investigator's
 Brochure v7 and the advisory briefing book quote the pre-restatement result (412 of 618,
 66.7%, "about two-thirds"). The other four documents mention LMN-301 but never that result.
+The briefing book ends with Appendix A (page 9), a bar chart of that result, so ai_parse_document has a
+figure to describe. Its search chunk was added to doc_chunks by hand without the chart values, so the
+AI Search hits stay on pages 4 and 6; rebuilding doc_chunks with build_search.py would also add page 9.
 """
 import subprocess
 import sys
@@ -176,6 +179,27 @@ ib = doc(
     ],
 )
 
+def chart_svg() -> str:
+    """Bar chart of the Week 52 responder rates (the pre-restatement result), as inline SVG for the PDF converter."""
+    bars = [("LMN-4471 400 mg", 66.7, "#1f4e8c"), ("Placebo", 47.1, "#b5524b")]
+    w, h, x0, y0, plot_h = 460, 300, 60, 30, 210
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" font-family="Helvetica, Arial, sans-serif">']
+    for t in range(0, 101, 20):
+        y = y0 + plot_h - plot_h * t / 100
+        out.append(f'<line x1="{x0}" y1="{y:.1f}" x2="{w - 20}" y2="{y:.1f}" stroke="#d5dbe3" stroke-width="1"/>')
+        out.append(f'<text x="{x0 - 8}" y="{y + 4:.1f}" font-size="11" text-anchor="end" fill="#444">{t}</text>')
+    for i, (name, v, color) in enumerate(bars):
+        bx = x0 + 60 + i * 170
+        bh = plot_h * v / 100
+        out.append(f'<rect x="{bx}" y="{y0 + plot_h - bh:.1f}" width="90" height="{bh:.1f}" fill="{color}"/>')
+        out.append(f'<text x="{bx + 45}" y="{y0 + plot_h - bh - 6:.1f}" font-size="13" text-anchor="middle" fill="#111">{v}%</text>')
+        out.append(f'<text x="{bx + 45}" y="{y0 + plot_h + 18}" font-size="12" text-anchor="middle" fill="#111">{name}</text>')
+    out.append(f'<text x="18" y="{y0 + plot_h / 2}" font-size="11" fill="#444" transform="rotate(-90 18 {y0 + plot_h / 2})" text-anchor="middle">Responders at Week 52 (%)</text>')
+    out.append("</svg>")
+    caption = f"<p><b>Figure A.1.</b> Proportion of participants meeting the responder definition at Week 52, Study {STUDY}, full analysis set.</p>"
+    return "<div style='margin:10pt 0'>" + "".join(out) + "</div>" + caption
+
+
 # ------------------------------------------------------------------ Advisory briefing book draft (quotes OLD result on page 6)
 book = doc(
     f"Advisory Committee Briefing Book (draft): {DRUG}",
@@ -216,6 +240,9 @@ book = doc(
             "2. Does the committee consider the proposed liver enzyme monitoring adequate?",
             "3. Are further data needed on long-term safety beyond 52 weeks?",
         )),
+        ("Appendix A. Primary efficacy figure", p(
+            f"Figure A.1 shows the primary efficacy result of Study {STUDY} as presented in this draft.",
+        ) + chart_svg() + p("Source: primary responder analysis, full analysis set, data as of the draft date.")),
     ],
 )
 

@@ -23,7 +23,7 @@ Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026,
 |---|---|---|
 | Delta table version history (`DESCRIBE HISTORY`, `VERSION AS OF`) on a Unity Catalog table | Comparing version 3 and version 4 of `efficacy_primary` | GA |
 | Unity Catalog certification tag and column lineage | The certified tables and the citation card | GA |
-| Unity Catalog volume, `ai_parse_document` (version 2.0, with page images and element bounding boxes) | Parsing the 6 PDFs: page chunks for AI Search, and the layout (`doc_elements`, `doc_pages`, volume `parsed_pages`) that the drafting workflow and the assistant show | GA |
+| Unity Catalog volume, `ai_parse_document` (version 2.0, with page images and element bounding boxes) | Parsing the 6 PDFs: page chunks for AI Search, and the layout (`doc_elements` with type, confidence, text, table HTML and figure descriptions and values; `doc_pages`; volume `parsed_pages`) shown on the Document parsing page (`/documents`), in the drafting workflow and in the assistant | GA |
 | AI Search (hybrid, Delta Sync index on `sz-shared-vs`) | Finding documents that still quote the old result | GA |
 | Unity Gateway model service with an inference table, routing to `databricks-claude-sonnet-5-5` | The wording check | GA (Unity Gateway since 4 Aug 2026) |
 | MLflow 3 tracing, through the `mlflow-tracing` Node SDK | Tracing every wording-check call | GA (MLflow 3 tracing); Node SDK status unverified |

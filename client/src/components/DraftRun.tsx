@@ -204,7 +204,7 @@ function StepDetail({
             </button>
           ))}
         </div>
-        <p className="text-xs text-ink-muted">Located by ai_parse_document. Click a page to open it.</p>
+        <p className="text-xs text-ink-muted">Located by ai_parse_document. Click a page to open it here, or see the whole document in Document parsing.</p>
       </>
     );
   }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Button, Skeleton } from '@databricks/appkit-ui/react';
-import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, ScanSearch, Search } from 'lucide-react';
 import { postSearchUntracked } from '../data/api';
 import { useReview } from '../data/review';
 import { useRestatementSummary, useUnchangedSentences } from '../data/queries';
@@ -616,9 +616,24 @@ function Reference({ search, typed, oldValues }: { search: ReferenceSearch; type
                           </span>
                         ) : null}
                       </td>
-                      <td className={`${TD} text-ink-muted`}>{h.page}</td>
+                      <td className={`${TD} text-ink-muted`}>
+                        <Link
+                          to={`/documents?file=${encodeURIComponent(h.file_path)}&page=${h.page}&q=${encodeURIComponent(terms[0] ?? '')}`}
+                          className="text-cited underline underline-offset-4"
+                          title="Open the parsed page"
+                        >
+                          {h.page}
+                        </Link>
+                      </td>
                       <td className={`${TD} font-serif text-[15px] leading-relaxed text-ink`}>
                         ...{highlight(trimSnippet(h.snippet), terms)}...
+                        <Link
+                          to={`/documents?file=${encodeURIComponent(h.file_path)}&page=${h.page}&q=${encodeURIComponent(terms[0] ?? '')}`}
+                          className="mt-1.5 flex items-center gap-1 font-sans text-[13px] text-cited underline-offset-4 hover:underline"
+                        >
+                          <ScanSearch className="size-3.5" aria-hidden="true" />
+                          Open the parsed page
+                        </Link>
                       </td>
                     </tr>
                   )),

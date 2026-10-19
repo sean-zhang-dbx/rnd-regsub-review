@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider, useNavigate, useParams } from 'react-router';
 import { Kbd, Label, Switch } from '@databricks/appkit-ui/react';
 import { Search } from 'lucide-react';
+import { Documents } from './pages/Documents';
 import { Overview } from './pages/Overview';
 import { Viewer } from './pages/Viewer';
 import { REVIEWER_SHORT, STUDY } from './lib/format';
@@ -67,6 +68,9 @@ function Layout() {
           <DossierSearch />
         </div>
         <div className="flex shrink-0 items-center gap-6">
+          <Link to="/documents" className="text-sm font-medium text-page hover:underline">
+            Document parsing
+          </Link>
           <div className="text-sm">
             <span className="text-bar-muted">Study </span>
             <span className="font-medium">{STUDY}</span>
@@ -100,6 +104,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Overview /> },
       { path: '/review/:sentenceId', element: <Viewer /> },
+      { path: '/documents', element: <Documents /> },
       { path: '/section/:section', element: <SectionRedirect /> },
     ],
   },

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { pageImageUrl } from '../data/api';
 import type { SourcePage } from '../data/types';
 
@@ -69,7 +70,10 @@ export function ParsedPage({ page, compact = false }: { page: SourcePage; compac
       {!compact ? (
         <figcaption className="mt-2 text-xs text-ink-muted">
           {page.doc_title}, page {page.page}. Layout and text from ai_parse_document: {page.boxes.length} elements, with the
-          passage {page.used_label ?? 'used by the draft'} outlined in blue. Hover an element to see its type.
+          passage {page.used_label ?? 'used by the draft'} outlined in blue. Hover an element to see its type.{' '}
+          <Link to={`/documents?file=${encodeURIComponent(page.file_path)}&page=${page.page}`} className="text-cited underline underline-offset-4">
+            Open in Document parsing
+          </Link>
         </figcaption>
       ) : null}
     </figure>
