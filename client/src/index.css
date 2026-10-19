@@ -121,8 +121,8 @@
 }
 @keyframes figure-new-in {
   0% {
-    opacity: 0;
-    transform: translateY(0.35em);
+    opacity: 0.4;
+    transform: translateY(0.2em);
     background-color: var(--recomputed-soft);
   }
   60% {

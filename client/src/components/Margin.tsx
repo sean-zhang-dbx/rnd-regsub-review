@@ -32,12 +32,12 @@ export function MarginComment({
   links?: ReactNode;
 }) {
   return (
-    <article className={`rounded-[var(--radius)] border border-border border-l-4 bg-page p-4 ${TONE[tone]}`}>
+    <article className={`rounded-[var(--radius)] border border-border border-l-4 bg-page p-3.5 ${TONE[tone]}`}>
       <header className="mb-2">
         <h2 className="text-sm font-semibold text-ink">{author}</h2>
         {via ? <p className="text-xs text-ink-muted">{via}</p> : null}
       </header>
-      <div className="space-y-2 text-sm leading-snug text-ink">{children}</div>
+      <div className="space-y-2 text-sm text-ink [&_p]:leading-5">{children}</div>
       {links ? <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">{links}</div> : null}
     </article>
   );
@@ -57,41 +57,48 @@ export function OtherDocuments({
 }) {
   if (rows.length === 0) return null;
   return (
-    <MarginComment author="Other documents" via="Sentences that cite the same table" tone={recomputed ? 'recomputed' : 'neutral'}>
+    <MarginComment author="Same table, other sections" via="Sentences that cite efficacy_primary" tone={recomputed ? 'recomputed' : 'neutral'}>
       <ul className="divide-y divide-border">
-        {rows.map((r) => (
-          <li key={r.sentence_id} className="py-2 first:pt-0 last:pb-0">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="font-medium">
-                {docLabel(r.doc_type, r.section)}, sentence {r.seq}
+        {rows.map((r) => {
+          const figs = all.filter((x) => x.sentence_id === r.sentence_id);
+          const first = figs[0];
+          const more = figs.length - 1;
+          const status =
+            r.kind === 'label'
+              ? recomputed
+                ? { text: 'Sent to Labelling', cls: 'text-attention' }
+                : { text: 'Goes to Labelling', cls: 'text-ink-muted' }
+              : approved
+                ? { text: 'Approved', cls: 'text-recomputed' }
+                : recomputed
+                  ? { text: 'Recomputed', cls: 'text-recomputed' }
+                  : { text: 'Can be recomputed', cls: 'text-cited' };
+          const label = r.doc_type === 'label' ? `Label ${r.section}` : r.section;
+          return (
+            <li
+              key={r.sentence_id}
+              className="flex items-baseline gap-2 py-1.5 first:pt-0 last:pb-0"
+              title={`${docLabel(r.doc_type, r.section)}, sentence ${r.seq}`}
+            >
+              <span className="shrink-0 font-medium">
+                {label} s{r.seq}
               </span>
-              {r.kind === 'label' ? (
-                <span className={`shrink-0 whitespace-nowrap ${recomputed ? 'text-attention' : 'text-ink-muted'}`}>
-                  {recomputed ? 'Sent to Labelling' : 'Goes to Labelling'}
-                </span>
-              ) : (
-                <span className={`shrink-0 whitespace-nowrap ${recomputed ? 'text-recomputed' : 'text-cited'}`}>
-                  {approved ? 'Approved' : recomputed ? 'Recomputed' : 'Can be recomputed'}
-                </span>
-              )}
-            </div>
-            <div className="mt-0.5 flex flex-wrap gap-x-3 text-ink-muted">
-              {all
-                .filter((x) => x.sentence_id === r.sentence_id)
-                .map((x) => (
-                  <span key={x.fig_key}>
-                    {recomputed ? (
-                      <>
-                        <s className="text-unchanged">{x.old_value}</s> <span className="text-ink">{x.new_value}</span>
-                      </>
-                    ) : (
-                      x.old_value
-                    )}
-                  </span>
-                ))}
-            </div>
-          </li>
-        ))}
+              <span className="min-w-0 flex-1 truncate text-ink-muted">
+                {first ? (
+                  recomputed ? (
+                    <>
+                      <s className="text-unchanged">{first.old_value}</s> {first.new_value}
+                    </>
+                  ) : (
+                    first.old_value
+                  )
+                ) : null}
+                {more > 0 ? ` +${more}` : ''}
+              </span>
+              <span className={`shrink-0 whitespace-nowrap ${status.cls}`}>{status.text}</span>
+            </li>
+          );
+        })}
       </ul>
     </MarginComment>
   );
@@ -108,7 +115,7 @@ export function WordingComment({
 }) {
   const links = (
     <>
-      <DbxLink linkKey="beat3_endpoint" label="Model endpoint in Databricks" />
+      <DbxLink linkKey="beat3_endpoint" label="Gateway inference table" />
       <DbxLink linkKey="beat3_traces" label="MLflow traces in Databricks" />
     </>
   );
@@ -150,14 +157,18 @@ export function WordingComment({
       </p>
       {flagged.map((r) => (
         <div key={r.sentence_id} id={flaggedId === r.sentence_id ? 'flag' : undefined} className="space-y-1">
-          <p className="font-serif text-[15px] italic text-ink-muted">{quote(r.sentence_id)}</p>
-          <p>{r.reason}</p>
-          <p className="text-xs text-ink-muted">Sent to the writer for review.</p>
-        </div>
+          <p className="line-clamp-1 font-serif text-[15px] italic leading-snug text-ink-muted">{quote(r.sentence_id)}</p>
+          <p>
+            {r.reason} <span className="text-ink-muted">Sent to the writer.</span>
+          </p>
+                  </div>
       ))}
       <p className="text-xs text-ink-muted">
-        <span className="break-all font-mono">{WORDING_SERVICE}</span> via Unity Gateway
-        {cached ? ', cached result' : ''}
+        <span className="font-mono" title={WORDING_SERVICE}>
+          wording_check
+        </span>{' '}
+        via Unity Gateway
+        {cached ? ' Cached result.' : ''}
       </p>
     </MarginComment>
   );
@@ -219,8 +230,8 @@ export function GenieComment({ onAnswered }: { onAnswered: () => void }) {
       <Textarea
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
-        rows={3}
-        className="resize-none bg-page text-sm"
+        rows={2}
+        className="resize-none bg-page text-[13px] leading-snug md:text-[13px]"
         aria-label="Question for the Genie Agent"
       />
       <Button
@@ -249,14 +260,14 @@ export function GenieComment({ onAnswered }: { onAnswered: () => void }) {
       {parts && answer.data ? (
         <div className="space-y-1.5">
           <p className="text-lg font-semibold leading-tight">{parts.head}</p>
-          {parts.note ? <p className="text-xs text-ink-muted">{parts.note}</p> : null}
+          {parts.note ? <p className="line-clamp-3 text-[13px] leading-snug text-ink-muted">{parts.note}</p> : null}
           <details>
             <summary className="cursor-pointer text-xs text-cited underline underline-offset-4">Show SQL</summary>
             <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed">
               {answer.data.sql}
             </pre>
           </details>
-          <p className="text-xs text-ink-muted">Generated from the certified tables. Check the SQL before you rely on it.</p>
+          <p className="text-[13px] text-ink-muted">Generated from the certified tables.</p>
         </div>
       ) : null}
     </MarginComment>

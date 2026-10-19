@@ -197,17 +197,13 @@ export function Section() {
           </QueryBoundary>
         </section>
 
-        <aside aria-label="Review comments" className="space-y-4">
+        <aside
+          aria-label="Review comments"
+          className="space-y-4 lg:sticky lg:top-14 lg:max-h-[calc(100vh-4.5rem)] lg:self-start lg:overflow-y-auto"
+        >
           {done && affectedIds.length > 0 ? (
             <WordingComment check={wording} quote={quote} flaggedId={flaggedId} />
           ) : null}
-          {impact.loading ? (
-            <Skeleton className="h-40 w-full" />
-          ) : impact.error ? (
-            <ErrorNote title="The other documents could not be listed." detail={impact.error} />
-          ) : (
-            <OtherDocuments rows={others} all={impact.data ?? []} recomputed={done} approved={review.approved !== null} />
-          )}
           <GenieComment onAnswered={() => setAnswered(true)} />
           <ApproveComment
             figureCount={figureIds.length}
@@ -219,6 +215,13 @@ export function Section() {
             approved={review.approved}
             version={sourceVersion}
           />
+          {impact.loading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : impact.error ? (
+            <ErrorNote title="The other sections could not be listed." detail={impact.error} />
+          ) : (
+            <OtherDocuments rows={others} all={impact.data ?? []} recomputed={done} approved={review.approved !== null} />
+          )}
         </aside>
       </div>
     </div>

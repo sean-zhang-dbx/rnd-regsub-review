@@ -56,7 +56,11 @@ export function Overview() {
       <section aria-label="Restatement" className="max-w-3xl">
         <QueryBoundary
           query={summary}
-          skeleton={<Skeleton className="h-8 w-4/5" />}
+          skeleton={
+            <p className="min-h-[3.75rem] text-2xl font-medium leading-snug text-ink-muted">
+              Reading the restatement from <span className="font-mono text-[0.9em]">efficacy_primary</span>...
+            </p>
+          }
           failed="The restatement could not be read."
           emptyTitle="No restatement found"
           emptyHint="The certified table has a single version, so nothing needs review."

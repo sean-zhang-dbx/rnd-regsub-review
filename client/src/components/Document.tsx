@@ -112,23 +112,26 @@ function Figure({
   const target = next ?? row.value_curr;
   const changed = row.value_prev !== target;
   const flipped = next !== null && changed;
-  /* Old value, a space, new value: reserve that width before the values arrive. */
-  const widthCh = row.value_prev.length + 0.5 + row.value_curr.length;
+  /* Old and new are both in the layout from the click, so the flip never moves the text. */
+  const pending = changed && reserve && !flipped;
 
   let face;
   if (changed && (flipped || reserve)) {
     face = (
-      <span className="inline-block whitespace-nowrap" style={{ minWidth: `${widthCh}ch` }}>
+      <span className="whitespace-nowrap">
         <s
-          className={flipped ? 'figure-old-out text-unchanged decoration-unchanged' : undefined}
-          style={flipped ? { animationDelay: `${order * 260}ms` } : undefined}
+          className={
+            flipped ? 'figure-old-out text-unchanged decoration-unchanged' : 'border-b border-cited no-underline'
+          }
+          style={flipped ? { animationDelay: `${order * 260}ms` } : { textDecoration: 'none' }}
         >
           {row.value_prev}
-        </s>{' '}
+        </s>
         <span
-          className={flipped ? 'figure-new-in rounded-[2px] px-0.5 font-semibold text-recomputed' : 'invisible'}
-          style={flipped ? { animationDelay: `${300 + order * 260}ms` } : undefined}
+          className={flipped ? 'figure-new-in font-semibold text-recomputed' : 'invisible'}
+          style={flipped ? { animationDelay: `${order * 260}ms` } : undefined}
         >
+          {' '}
           {flipped ? next : row.value_curr}
         </span>
       </span>
@@ -136,21 +139,13 @@ function Figure({
   } else {
     face = <span>{next ?? row.value_prev}</span>;
   }
-  /* The reserved, not yet flipped state shows the old value as plain text, not struck through. */
-  if (changed && reserve && !flipped) {
-    face = (
-      <span className="inline-block whitespace-nowrap" style={{ minWidth: `${widthCh}ch` }}>
-        {row.value_prev}
-      </span>
-    );
-  }
 
   return (
     <HoverCard openDelay={120} closeDelay={80}>
       <HoverCardTrigger asChild>
         <span
           tabIndex={0}
-          className="cursor-help border-b border-cited decoration-cited hover:bg-cited-soft focus-visible:bg-cited-soft"
+          className={`cursor-help border-b decoration-cited hover:bg-cited-soft focus-visible:bg-cited-soft ${pending ? 'border-transparent' : 'border-cited'}`}
         >
           {face}
         </span>
