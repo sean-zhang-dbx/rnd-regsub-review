@@ -128,6 +128,20 @@ declare module "@databricks/appkit-ui/react" {
           signed_at: string;
         }>;
       };
+    tlf_table: {
+        name: "tlf_table";
+        parameters: Record<string, never>;
+        result: Array<{
+          /** TRT, PBO or DIFF */
+          row_key: string;
+          /** @sqlType STRING */
+          column_name: string;
+          /** @sqlType STRING */
+          value_prev: string;
+          /** @sqlType STRING */
+          value_curr: string;
+        }>;
+      };
     unchanged_sentences: {
         name: "unchanged_sentences";
         parameters: Record<string, never>;
