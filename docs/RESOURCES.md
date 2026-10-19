@@ -8,7 +8,7 @@ Repo: https://github.com/sean-zhang-dbx/rnd-regsub-review (private, topics `acco
 |---|---|---|---|---|
 | Schema | `sean_zhang_catalog.rnd_regsub_review` (tags `sz_domain=rnd`, `sz_project=regsub_review`, `asset_class=app`) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review | 2026-10-19 |
 
-Shared, not owned by this demo: SQL warehouse `Serverless Starter Warehouse` (`16ad82bead3f55b5`), AI Search endpoint `sz-shared-vs`, serving endpoint `databricks-claude-sonnet-5-5`.
+Shared, not owned by this demo: SQL warehouse `Serverless Starter Warehouse` (`16ad82bead3f55b5`), AI Search endpoint `sz-shared-vs`, serving endpoints `databricks-claude-sonnet-5-5` and `databricks-gpt-5-5` (judge).
 | Table | `sean_zhang_catalog.rnd_regsub_review.adsl` (tags) | a table | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/adsl | 2026-10-19 |
 | Table | `sean_zhang_catalog.rnd_regsub_review.adeff` (tags) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/adeff | 2026-10-19 |
 | Table | `sean_zhang_catalog.rnd_regsub_review.efficacy_primary` (certified, Delta versions 0 to 4) | a7b915f3-a905-4510-9db9-e258d323b955 | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/efficacy_primary | 2026-10-19 |
@@ -19,6 +19,9 @@ Shared, not owned by this demo: SQL warehouse `Serverless Starter Warehouse` (`1
 | Table | `sean_zhang_catalog.rnd_regsub_review.review_signoffs` | 2ae1c799-f031-448a-b6dd-f6be79f72ad1 | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/review_signoffs | 2026-10-19 |
 | Table | `sean_zhang_catalog.rnd_regsub_review.doc_chunks` (Change Data Feed on) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/doc_chunks | 2026-10-19 |
 | Table | `sean_zhang_catalog.rnd_regsub_review.section_drafts` (drafts from the drafting beat: templates with placeholders, trace ID; the last clean draft is the fallback) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/section_drafts | 2026-10-19 |
+| Volume | `sean_zhang_catalog.rnd_regsub_review.parsed_pages` (page images written by ai_parse_document 2.0) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/volumes/sean_zhang_catalog/rnd_regsub_review/parsed_pages | 2026-10-19 |
+| Table | `sean_zhang_catalog.rnd_regsub_review.doc_pages` (32 pages, image path and size) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/doc_pages | 2026-10-19 |
+| Table | `sean_zhang_catalog.rnd_regsub_review.doc_elements` (138 layout elements with bounding boxes, from `scripts/parse_elements.py`) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/doc_elements | 2026-10-19 |
 | Volume | `sean_zhang_catalog.rnd_regsub_review.source_docs` (6 PDFs) | 6500b0be-4e46-400a-8f7b-c85ca065de13 | https://fevm-sean-zhang.cloud.databricks.com/explore/data/volumes/sean_zhang_catalog/rnd_regsub_review/source_docs | 2026-10-19 |
 | AI Search index | `sean_zhang_catalog.rnd_regsub_review.doc_chunks_index` (Delta Sync, hybrid, endpoint `sz-shared-vs`) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/doc_chunks_index | 2026-10-19 |
 | Unity Gateway model service | `sean_zhang_catalog.rnd_regsub_review.wording_check` (routes to `system.ai.databricks-claude-sonnet-5-5`, inference logging on) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review | 2026-10-19 |

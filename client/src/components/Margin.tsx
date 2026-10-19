@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button, Textarea } from '@databricks/appkit-ui/react';
-import { postDraftSection, postGenieAsk } from '../data/api';
+import { postGenieAsk } from '../data/api';
 import type { GenieAnswer, WordingCheckResult } from '../data/types';
-import { CELL_LABEL, FIG_CELL, formatClock, formatDay, TLF, WORDING_SERVICE } from '../lib/format';
+import { formatClock, formatDay, WORDING_SERVICE } from '../lib/format';
 import { DbxLink } from '../lib/presenter';
 import { useAsync } from '../lib/useAsync';
 import type { AsyncState } from '../lib/useAsync';
@@ -112,85 +112,8 @@ export function WordingComment({
   );
 }
 
-/** Sections the drafting model has an outline for (server/routes/draftSection.ts). */
+/** Sections the drafting workflow has an outline for (server/routes/draftSection.ts). */
 export const DRAFTABLE = new Set(['11.4.1', '2.7.3']);
-
-export function DraftComment({
-  section,
-  onFocus,
-  onDrafted,
-}: {
-  section: string;
-  onFocus: (figKey: string | null) => void;
-  onDrafted: (sourceVersion: number) => void;
-}) {
-  const [run, setRun] = useState(0);
-  const draft = useAsync(() => postDraftSection(section), run > 0);
-  const d = draft.data;
-
-  /* Show the table at the version the draft was written against, so the chips match its cells. */
-  useEffect(() => {
-    if (d) onDrafted(d.source_version);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d]);
-  const via = 'Claude Sonnet 5.5 via Unity Gateway';
-  const links = (
-    <>
-      <DbxLink linkKey="beat3_traces" label="MLflow traces in Databricks" />
-      <DbxLink linkKey="beat2_drafts" label="Stored drafts in Databricks" />
-    </>
-  );
-  const typed = d?.typed_numbers ?? [];
-  return (
-    <MarginComment author="Drafting" via={via} tone={d ? (typed.length > 0 ? 'attention' : 'recomputed') : 'neutral'} links={links}>
-      {!d ? (
-        <p>
-          The model drafts this section from its outline and writes a placeholder for each figure. SQL fills each one in
-          from {TLF.efficacy_primary}, so every figure is tied to its cell from the start.
-        </p>
-      ) : null}
-      {draft.loading ? <p className="text-ink-muted">Drafting from the outline</p> : null}
-      {draft.error ? <ErrorNote title="The draft did not finish." detail={draft.error} /> : null}
-      {d ? (
-        <>
-          <ol className="list-decimal space-y-1.5 pl-4 font-serif text-[14px] leading-snug">
-            {d.sentences.map((s, i) => (
-              <li key={i}>
-                {s.parts.map((p, j) =>
-                  'slot' in p ? (
-                    <span
-                      key={j}
-                      onMouseEnter={() => onFocus(p.slot)}
-                      onMouseLeave={() => onFocus(null)}
-                      title={`${TLF.efficacy_primary}, ${FIG_CELL[p.slot]?.row ?? ''}, ${CELL_LABEL[FIG_CELL[p.slot]?.column ?? ''] ?? p.slot}, version ${d.source_version}`}
-                      className="rounded-[2px] bg-cited-soft px-0.5 font-medium text-cited"
-                    >
-                      {p.value}
-                    </span>
-                  ) : (
-                    <span key={j}>{p.text}</span>
-                  ),
-                )}
-              </li>
-            ))}
-          </ol>
-          <p>
-            {d.figure_count} figures, each filled from a cell of {TLF.efficacy_primary} version {d.source_version}.{' '}
-            {typed.length === 0
-              ? 'The model typed no figures itself.'
-              : `The model typed ${typed.join(', ')} itself, so ${typed.length === 1 ? 'that number is' : 'those numbers are'} not tied to a cell.`}
-          </p>
-          {d.cached ? <p className="text-xs text-ink-muted">Stored draft. The model did not answer in time.</p> : null}
-        </>
-      ) : null}
-      {!draft.loading ? (
-        <Button size="sm" variant="outline" onClick={() => setRun((n) => n + 1)}>
-          {d || draft.error ? 'Draft again' : 'Draft this section'}
-        </Button>
-      ) : null}
-    </MarginComment>
-  );
-}
 
 export const SAMPLE_QUESTION =
   'How many participants in the treatment arm met the primary endpoint after the restatement?';
@@ -334,8 +257,8 @@ export function ApproveComment({
         {!recomputed
           ? 'Recompute the figures from source before you approve them.'
           : !answered
-            ? 'Ask the Genie Agent to confirm the figures, then approve them.'
-            : 'The Genie Agent has answered. Approve the recomputed figures.'}
+            ? 'Ask the reviewer assistant to confirm the figures, then approve them.'
+            : 'The assistant has confirmed the figures from the certified tables. Approve the recomputed figures.'}
       </p>
       {approveError ? <ErrorNote title="The sign-off was not recorded." detail={approveError} /> : null}
       <Button size="sm" disabled={!ready || approving || figureCount === 0} onClick={onApprove}>

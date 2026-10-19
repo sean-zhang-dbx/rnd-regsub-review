@@ -117,7 +117,8 @@ all_traces = mlflow.search_traces(experiment_ids=[EXPERIMENT_ID], max_results=50
 
 
 def unscored(span_name: str, assessment: str):
-    t = all_traces[all_traces["spans"].map(lambda spans: any(s.get("name") == span_name for s in spans or []))]
+    names = {span_name, "draft_run"} if span_name == "draft_section" else {span_name}
+    t = all_traces[all_traces["spans"].map(lambda spans: any(s.get("name") in names and not s.get("parent_span_id") for s in spans or []))]
     done = t["assessments"].map(lambda a: any(x.get("assessment_name") == assessment for x in a or []))
     print(f"{span_name} traces: {len(t)}, not yet scored: {int((~done).sum())}")
     return t[~done]
@@ -125,7 +126,7 @@ def unscored(span_name: str, assessment: str):
 
 jobs = [
     ("wording_check", unscored("wording_check", "verdict_supported"), [figures_match_source, verdict_supported]),
-    ("draft_section", unscored("draft_section", "figures_bound_to_cells"), [figures_bound_to_cells]),
+    ("drafting", unscored("draft_section", "figures_bound_to_cells"), [figures_bound_to_cells]),
 ]
 if all(t.empty for _, t, _ in jobs):
     sys.exit("Nothing new to score. Run a wording check or a draft in the app first.")

@@ -66,3 +66,61 @@ export interface DraftResult {
   cached: boolean;
   drafted_at: string;
 }
+
+export interface ParsedBox {
+  element_id: number;
+  element_type: string;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  used: boolean;
+}
+
+export interface SourcePage {
+  doc_title: string;
+  file_path: string;
+  page: number;
+  image_path: string;
+  width: number;
+  height: number;
+  excerpt: string;
+  boxes: ParsedBox[];
+  /** How the highlighted element is described, for example "used by the draft" or "cited in the answer". */
+  used_label?: string;
+}
+
+export type DraftStepId = 'read_sources' | 'find_table' | 'draft' | 'fill' | 'check' | 'done';
+
+export interface DraftRunEvent {
+  step: DraftStepId;
+  title?: string;
+  status: 'running' | 'done' | 'error';
+  ms?: number;
+  error?: string;
+  detail?: Record<string, unknown>;
+  result?: DraftResult;
+}
+
+export interface AssistantSource {
+  n: number;
+  doc_title: string;
+  page: number;
+  snippet: string;
+  view: SourcePage | null;
+}
+
+export interface AssistantGenie {
+  answer_text: string;
+  sql: string;
+  rows: Record<string, string | null>[];
+  conversation_id: string;
+  conversation_url: string;
+}
+
+export type AssistantEvent =
+  | { event: 'route'; tables: boolean; documents: boolean }
+  | { event: 'tables'; genie?: AssistantGenie; error?: string }
+  | { event: 'documents'; count?: number; error?: string }
+  | { event: 'answer'; answer: string; sources: AssistantSource[]; genie: AssistantGenie | null; trace_id: string }
+  | { event: 'error'; error: string };

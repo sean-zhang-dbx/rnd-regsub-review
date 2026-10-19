@@ -9,10 +9,10 @@ import { initTracing, mlflow } from '../lib/tracing';
  * version the draft is written against, so each figure is tied to a cell from the moment it is drafted.
  */
 
-const SOURCE_VERSION = 3; // Draft 0.4 was written against version 3, before the re-delivery.
+export const SOURCE_VERSION = 3; // Draft 0.4 was written against version 3, before the re-delivery.
 const TIMEOUT_MS = 25_000;
 
-const SLOTS: Record<string, string> = {
+export const SLOTS: Record<string, string> = {
   trt_resp: 'number of responders in the LMN-4471 400 mg arm',
   trt_n: 'number of participants in the LMN-4471 400 mg arm',
   trt_rate: 'responder rate in the LMN-4471 400 mg arm, in percent',
@@ -24,7 +24,7 @@ const SLOTS: Record<string, string> = {
   ci_high: 'upper bound of the 95% CI of the difference',
 };
 
-const OUTLINES: Record<string, { title: string; outline: string[] }> = {
+export const OUTLINES: Record<string, { title: string; outline: string[] }> = {
   '11.4.1': {
     title: 'Clinical Study Report, section 11.4.1 Primary efficacy endpoint',
     outline: [
@@ -51,12 +51,12 @@ Write in the plain, factual register of a clinical study report, in British Engl
 You do not know the results. Every result figure must be written as a placeholder in curly braces, chosen from the list you are given, for example "{trt_resp} of {trt_n} participants ({trt_rate}%)". Never write a result figure as a number, never estimate one, and never invent a placeholder that is not in the list. Numbers that appear in the outline (such as Week 52, 95% CI or 400 mg) may be written as they are.
 Reply with one JSON object and nothing else: {"sentences": ["<sentence 1>", "<sentence 2>", ...]}`;
 
-type Part = { text: string } | { slot: string; value: string };
+export type Part = { text: string } | { slot: string; value: string };
 interface DraftSentence {
   template: string;
   parts: Part[];
 }
-interface DraftResult {
+export interface DraftResult {
   section: string;
   source_version: number;
   sentences: DraftSentence[];
@@ -72,7 +72,7 @@ interface DraftResult {
 let valuesCache: Record<string, string> | undefined;
 
 /** The 9 cited cells of Table 14.2.1 at the drafting version, keyed by placeholder name. */
-async function slotValues(): Promise<Record<string, string>> {
+export async function slotValues(): Promise<Record<string, string>> {
   if (valuesCache) return valuesCache;
   const rows = await sqlRows(
     `WITH v AS (
@@ -91,7 +91,7 @@ async function slotValues(): Promise<Record<string, string>> {
   return valuesCache;
 }
 
-function bind(templates: string[], values: Record<string, string>) {
+export function bind(templates: string[], values: Record<string, string>) {
   const unknown = new Set<string>();
   const typed = new Set<string>();
   let figures = 0;
@@ -119,7 +119,7 @@ function bind(templates: string[], values: Record<string, string>) {
   return { sentences, figures, unknown: [...unknown], typed: [...typed] };
 }
 
-async function callModel(userContent: string, signal: AbortSignal) {
+export async function callModel(userContent: string, signal: AbortSignal) {
   // Same Unity Gateway model service as the wording check (Claude Sonnet 5.5, inference table on).
   const out = await dbxFetch<{ choices: { message: { content: string | { text?: string }[] } }[]; usage?: Record<string, number> }>(
     '/ai-gateway/mlflow/v1/chat/completions',
@@ -146,7 +146,7 @@ async function callModel(userContent: string, signal: AbortSignal) {
   return { templates: parsed.sentences, usage: out.usage };
 }
 
-async function persist(r: DraftResult) {
+export async function persist(r: DraftResult) {
   await sqlRows(
     `INSERT INTO ${FQ}.section_drafts (section, source_version, templates_json, figure_count, typed_numbers, model, trace_id, drafted_at)
      VALUES (:section, CAST(:ver AS BIGINT), :tpl, CAST(:figs AS INT), :typed, :model, :trace, current_timestamp())`,
@@ -163,7 +163,7 @@ async function persist(r: DraftResult) {
 }
 
 /** Fallback when the model is slow or fails: the last stored draft of the section. */
-async function lastDraft(section: string, values: Record<string, string>): Promise<DraftResult | null> {
+export async function lastDraft(section: string, values: Record<string, string>): Promise<DraftResult | null> {
   const rows = await sqlRows(
     `SELECT templates_json, trace_id, drafted_at FROM ${FQ}.section_drafts
      WHERE section = :section AND coalesce(typed_numbers, '') = ''

@@ -38,6 +38,10 @@ resources:
           serving_endpoint:
             name: ${var.serving_endpoint_name}
             permission: CAN_QUERY
+        - name: judge-endpoint
+          serving_endpoint:
+            name: databricks-gpt-5-5
+            permission: CAN_QUERY
         - name: genie-space
           genie_space:
             name: ${var.genie_space_name}

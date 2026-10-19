@@ -6,7 +6,11 @@ import { ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react';
 import { useReview } from '../data/review';
 import { useDocumentSection, useRestatementSummary, useTlfTable } from '../data/queries';
 import { DocumentSentence, FigureFocus, FlipPair, PageBoundary, sentenceText, toSentences } from '../components/Document';
-import { ApproveComment, DRAFTABLE, DraftComment, GenieComment, WordingComment } from '../components/Margin';
+import { DraftRun } from '../components/DraftRun';
+import { AssistantDrawer, SUGGESTED } from '../components/Assistant';
+import { ApproveComment, DRAFTABLE, MarginComment, WordingComment } from '../components/Margin';
+import { ParsedPage } from '../components/ParsedPage';
+import type { SourcePage } from '../data/types';
 import { ErrorNote, QueryBoundary } from '../components/QueryBoundary';
 import { RecomputeButton } from '../components/RecomputeButton';
 import { TlfPage } from '../components/Tlf';
@@ -49,6 +53,8 @@ export function Viewer() {
   const [approveError, setApproveError] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
   const [pageEl, setPageEl] = useState<HTMLElement | null>(null);
+  const [sourcePage, setSourcePage] = useState<SourcePage | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const figureIds = affected.filter((r) => r.kind === 'figure').map((r) => r.sentence_id);
   const sentences = useMemo(() => toSentences(doc.data ?? []), [doc.data]);
@@ -144,7 +150,7 @@ export function Viewer() {
           </div>
         ) : null}
 
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_23rem]">
+        <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_23rem]">
           {/* Document page */}
           <section aria-label={`${meta.title} page`} className="flex min-h-0 flex-col border-r border-line">
             <PaneBar>
@@ -216,6 +222,25 @@ export function Viewer() {
 
           {/* Source table page */}
           <section aria-label={`${TLF.efficacy_primary} output`} className="flex min-h-0 flex-col border-r border-line">
+            {sourcePage ? (
+              <>
+                <PaneBar>
+                  <span className="truncate font-medium text-ink">
+                    {sourcePage.doc_title}, page {sourcePage.page}
+                  </span>
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSourcePage(null)}>
+                    Back to {TLF.efficacy_primary}
+                  </Button>
+                </PaneBar>
+                <div className="min-h-0 flex-1 overflow-auto bg-desk px-4 py-6">
+                  <ParsedPage page={sourcePage} />
+                  <div className="mx-auto mt-2 max-w-[34rem]">
+                    <DbxLink linkKey="beat2_parsed" label="Parsed elements in Databricks" />
+                  </div>
+                </div>
+              </>
+            ) : (
+            <>
             <PaneBar>
               <span className="truncate font-medium text-ink">
                 {TLF.efficacy_primary}
@@ -269,6 +294,8 @@ export function Viewer() {
                 <DbxLink linkKey="beat2" label="Table lineage in Databricks" />
               </div>
             </div>
+            </>
+            )}
           </section>
 
           {/* Information panel */}
@@ -312,7 +339,7 @@ export function Viewer() {
               </div>
             ) : null}
             {done && affected.length > 0 ? <WordingComment check={wording} quote={quote} flaggedId={flaggedId} /> : null}
-            {DRAFTABLE.has(section) ? <DraftComment key={section} section={section} onFocus={setFocus} onDrafted={(v) => setTlfVersion(v === 3 ? 3 : 4)} /> : null}
+            {DRAFTABLE.has(section) ? <DraftRun key={section} section={section} onFocus={setFocus} onShowSource={setSourcePage} onFilled={(v) => setTlfVersion(v === 3 ? 3 : 4)} /> : null}
             <div className="px-4 py-4">
               <h2 className="text-sm font-semibold text-ink">Version history, {TLF.efficacy_primary}</h2>
               <table className="mt-2 w-full text-sm">
@@ -349,7 +376,12 @@ export function Viewer() {
             </div>
             {/* Ask and approve stay in view while the panel above scrolls. */}
             <div className="max-h-[60%] shrink-0 overflow-y-auto border-t border-line shadow-[0_-6px_12px_-8px_rgba(16,24,40,0.18)]">
-              <GenieComment onAnswered={() => setAnswered(true)} />
+              <MarginComment author="Reviewer assistant" via="Genie Agent and AI Search">
+                <p className="text-ink-muted">Ask about the results in the certified tables or about what the source documents say.</p>
+                <Button size="sm" variant="outline" onClick={() => setAssistantOpen(true)}>
+                  Open the assistant
+                </Button>
+              </MarginComment>
               <ApproveComment
                 figureCount={figureIds.length}
                 recomputed={done}
@@ -362,6 +394,13 @@ export function Viewer() {
               />
             </div>
           </aside>
+          <AssistantDrawer
+            open={assistantOpen}
+            onClose={() => setAssistantOpen(false)}
+            onShowSource={setSourcePage}
+            onAnswered={() => setAnswered(true)}
+            initialQuestion={SUGGESTED[0]}
+          />
         </div>
       </div>
     </FigureFocus.Provider>

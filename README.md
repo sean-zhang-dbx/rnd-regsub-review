@@ -23,13 +23,15 @@ Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026,
 |---|---|---|
 | Delta table version history (`DESCRIBE HISTORY`, `VERSION AS OF`) on a Unity Catalog table | Comparing version 3 and version 4 of `efficacy_primary` | GA |
 | Unity Catalog certification tag and column lineage | The certified tables and the citation card | GA |
-| Unity Catalog volume, `ai_parse_document` | Storing and parsing the 6 PDFs outside the dossier | GA |
+| Unity Catalog volume, `ai_parse_document` (version 2.0, with page images and element bounding boxes) | Parsing the 6 PDFs: page chunks for AI Search, and the layout (`doc_elements`, `doc_pages`, volume `parsed_pages`) that the drafting workflow and the assistant show | GA |
 | AI Search (hybrid, Delta Sync index on `sz-shared-vs`) | Finding documents that still quote the old result | GA |
 | Unity Gateway model service with an inference table, routing to `databricks-claude-sonnet-5-5` | The wording check | GA (Unity Gateway since 4 Aug 2026) |
 | MLflow 3 tracing, through the `mlflow-tracing` Node SDK | Tracing every wording-check call | GA (MLflow 3 tracing); Node SDK status unverified |
-| Unity Gateway model service (same service), drafting CSR 11.4.1 and Module 2.7.3 with a placeholder for each figure; drafts stored in `section_drafts` | The drafting beat (`/api/draft-section`) | GA (Unity Gateway since 4 Aug 2026) |
+| Unity Gateway model service (same service), drafting CSR 11.4.1 and Module 2.7.3 with a placeholder for each figure; drafts stored in `section_drafts` | The drafting workflow (`/api/draft-run`, 5 streamed steps, one MLflow trace) and the assistant's routing and answers (`/api/assistant`) | GA (Unity Gateway since 4 Aug 2026) |
 | MLflow 3 GenAI evaluation: a code scorer and an LLM judge (`make_judge`, on `databricks-gpt-5-5`) | Scoring each wording-check trace with `scripts/judge_traces.py` | GA |
-| Genie Agent and Conversation API, on behalf of the user | Beat 4 question | GA |
+| Genie Agent and Conversation API, on behalf of the user | The reviewer assistant's answers about the certified tables (beat 4), with follow-up questions in the same conversation | GA |
+| AI Search (hybrid) in the reviewer assistant | Answers about the source documents, cited by page | GA |
+| Foundation Model API endpoint `databricks-gpt-5-5` | The live judge in the drafting workflow (a different model family from the drafting model) | GA |
 | SQL warehouse (AppKit analytics plugin) | Every query in `config/queries/` | GA |
 | Databricks Apps (AppKit) | The app | GA |
 
