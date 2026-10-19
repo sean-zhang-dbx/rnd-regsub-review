@@ -76,6 +76,21 @@ Context: the demo supports Sean's regulatory section on the Jiajie Zhang call (T
   - Rewriting documents outside the dossier: they belong to other owners, so the demo only flags them.
   - Multiple studies: one study keeps one path.
 
+### Amendment, 19 Oct 2026 (Sean): QC log, then document
+Sean chose this after review round 3, because the abstract overview (mini pages with bars) did not read as a CSR workflow. It replaces the beat 1 screen and the section 5 "Shape" and beat 1 wireframe. The data, contract, routes and hero content are unchanged.
+
+Why: after drafting, a QC reviewer checks each number in the CSR against the TLFs (tables, listings, figures) and keeps a numerical QC log (location, reported value, TLF ID and cell, finding, owner, resolution). Rechecking affected text when TLFs are re-delivered is part of that practice. The certified tables play the role of TLFs: `efficacy_primary` is **Table 14.2.1** (primary efficacy endpoint, full analysis set) and `safety_overview` is **Table 14.3.1** (overview of TEAEs). Always show both names, for example "Table 14.2.1 (efficacy_primary)".
+
+Walk (new order):
+1. **QC log (opening screen).** The header reads "Table 14.2.1 (efficacy_primary) re-delivered by Biostatistics, version 3 to 4, 19 Oct 2026 09:12". Below it is a numerical QC log with 1 row per affected sentence: Location ("CSR 11.4.1, sentence 2"), Text says (the old figures in that sentence, compact), Source cell ("Table 14.2.1, TRT, responders"; first changed cell plus "+n"), Finding ("Value changed", "Wording may not hold", "Label text"), Owner (Writer, Labelling), Status (Open, Recomputed, With the writer, Sent to Labelling, Approved). Under the log: "Safety text citing Table 14.3.1 (safety_overview): no change [show]", then the AI Search block for documents outside the dossier with Notify owners. The primary action is "Recompute from version 4".
+2. **Hero, on the log.** Click "Recompute from version 4". In Text says, old values strike through and new values appear (the figure flip). The wording check runs, and the "two-thirds" row turns amber with Finding "Wording may not hold", plus the model's one-line reason in the row. The label row moves to "Sent to Labelling". The figure rows read "Recomputed".
+3. **Document.** Click the CSR 11.4.1 row. The CSR page opens in review mode with a document header "LMN-301 Clinical Study Report, Draft 0.4, In review". The new figures show as tracked changes (old struck in muted grey, new in green), and the "two-thirds" sentence is amber. Hovering a figure shows the citation card (Table 14.2.1 (efficacy_primary), row, column, version 4, certified by Biostatistics). The right-hand comment pane has the wording check comment, the Genie Agent and the sign-off.
+4. **Genie and sign-off.** As before, in the comment pane. Approving sets the figure rows on the QC log to "Approved".
+
+Presenter lines for the new order: beat 1 and the hero use the existing beat 1 and beat 3 lines, and the document uses the beat 2 and beat 4 lines.
+Copy register still applies: the header and notes name things, and the table rows carry the quantities.
+Visual: keep the section 5 tokens, fonts and the page look for the document. The QC log is a plain, dense table on a white page (a controlled record, not a dashboard): no cards, no KPI tiles, no bars. No sidebar.
+
 ## 3. Databricks mapping
 Workspace `fe-vm-sean-zhang`, catalog `sean_zhang_catalog`, warehouse `Serverless Starter Warehouse` (`16ad82bead3f55b5`). Statuses come from `~/Projects/gsk/_decks/jiajie/research/databricks_playbook.md` section 6, which was checked against the Azure release notes up to 19 Oct 2026. Recheck any status you are unsure of with `databricks:databricks-docs`.
 
