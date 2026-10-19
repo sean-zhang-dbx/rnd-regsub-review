@@ -1,14 +1,15 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAnalyticsQuery } from '@databricks/appkit-ui/react';
+import { sql } from '@databricks/appkit-ui/js';
 import { REVIEWER_FULL } from '../lib/format';
 import { postSignoff } from './api';
 import type { SignoffAction } from './types';
 
 /*
  * Review state comes from `review_signoffs` (the `signoffs` query), so a reload keeps it and
- * resetting the table resets the demo. Successful writes in this session are added locally at once,
- * because the analytics plugin may serve a cached `signoffs` result for a while.
+ * resetting the table resets the demo. The analytics plugin caches results by parameters, so each page
+ * load sends a fresh nonce. Successful writes in this session are added locally at once.
  */
 export interface ReviewRow {
   sentence_id: string;
@@ -30,7 +31,8 @@ interface Review {
 const ReviewContext = createContext<Review | null>(null);
 
 export function ReviewProvider({ children }: { children: ReactNode }) {
-  const q = useAnalyticsQuery('signoffs', {});
+  const [nonce] = useState(() => String(Date.now()));
+  const q = useAnalyticsQuery('signoffs', { nonce: sql.string(nonce) });
   const [local, setLocal] = useState<ReviewRow[]>([]);
 
   const record = useCallback(async (ids: string[], action: SignoffAction) => {

@@ -113,11 +113,14 @@ declare module "@databricks/appkit-ui/react" {
       };
     signoffs: {
         name: "signoffs";
-        parameters: Record<string, never>;
+        parameters: {
+          /** STRING - use sql.string() */
+          nonce: SQLStringMarker;
+        };
         result: Array<{
           /** @sqlType STRING */
           sentence_id: string;
-          /** approved, sent_to_labelling or sent_to_writer */
+          /** approved, sent_to_labelling, sent_to_writer or notified_owner (sentence_id then holds the document file path) */
           action: string;
           /** @sqlType STRING */
           reviewer: string;
