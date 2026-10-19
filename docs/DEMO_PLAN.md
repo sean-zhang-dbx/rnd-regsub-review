@@ -119,7 +119,7 @@ All tables are in `sean_zhang_catalog.rnd_regsub_review`. The data is synthetic,
 | `wording_checks` | sentence_id string, table_version bigint, verdict string ('ok','needs_writer'), reason string, model string, trace_id string, checked_at timestamp | cache | Written by the wording-check route and read as the fallback |
 | Volume `source_docs` | 6 synthetic PDFs (3 to 8 pages each): `LMN-301_Protocol_v3.pdf`, `LMN-301_SAP_v2.pdf`, `LMN-4471_Investigators_Brochure_v7.pdf`, `LMN-4471_Advisory_Briefing_Book_draft.pdf`, `LMN-4471_DSUR_2025.pdf`, `LMN-301_Plain_Language_Summary_draft.pdf` | 6 files | IB and briefing book quote the old result (412 of 618, 66.7%, "about two-thirds"). Others mention LMN-301 but not that result |
 | `doc_chunks` | chunk_id string, file_path string, doc_title string, page int, chunk_text string | about 100 to 200 | From `ai_parse_document` then chunking; Change Data Feed on, for a Delta Sync index |
-| `review_signoffs` | signoff_id string, sentence_id string, action string ('approved','sent_to_labelling','sent_to_writer'), reviewer string, table_version bigint, signed_at timestamp | starts empty | Written by the approve route. The reviewer is "Dr. Amara Okafor, Regulatory Review" (fictional) |
+| `review_signoffs` | signoff_id string, sentence_id string, action string ('approved','sent_to_labelling','sent_to_writer','notified_owner'), reviewer string, table_version bigint, signed_at timestamp | starts empty | Written by the approve route, and by "Notify owners" in beat 1 (action `notified_owner`, one row per untracked document, with the document's `file_path` in `sentence_id`; decision: Sean, 19 Oct 2026). The reviewer is "Dr. Amara Okafor, Regulatory Review" (fictional) |
 
 **Must be true** (backend runs these as checks and reports the results):
 1. `efficacy_primary` history shows the earlier version with treatment responders 412 and the current version with 409. Placebo is 287/609 in both.
@@ -149,7 +149,7 @@ All tables are in `sean_zhang_catalog.rnd_regsub_review`. The data is synthetic,
 |---|---|---|
 | `POST /api/wording-check` | `{ sentence_ids: string[] }` | `[{ sentence_id, verdict: 'ok'|'needs_writer', reason, model, trace_id, cached: boolean }]`. Calls `databricks-claude-sonnet-5-5` through Unity Gateway at temperature 0, with an MLflow trace. Falls back to `wording_checks` if the call takes more than 8 s |
 | `POST /api/search-untracked` | `{ old_values: string[] }` (from `impact_list`) | `[{ doc_title, file_path, page, snippet, score }]`, from a hybrid query on `doc_chunks_index`. Results with no match on an old value are filtered out. Cached on first call |
-| `POST /api/signoff` | `{ sentence_ids: string[], action }` | `{ written: number }` |
+| `POST /api/signoff` | `{ sentence_ids: string[], action }` (for `notified_owner`, `sentence_ids` are document `file_path`s from `search_untracked`) | `{ written: number }` |
 | `POST /api/genie/ask` | `{ question: string }` | `{ answer_text, sql, rows, conversation_url }` (Genie Conversation API, or the AppKit Genie plugin if one exists; check with `npx @databricks/appkit docs`) |
 
 **Links:** `config/demo-links.json` has these keys:
