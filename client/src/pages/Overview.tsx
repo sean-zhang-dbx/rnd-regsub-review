@@ -31,8 +31,8 @@ export function Overview() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-6 md:px-10">
       <div className="rounded-[var(--radius-page)] bg-page px-8 py-6 shadow-page">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-h-[3.25rem] max-w-3xl">
+        <header className="flex items-start justify-between gap-6">
+          <div className="min-h-[3.25rem] min-w-0 flex-1">
             <QueryBoundary
               query={summary}
               skeleton={
@@ -59,8 +59,8 @@ export function Overview() {
               <DbxLink linkKey="beat1" label="Table history in Databricks" />
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <Button size="lg" onClick={review.start} disabled={review.phase === 'recomputing' || done}>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <Button size="lg" className="min-w-[15rem]" onClick={review.start} disabled={review.phase === 'recomputing' || done}>
               {review.phase === 'recomputing'
                 ? 'Recomputing from source'
                 : done
@@ -118,7 +118,15 @@ function QcTable() {
       .sort((a, b) => order.indexOf(a.fig_key) - order.indexOf(b.fig_key));
 
   return (
-    <table className="w-full border-collapse text-sm">
+    <table className="w-full table-fixed border-collapse text-sm">
+      <colgroup>
+        <col className="w-[14%]" />
+        <col className="w-[34%]" />
+        <col className="w-[18%]" />
+        <col className="w-[16%]" />
+        <col className="w-[7%]" />
+        <col className="w-[11%]" />
+      </colgroup>
       <thead>
         <tr>
           <th className={TH}>Location</th>
@@ -191,7 +199,7 @@ function QcRow({
           </>
         ) : null;
       return (
-        <span key={f.fig_key} className="whitespace-nowrap">
+        <span key={f.fig_key}>
           {FIG_LABEL[f.fig_key] ?? f.fig_key} {flip(f, i)}
           {pct}
           {ci}
@@ -232,7 +240,7 @@ function QcRow({
       className={`cursor-pointer border-b border-border hover:bg-cited-soft ${flagged ? 'bg-attention-soft' : ''}`}
       onClick={onOpen}
     >
-      <td className={`${TD} whitespace-nowrap`}>
+      <td className={TD}>
         <Link
           to={`/section/${row.section}`}
           className="text-cited underline underline-offset-4"
@@ -258,7 +266,7 @@ function QcRow({
         {flagged && verdict ? <p className="mt-1 max-w-xs text-[13px] leading-snug text-ink">{verdict.reason}</p> : null}
       </td>
       <td className={TD}>{row.kind === 'label' ? 'Labelling' : 'Writer'}</td>
-      <td className={`${TD} whitespace-nowrap ${statusClass}`}>{status}</td>
+      <td className={`${TD} ${statusClass}`}>{status}</td>
     </tr>
   );
 }
