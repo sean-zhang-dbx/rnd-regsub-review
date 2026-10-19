@@ -19,7 +19,7 @@ createRoot(document.getElementById('root')!).render(
        * <Toaster /> can swap the indicator for useResourceStatusToaster().
        */}
       <ResourceStatusProvider>
-        <ResourceStatusIndicator />
+        <ResourceStatusIndicator position="bottom-left" />
         <App />
       </ResourceStatusProvider>
     </ErrorBoundary>

@@ -217,7 +217,10 @@ export function Viewer() {
           {/* Source table page */}
           <section aria-label={`${TLF.efficacy_primary} output`} className="flex min-h-0 flex-col border-r border-line">
             <PaneBar>
-              <span className="truncate font-medium text-ink">{TLF.efficacy_primary} Primary efficacy</span>
+              <span className="truncate font-medium text-ink">
+                {TLF.efficacy_primary}
+                <span className="hidden min-[1400px]:inline"> Primary efficacy</span>
+              </span>
               <div role="radiogroup" aria-label="Table version" className="flex overflow-hidden rounded-[var(--radius)] border border-line text-xs">
                 {([3, 4] as const).map((v) => (
                   <button
@@ -226,14 +229,15 @@ export function Viewer() {
                     role="radio"
                     aria-checked={tlfVersion === v}
                     onClick={() => setTlfVersion(v)}
-                    className={`px-2.5 py-1 ${tlfVersion === v ? 'bg-cited text-page' : 'bg-page text-ink-muted hover:bg-desk'}`}
+                    className={`px-2.5 py-1 whitespace-nowrap ${tlfVersion === v ? 'bg-cited text-page' : 'bg-page text-ink-muted hover:bg-desk'}`}
                   >
-                    v{v} {v === 4 ? 'Current' : 'Superseded'}
+                    v{v}
+                    <span className="hidden min-[1400px]:inline"> {v === 4 ? 'Current' : 'Superseded'}</span>
                   </button>
                 ))}
               </div>
             </PaneBar>
-            <div className="min-h-0 flex-1 overflow-auto bg-desk p-6">
+            <div className="min-h-0 flex-1 overflow-auto bg-desk px-4 py-6">
               <QueryBoundary
                 query={tlf}
                 skeleton={<Skeleton className="mx-auto h-80 w-full max-w-[34rem]" />}
@@ -268,8 +272,9 @@ export function Viewer() {
           </section>
 
           {/* Information panel */}
-          <aside aria-label="Information" className="min-h-0 overflow-y-auto bg-page">
-            <div className="flex h-10 items-center border-b border-line px-4 text-[15px] font-semibold text-ink">Information</div>
+          <aside aria-label="Information" className="flex min-h-0 flex-col bg-page">
+            <div className="flex h-10 shrink-0 items-center border-b border-line px-4 text-[15px] font-semibold text-ink">Information</div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
             {finding ? (
               <div className="border-b border-line px-4 py-4">
                 <h2 className="text-sm font-semibold text-ink">Finding</h2>
@@ -307,17 +312,6 @@ export function Viewer() {
               </div>
             ) : null}
             {done && affected.length > 0 ? <WordingComment check={wording} quote={quote} flaggedId={flaggedId} /> : null}
-            <GenieComment onAnswered={() => setAnswered(true)} />
-            <ApproveComment
-              figureCount={figureIds.length}
-              recomputed={done}
-              answered={answered}
-              approving={approving}
-              approveError={approveError}
-              onApprove={() => void approve()}
-              approved={review.approved}
-              version={sourceVersion}
-            />
             <div className="px-4 py-4">
               <h2 className="text-sm font-semibold text-ink">Version history, {TLF.efficacy_primary}</h2>
               <table className="mt-2 w-full text-sm">
@@ -350,6 +344,21 @@ export function Viewer() {
               <div className="mt-2">
                 <DbxLink linkKey="beat1" label="Table history in Databricks" />
               </div>
+            </div>
+            </div>
+            {/* Ask and approve stay in view while the panel above scrolls. */}
+            <div className="max-h-[60%] shrink-0 overflow-y-auto border-t border-line shadow-[0_-6px_12px_-8px_rgba(16,24,40,0.18)]">
+              <GenieComment onAnswered={() => setAnswered(true)} />
+              <ApproveComment
+                figureCount={figureIds.length}
+                recomputed={done}
+                answered={answered}
+                approving={approving}
+                approveError={approveError}
+                onApprove={() => void approve()}
+                approved={review.approved}
+                version={sourceVersion}
+              />
             </div>
           </aside>
         </div>

@@ -92,13 +92,12 @@ export function WordingComment({
   const cached = results.some((r) => r.cached);
   return (
     <MarginComment author="Wording check" via={via} tone={flagged.length > 0 ? 'attention' : 'recomputed'} links={links}>
-      <p>
-        Wording checked against the new figures.
-        {flagged.length === 0 ? ' It still holds wherever a figure changed.' : null}
-      </p>
+      {flagged.length === 0 ? <p>The wording still holds wherever a figure changed.</p> : null}
       {flagged.map((r) => (
         <div key={r.sentence_id} id={flaggedId === r.sentence_id ? 'flag' : undefined} className="space-y-1">
-          <p className="font-serif text-[15px] italic leading-snug text-ink-muted">{quote(r.sentence_id)}</p>
+          <p className="line-clamp-2 font-serif text-[15px] italic leading-snug text-ink-muted" title={quote(r.sentence_id)}>
+            {quote(r.sentence_id)}
+          </p>
           <p>{r.reason}</p>
         </div>
       ))}
@@ -197,9 +196,13 @@ export function GenieComment({ onAnswered }: { onAnswered: () => void }) {
         <p className="text-ink-muted">The Genie Agent returned no answer. Rephrase the question and ask again.</p>
       ) : null}
       {parts && answer.data ? (
-        <div className="space-y-1.5">
+        <div className="mt-3 space-y-1.5">
           <p className="text-lg font-semibold leading-tight">{parts.head}</p>
-          {parts.note ? <p className="text-[13px] leading-snug text-ink-muted">{parts.note}</p> : null}
+          {parts.note ? (
+            <p className="line-clamp-3 text-[13px] leading-snug text-ink-muted" title={parts.note}>
+              {parts.note}
+            </p>
+          ) : null}
           <details>
             <summary className="cursor-pointer text-xs text-cited underline underline-offset-4">Show SQL</summary>
             <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed">

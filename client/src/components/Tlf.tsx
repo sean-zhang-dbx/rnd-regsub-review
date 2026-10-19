@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TlfCell } from '../data/types';
 import { FIG_CELL, STUDY } from '../lib/format';
@@ -39,7 +39,8 @@ export function TlfPage({ cells, version, matched, animate, currentKeys, certifi
   );
 
   return (
-    <div className="tlf mx-auto w-full max-w-[34rem] bg-page px-8 pt-6 pb-8 text-ink shadow-page">
+    <FitWidth width={480}>
+    <div className="tlf w-[30rem] bg-page px-6 pt-6 pb-7 text-ink shadow-page">
       <div className="flex justify-between">
         <span>{STUDY}</span>
         <span>Page 1 of 1</span>
@@ -96,6 +97,27 @@ export function TlfPage({ cells, version, matched, animate, currentKeys, certifi
         <p>
           Source: ADEFF. {certified} Version {version}.
         </p>
+      </div>
+    </div>
+    </FitWidth>
+  );
+}
+
+/* A SAS output page has a fixed width: scale it down to the pane instead of reflowing it. */
+function FitWidth({ width, children }: { width: number; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setZoom(Math.min(1, e.contentRect.width / width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
+  return (
+    <div ref={ref} className="w-full">
+      <div className="mx-auto w-fit" style={{ zoom }}>
+        {children}
       </div>
     </div>
   );

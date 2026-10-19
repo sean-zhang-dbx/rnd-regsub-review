@@ -1,7 +1,7 @@
 import type { DocType } from '../data/types';
 
 /** The reviewer is fictional. The sign-off route records the same name server-side. */
-export const REVIEWER_SHORT = 'A. Okafor';
+export const REVIEWER_SHORT = 'Dr. Amara Okafor';
 export const STUDY = 'LMN-301';
 
 export function docLabel(docType: DocType, section: string): string {
@@ -41,7 +41,7 @@ export function formatDay(iso: string): string {
 }
 
 export function formatClock(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
 }
 
 /** TLF IDs for the certified tables. The tables play the role of the TLFs (tables, listings, figures). */
@@ -110,4 +110,4 @@ export function docMeta(docType: string) {
   return DOC_META[docType] ?? DOC_META.csr;
 }
 
-export const SEQUENCE = 'Sequence 0003';
+export const SEQUENCE = 'Sequence 0001';

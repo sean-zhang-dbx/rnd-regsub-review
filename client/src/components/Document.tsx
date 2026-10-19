@@ -177,7 +177,7 @@ function Figure({
         </span>
       </HoverCardTrigger>
       <HoverCardContent
-        className="w-[22rem] font-sans"
+        className="w-[20rem] font-sans"
         side="bottom"
         align="start"
         collisionBoundary={boundary ?? undefined}
@@ -221,11 +221,14 @@ export function CitationCard({ citationId, sourceVersion }: { citationId: string
         Row {d.row_key}, column {d.column_name}
       </p>
       <p className="text-sm text-ink">
-        Certified by {d.certified_by}, {formatDateUtc(d.certified_at)}
+        Validated and released by {d.certified_by}, {formatDateUtc(d.certified_at)}
       </p>
-      <pre className="whitespace-pre-wrap break-all rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed text-ink">
-        {d.query_sql}
-      </pre>
+      <details>
+        <summary className="cursor-pointer text-xs text-cited underline underline-offset-4">Show query</summary>
+        <pre className="mt-1.5 whitespace-pre-wrap break-all rounded-[var(--radius)] bg-muted p-2 font-mono text-xs leading-relaxed text-ink">
+          {d.query_sql}
+        </pre>
+      </details>
       <DbxLink linkKey="beat2" label="Table lineage in Databricks" />
     </div>
   );

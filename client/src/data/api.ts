@@ -19,8 +19,8 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return (await res.json()) as T;
 }
 
-export function postWordingCheck(sentenceIds: string[]): Promise<WordingCheckResult[]> {
-  return postJson('/api/wording-check', { sentence_ids: sentenceIds });
+export function postWordingCheck(sentenceIds: string[], preferCached = false): Promise<WordingCheckResult[]> {
+  return postJson('/api/wording-check', { sentence_ids: sentenceIds, prefer_cached: preferCached });
 }
 
 export function postSearchUntracked(oldValues: string[]): Promise<UntrackedHit[]> {

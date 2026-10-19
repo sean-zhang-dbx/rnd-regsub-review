@@ -230,6 +230,8 @@ export async function warmWordingCheck() {
 export function registerWordingCheck(app: Application) {
   app.post('/api/wording-check', async (req: Request, res: Response) => {
     const ids = (req.body as { sentence_ids?: unknown })?.sentence_ids;
+    /* After a reload the review is already recorded: read the saved verdicts instead of calling the model again. */
+    const preferCached = (req.body as { prefer_cached?: unknown })?.prefer_cached === true;
     if (!Array.isArray(ids) || ids.length === 0 || ids.length > 25 || !ids.every((i) => typeof i === 'string' && /^[\w.\-]+$/.test(i))) {
       res.status(400).json({ error: 'sentence_ids must be a non-empty array of sentence ids' });
       return;
@@ -241,7 +243,7 @@ export function registerWordingCheck(app: Application) {
       const results = await Promise.all(
         (ids as string[]).map((id) => {
           const s = byId.get(id);
-          return s ? checkOne(s, cits, cur, version) : cachedResult(id, version);
+          return s && !preferCached ? checkOne(s, cits, cur, version) : cachedResult(id, version);
         }),
       );
       res.json(results);

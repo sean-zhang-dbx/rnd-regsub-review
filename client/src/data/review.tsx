@@ -80,7 +80,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   }, [impactQ.data]);
   const affectedIds = affected.map((r) => r.sentence_id);
   const done = phase === 'done';
-  const wording = useAsync(() => postWordingCheck(affectedIds), done && affectedIds.length > 0);
+  const wording = useAsync(() => postWordingCheck(affectedIds, !animated), done && affectedIds.length > 0);
   const verdicts = useMemo(() => new Map((wording.data ?? []).map((r) => [r.sentence_id, r])), [wording.data]);
   const values = useMemo(
     () => (recomputeRows ? Object.fromEntries(recomputeRows.map((r) => [r.fig_key, r.value])) : null),

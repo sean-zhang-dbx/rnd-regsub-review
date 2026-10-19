@@ -100,7 +100,7 @@ export function Overview() {
 /* ---------- Dossier tree ---------- */
 
 const TREE: { module: string; title: string; docs: { docType: string; section: string; label: string }[] }[] = [
-  { module: 'Module 1', title: 'Administrative information', docs: [{ docType: 'label', section: '14', label: '1.14 Prescribing Information' }] },
+  { module: 'Module 1', title: 'Administrative', docs: [{ docType: 'label', section: '14', label: '1.14 Prescribing Information' }] },
   {
     module: 'Module 2',
     title: 'Summaries',
@@ -219,10 +219,10 @@ function VersionPill({ v, current }: { v: number; current: boolean }) {
 function ChangeNotice() {
   const summary = useRestatementSummary();
   return (
-    <section aria-label="Change notice" className="rounded-[var(--radius)] border border-line border-l-4 border-l-attention bg-page px-5 py-4">
+    <section aria-label="TLF re-delivery" className="rounded-[var(--radius)] border border-line border-l-4 border-l-attention bg-page px-5 py-4">
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
-          <div className="text-xs font-medium text-attention">Change notice</div>
+          <div className="text-xs font-medium text-attention">TLF re-delivery</div>
           <QueryBoundary
             query={summary}
             skeleton={<Skeleton className="mt-1 h-6 w-2/3" />}
@@ -269,7 +269,7 @@ type Filter = 'all' | 'open' | 'person' | 'recomputed' | 'approved';
 const FILTERS: { key: Filter; label: string; match: (s: QcStatus) => boolean }[] = [
   { key: 'all', label: 'All', match: () => true },
   { key: 'open', label: 'Ready for review', match: (s) => s === 'open' || s === 'checking' },
-  { key: 'person', label: 'Needs a person', match: (s) => NEEDS_PERSON.includes(s) },
+  { key: 'person', label: 'With a person', match: (s) => NEEDS_PERSON.includes(s) },
   { key: 'recomputed', label: 'Recomputed', match: (s) => s === 'recomputed' },
   { key: 'approved', label: 'Approved', match: (s) => s === 'approved' },
 ];
@@ -447,12 +447,15 @@ function QcRow({ row, figs, status, onOpen }: { row: ImpactRow; figs: ImpactRow[
       <td className={TD}>
         <Link
           to={`/review/${row.sentence_id}`}
-          className="font-medium text-cited hover:underline"
+          aria-label={`${docLabel(row.doc_type, row.section)}, sentence ${row.seq}`}
+          className="font-medium whitespace-nowrap text-cited hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
-          {docLabel(row.doc_type, row.section)}, sentence {row.seq}
+          {docLabel(row.doc_type, row.section)}
         </Link>
-        <div className="text-xs text-ink-muted">{docMeta(row.doc_type).draft}</div>
+        <div className="text-xs text-ink-muted">
+          Sentence {row.seq}, {docMeta(row.doc_type).draft}
+        </div>
       </td>
       <td className={TD}>
         {parts.map((p, i) => (
@@ -539,6 +542,7 @@ function Reference({ search, typed, oldValues }: { search: ReferenceSearch; type
     setNotifyError(null);
     try {
       await review.record(paths, 'notified_owner');
+      requestAnimationFrame(() => document.getElementById('notified')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
     } catch (e) {
       setNotifyError(e instanceof Error ? e.message : 'The request failed.');
     } finally {
@@ -628,7 +632,9 @@ function Reference({ search, typed, oldValues }: { search: ReferenceSearch; type
             ) : null}
             <div className="mt-3 flex flex-wrap items-center gap-4">
               {review.notified ? (
-                <p className="text-sm font-medium text-recomputed">Owners notified at {formatClock(review.notified.at)}.</p>
+                <p id="notified" className="text-sm font-medium text-recomputed">
+                  Owners notified at {formatClock(review.notified.at)}.
+                </p>
               ) : (
                 <Button
                   variant="outline"
