@@ -24,5 +24,6 @@ Shared, not owned by this demo: SQL warehouse `Serverless Starter Warehouse` (`1
 | Table | `sean_zhang_catalog.rnd_regsub_review.wording_check_payload` (inference table of the model service) | 96039b9e-31de-4c8c-8af0-b88748dc2142 | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/wording_check_payload | 2026-10-19 |
 | Genie Agent | Regsub Review: LMN-301 certified tables | 01f1cbc34f071871a047d7a3489ce6d3 | https://fevm-sean-zhang.cloud.databricks.com/genie/rooms/01f1cbc34f071871a047d7a3489ce6d3 | 2026-10-19 |
 | MLflow experiment | `/Users/sean.zhang@databricks.com/rnd_regsub_review` | 1752849192687853 | https://fevm-sean-zhang.cloud.databricks.com/ml/experiments/1752849192687853 | 2026-10-19 |
+| Databricks App | `rnd-regsub-review` (service principal `2dfcc8b5-6e43-44e9-983d-4cba8cd00c62`: grants from `scripts/grant_app_sp.py` plus EXECUTE on the model service) | | https://rnd-regsub-review-7474654216647582.aws.databricksapps.com | 2026-10-19 |
 
 Notes: the schema has predictive optimization disabled so the Delta versions of `efficacy_primary` stay at 0 to 4. The shared endpoint `databricks-claude-sonnet-5-5` had its legacy AI Gateway inference-table setting touched once during testing and was set back to disabled (`enabled: false`, usage tracking still on); the stray table `gw_payload` was dropped.

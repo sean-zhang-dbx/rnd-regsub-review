@@ -13,8 +13,14 @@ export async function initTracing(): Promise<boolean> {
   if (failed) return false;
   try {
     if (process.env.DATABRICKS_CLIENT_ID) {
-      // Databricks Apps: the runtime injects the service principal credentials.
-      mlflow.init({ trackingUri: 'databricks', experimentId: EXPERIMENT_ID });
+      // Databricks Apps: the runtime injects the service principal credentials. DATABRICKS_HOST
+      // comes without a scheme there, and mlflow-tracing builds the request URL from it as is.
+      const host = process.env.DATABRICKS_HOST ?? '';
+      mlflow.init({
+        trackingUri: 'databricks',
+        experimentId: EXPERIMENT_ID,
+        host: /^https?:\/\//.test(host) ? host : `https://${host}`,
+      });
     } else {
       // Local development: the CLI profile has two entries for this host, so pass the token explicitly.
       const w = ServiceContext.get().client;

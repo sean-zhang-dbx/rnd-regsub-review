@@ -1,3 +1,4 @@
+import { ROOT_CONTEXT, context } from '@opentelemetry/api';
 import type { Application, Request, Response } from 'express';
 import {
   FQ,
@@ -188,12 +189,16 @@ async function checkOne(
     `Changed figures:\n${changes.join('\n') || '(none)'}`;
 
   await initTracing();
-  const span = mlflow.startSpan({
-    name: 'wording_check',
-    spanType: mlflow.SpanType.LLM,
-    inputs: { sentence_id: s.sentence_id, prompt: userContent },
-    attributes: { model_service: MODEL_SERVICE, table_version: version },
-  });
+  // Start from the root context: behind the Apps proxy the active context carries an unsampled
+  // parent, and mlflow-tracing turns a child of an unsampled span into a no-op span.
+  const span = context.with(ROOT_CONTEXT, () =>
+    mlflow.startSpan({
+      name: 'wording_check',
+      spanType: mlflow.SpanType.LLM,
+      inputs: { sentence_id: s.sentence_id, prompt: userContent },
+      attributes: { model_service: MODEL_SERVICE, table_version: version },
+    }),
+  );
   const traceId = span.traceId;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);

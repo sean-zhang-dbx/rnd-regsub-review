@@ -8,3 +8,8 @@ env:
     valueFrom: genie-space
   - name: MLFLOW_EXPERIMENT_ID
     valueFrom: mlflow-experiment
+  # The Apps runtime sets an OTLP endpoint, which makes AppKit register its own global tracer and
+  # HTTP auto-instrumentation. That collides with mlflow-tracing and drops the wording_check traces,
+  # so keep AppKit telemetry off as it is in local development.
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: ''

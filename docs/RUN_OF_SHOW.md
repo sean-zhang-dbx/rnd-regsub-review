@@ -8,7 +8,7 @@ About 6 minutes, for the regulatory section of the Jiajie Zhang call (Tue 20 Oct
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py
    ```
-2. Open the app (the deployed URL in `docs/RESOURCES.md`, or http://localhost:8000) in a browser window about 1440 pixels wide, and wait until the QC log has loaded. This warms the SQL warehouse, so nothing shows "warming up" on the call.
+2. Open the app (https://rnd-regsub-review-7474654216647582.aws.databricksapps.com, or http://localhost:8000 as the fallback) in a browser window about 1440 pixels wide, and wait until the QC log has loaded. This warms the SQL warehouse, so nothing shows "warming up" on the call.
 3. Check that the "Databricks" switch in the top bar is off, and the browser zoom is 100%.
 4. Keep `docs/screenshots/vault/` open in a second window as the fallback.
 
