@@ -16,7 +16,8 @@ const SYSTEM_PROMPT = `You are a regulatory medical-writing checker. A certified
 Rule: if the sentence uses a qualitative or fractional expression (for example "two-thirds", "half", "three-quarters", "majority", "nearly", "more than", "at least", "exceeds a margin") and the new figure now sits on a different side of the value that expression names than the old figure did, the answer is needs_writer. This applies even when the expression is softened with "about". A figure that was at or above the named fraction before and is below it now needs the writer, because only the writer can decide whether the wording still holds.
 If the sentence contains only numbers and neutral wording, or the wording remains true with the new figures, the answer is ok.
 
-Reply with one JSON object and nothing else: {"verdict": "ok" | "needs_writer", "reason": "<one sentence of at most 25 words naming the figure and the expression>"}`;
+Reply with one JSON object and nothing else: {"verdict": "ok" | "needs_writer", "reason": "<reason>"}
+The reason is one plain sentence of at most 22 words. For needs_writer, use this pattern: "<new figure> is below <the named expression>, so '<the phrase in the sentence>' may no longer hold. The writer decides." (use "above" or the matching direction if the figure moved the other way). Name the figure and the expression exactly as "<figure>% is below <fraction>" and quote only the shortest lower-case phrase (for example 'about two-thirds'), never the whole sentence. Name the figure and the expression exactly as "<figure>% is below <fraction>" and quote only the shortest lower-case phrase (for example 'about two-thirds'), never the whole sentence. Do not quote the old figure, do not give decimals of the named fraction, and do not explain the rule. For ok, write one short sentence such as "The wording holds with the new figures."`;
 
 interface SentenceRow {
   sentence_id: string;
@@ -82,7 +83,7 @@ async function callModel(userContent: string, signal: AbortSignal) {
   }>('/ai-gateway/mlflow/v1/chat/completions', {
     body: {
       model: MODEL_SERVICE,
-      max_tokens: 200,
+      max_tokens: 800,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userContent },
@@ -105,24 +106,32 @@ async function callModel(userContent: string, signal: AbortSignal) {
   return { verdict, reason: String(parsed.reason ?? ''), usage: out.usage };
 }
 
-async function persist(r: Result, version: number) {
-  await sqlRows(
-    `MERGE INTO ${FQ}.wording_checks t
-     USING (SELECT :sid AS sentence_id, CAST(:ver AS BIGINT) AS table_version, :verdict AS verdict,
-                   :reason AS reason, :model AS model, :trace AS trace_id,
-                   current_timestamp() AS checked_at) s
+/** One MERGE per request (parallel per-sentence MERGEs conflict), retried once on a concurrent-write conflict. */
+async function persistBatch(rs: Result[], version: number) {
+  if (rs.length === 0) return;
+  const rows = rs.map((_, i) => `SELECT :sid${i}, CAST(:ver AS BIGINT), :verdict${i}, :reason${i}, :model${i}, :trace${i}, current_timestamp()`).join('\nUNION ALL\n');
+  const params = [
+    { name: 'ver', value: String(version) },
+    ...rs.flatMap((r, i) => [
+      { name: `sid${i}`, value: r.sentence_id },
+      { name: `verdict${i}`, value: r.verdict },
+      { name: `reason${i}`, value: r.reason },
+      { name: `model${i}`, value: r.model },
+      { name: `trace${i}`, value: r.trace_id },
+    ]),
+  ];
+  const stmt = `MERGE INTO ${FQ}.wording_checks t
+     USING (SELECT * FROM (${rows}) AS v(sentence_id, table_version, verdict, reason, model, trace_id, checked_at)) s
      ON t.sentence_id = s.sentence_id AND t.table_version = s.table_version
      WHEN MATCHED THEN UPDATE SET *
-     WHEN NOT MATCHED THEN INSERT *`,
-    [
-      { name: 'sid', value: r.sentence_id },
-      { name: 'ver', value: String(version) },
-      { name: 'verdict', value: r.verdict },
-      { name: 'reason', value: r.reason },
-      { name: 'model', value: r.model },
-      { name: 'trace', value: r.trace_id },
-    ],
-  );
+     WHEN NOT MATCHED THEN INSERT *`;
+  try {
+    await sqlRows(stmt, params);
+  } catch (e) {
+    if (!/CONCURRENT|conflict/i.test((e as Error).message)) throw e;
+    await new Promise((ok) => setTimeout(ok, 1500));
+    await sqlRows(stmt, params);
+  }
 }
 
 async function cachedResult(sentenceId: string, version: number): Promise<Result> {
@@ -199,7 +208,6 @@ async function checkOne(
       trace_id: traceId,
       cached: false,
     };
-    void persist(result, version).catch((e) => console.warn('[wording-check] persist failed:', e.message));
     return result;
   } catch (e) {
     span.end({ status: mlflow.SpanStatusCode.ERROR, outputs: { error: (e as Error).message } });
@@ -236,8 +244,9 @@ export function registerWordingCheck(app: Application) {
           return s ? checkOne(s, cits, cur, version) : cachedResult(id, version);
         }),
       );
-      await mlflow.flushTraces().catch(() => undefined);
       res.json(results);
+      void mlflow.flushTraces().catch(() => undefined);
+      void persistBatch(results.filter((r) => !r.cached), version).catch((e) => console.warn('[wording-check] persist failed:', e.message));
     } catch (e) {
       console.error('[wording-check]', e);
       res.status(500).json({ error: (e as Error).message });
