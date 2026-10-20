@@ -133,6 +133,10 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 
 **Say:** "Then Biostatistics re-delivers the primary efficacy table after a late data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."
 
+**If asked what changed in the table itself:** press `D`, then click "What changed, v3 to v4" under the re-delivery card. A saved query opens in the Databricks SQL editor; run it. Delta time travel compares version 3 with version 4 and returns the 5 cells that changed: responders 412 to 409, rate 66.7 to 66.2, difference 19.5 to 19.1, and the CI bounds 14.1 to 13.6 and 25.0 to 24.5. Press `D` again before you go back to the app.
+
+"The table history in Unity Catalog shows that version 4 was written by Biostatistics and when. This query shows the cells that changed, straight from the 2 versions of the table. In production you'd also turn on Change Data Feed, so each re-delivery records its before and after rows."
+
 **Do:** scroll to "Reference documents outside the dossier".
 
 **Say:** "The Investigator's Brochure and the briefing book were written outside this workflow, so they have no citation records. AI Search finds the old result in their parsed text, on page 4 and page 6, and the app notifies their owners without editing either document. The chart we saw a minute ago is in the same briefing book."

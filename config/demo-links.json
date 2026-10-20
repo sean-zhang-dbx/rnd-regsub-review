@@ -9,5 +9,6 @@
   "beat3_traces": { "label": "MLflow experiment rnd_regsub_review", "url": "https://fevm-sean-zhang.cloud.databricks.com/ml/experiments/1752849192687853/traces" },
   "beat4_genie": { "label": "Genie Agent: Regsub Review: LMN-301 certified tables", "url": "https://fevm-sean-zhang.cloud.databricks.com/genie/rooms/01f1cbc34f071871a047d7a3489ce6d3" },
   "beat4_signoffs": { "label": "review_signoffs table", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_regsub_review/review_signoffs" },
-  "app": { "label": "App rnd-regsub-review", "url": "https://fevm-sean-zhang.cloud.databricks.com/apps/rnd-regsub-review" }
+  "app": { "label": "App rnd-regsub-review", "url": "https://fevm-sean-zhang.cloud.databricks.com/apps/rnd-regsub-review" },
+  "beat3_diff": { "label": "Saved query: Table 14.2.1, what changed, v3 to v4", "url": "https://fevm-sean-zhang.cloud.databricks.com/sql/editor/52a54fd6-66ce-4989-b6ef-beaf7a6cbe1f" }
 }

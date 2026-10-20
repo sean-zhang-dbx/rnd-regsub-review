@@ -254,6 +254,7 @@ function ChangeNotice() {
           </QueryBoundary>
           <div className="mt-1">
             <DbxLink linkKey="beat1" label="Table history in Databricks" />
+            <DbxLink linkKey="beat3_diff" label="What changed, v3 to v4" className="ml-4" />
           </div>
         </div>
         <RecomputeButton />
