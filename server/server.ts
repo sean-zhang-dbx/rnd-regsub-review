@@ -6,6 +6,7 @@ import { registerDraftSection } from './routes/draftSection';
 import { registerGenie } from './routes/genie';
 import { registerSearchUntracked } from './routes/searchUntracked';
 import { registerSignoff } from './routes/signoff';
+import { registerSources } from './routes/sources';
 import { registerWordingCheck, warmWordingCheck } from './routes/wordingCheck';
 
 createApp({
@@ -20,6 +21,7 @@ createApp({
       registerDraftRun(app);
       registerAssistant(app);
       registerDocuments(app);
+      registerSources(app);
     });
     void warmWordingCheck();
   },

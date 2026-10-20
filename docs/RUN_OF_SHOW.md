@@ -18,9 +18,9 @@ About 8 minutes, for the regulatory section of the Jiajie Zhang call (Tue 20 Oct
 
 ## The walk
 
-The demo follows the workflow bar under the app header: 1 Parse sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off. The lines to say are in `docs/SCRIPT.md`, section "Demo"; this list is the click path.
+The demo follows the workflow bar under the app header: 1 Sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off. The lines to say are in `docs/SCRIPT.md`, section "Demo"; this list is the click path.
 
-1. **Parse sources (1 minute).** Click "1 Parse sources": Document parsing opens on the SAP, page 2. Hover the text block. Pick the advisory briefing book, go to page 9, hover the chart (figure, confidence 0.94, values 66.7 and 47.1). Optionally show JSON.
+1. **Sources (1 minute 15 seconds).** Click "1 Sources": the sources of CSR 11.4.1, with structured data on the left (Table 14.2.1, certified, built from adeff and adsl by Unity Catalog lineage), the section in the middle, and the parsed protocol and SAP on the right. Hover sentence 2, then sentence 1, then click "Open the parsed page" under the Protocol passage (page 3, endpoints table outlined). If there is time, open the briefing book, page 9, and hover the chart.
 2. **Draft (1 minute 15 seconds).** Click "Next: Draft": CSR 11.4.1 opens against Table 14.2.1 v3, with the Drafting workflow outlined. Click "Draft this section"; 5 steps stream in over about 12 seconds (SAP page in the middle pane, placeholders, figures filled from v3, code check and judge). Point to "about two-thirds".
 3. **Re-delivery and QC (1 minute).** Click "Next: Re-delivery and QC": the QC log with the re-delivery card and the 7 findings. Scroll to "Reference documents outside the dossier" (brochure p.4, briefing book p.6). Optionally "Open the parsed page".
 4. **Review and sign-off (2 minutes 45 seconds).** Click "Next: Review and sign-off": hover "412", click "Recompute from Table 14.2.1 v4" (figures flip, "about two-thirds" turns amber), open the assistant and ask the first suggested question (409 of 618 with SQL), close it, approve, close the viewer. Press `D` and open a judged `wording_check` trace from the rehearsal.

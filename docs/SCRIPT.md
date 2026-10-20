@@ -27,7 +27,7 @@ Earlier in the day:
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py
    ```
-2. Open the app in a window about 1440 pixels wide and wait for the QC log to load. This warms the SQL warehouse. Then click "1 Parse sources" so the demo starts there.
+2. Open the app in a window about 1440 pixels wide and wait for the QC log to load. This warms the SQL warehouse. Then click "1 Sources" so the demo starts there.
 3. Check that the "Databricks" switch in the top bar is off and the browser zoom is 100%.
 4. Open the deck in presenter view, and keep `docs/screenshots/vault/` open as the fallback.
 
@@ -61,7 +61,7 @@ Keep in reserve, and use it only if Jiajie raises authoring maturity: a June 202
 
 ## Slide 6: the scenario (15 seconds)
 
-**Say:** "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. I'll show it in the 4 steps you'll see across the top of the app: the sources are parsed, the section is drafted from them, the table is re-delivered, and the reviewer checks and signs off."
+**Say:** "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. I'll show it in the 4 steps you'll see across the top of the app: the sources the section is built from, the draft itself, the table is re-delivered, and the reviewer checks and signs off."
 
 Switch to the app.
 
@@ -69,22 +69,25 @@ Switch to the app.
 
 ## Demo
 
-The demo follows the workflow bar across the top of the app: **1 Parse sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off**. "Next" at the right of the bar moves to the following step.
+The demo follows the workflow bar across the top of the app: **1 Sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off**. "Next" at the right of the bar moves to the following step.
 
-### Step 1. Parse sources (1 minute)
+### Step 1. Sources (1 minute 15 seconds)
 
-![Step 1: the SAP, page 2, with a box for each element and the parsed content on the right.](screenshots/workflow/step1.png)
-*Step 1: the SAP, page 2, with a box for each element and the parsed content on the right.*
+![Step 1: the sources of CSR 11.4.1, structured on the left and unstructured on the right, with sentence 2 hovered.](screenshots/workflow/step1.png)
+*Step 1: the sources of CSR 11.4.1, structured on the left and unstructured on the right, with sentence 2 hovered.*
 
-**Do:** click "1 Parse sources" in the workflow bar. Document parsing opens on the SAP, page 2: the page on the left with a coloured box for each element, and the parsed content on the right. Hover the text block.
+**Do:** click "1 Sources" in the workflow bar. "Sources for CSR 11.4.1" opens in 3 columns: structured data on the left, the section in the middle, and the parsed documents on the right. Hover the second sentence, "In the primary analysis…".
 
-**Say:** "Before anything is drafted, the source documents are parsed. ai_parse_document turns each PDF into elements with their type, position on the page and confidence, and the content as text and tables. This is the SAP section the draft will use."
+**Say:** "A CSR section is put together from 2 kinds of source. On the left is structured data in Unity Catalog: Table 14.2.1, certified by Biostatistics, and, through lineage, the 2 analysis datasets it's built from. On the right are documents, the protocol and the SAP, which ai_parse_document has parsed. When I hover a sentence you can see what it draws on. This one takes its 9 figures from cells of the certified table and its method from the SAP."
 
-**Do:** in the document picker, choose the advisory briefing book, then go to page 9. Hover the chart.
+**Do:** hover the first sentence. The Protocol page 3 table and the SAP page 2 passage light up. Then click "Open the parsed page" under the Protocol passage.
 
-**Say:** "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1."
+![Step 1, continued: the Protocol page 3 opened from the Sources page, with the endpoints table outlined.](screenshots/workflow/step1_parsed.png)
+*Step 1, continued: the Protocol page 3 opened from the Sources page, with the endpoints table outlined.*
 
-**Do:** optionally switch to JSON for a second, then back to Rendered.
+**Say:** "This is the page as ai_parse_document sees it: each element with its type, its place on the page and a confidence score, and the content as text and tables. The endpoint table came through as a table, so the draft can quote the endpoint from it."
+
+**If there is time:** in the document picker, choose the advisory briefing book, go to page 9 and hover the chart. "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1."
 
 ### Step 2. Draft (1 minute 15 seconds)
 
@@ -95,7 +98,7 @@ The demo follows the workflow bar across the top of the app: **1 Parse sources, 
 
 **When step 1 finishes,** the SAP page opens in the middle pane with the passage the draft uses outlined in blue.
 
-**Say:** "The workflow starts where a writer would, with the protocol and the SAP we just saw parsed, so it takes the endpoint definition from the SAP and shows where it came from."
+**Say:** "The workflow starts where a writer would, with the sources we just saw. It takes the endpoint definition from the parsed SAP, shows where on the page it came from, and finds the certified table in Unity Catalog."
 
 **When step 3 appears,** point to the grey placeholders.
 
@@ -181,7 +184,7 @@ The trace from the live run has no scores yet, because the judges run after the 
 
 Cut in this order, about 3 minutes in total:
 
-1. Skip the optional second assistant question in demo step 4, and the JSON view in step 1.
+1. Skip the optional second assistant question in demo step 4, and the chart in step 1.
 2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
 3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
 4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.

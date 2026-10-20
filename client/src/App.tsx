@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import { Stepper } from './components/Stepper';
 import { Documents } from './pages/Documents';
 import { Overview } from './pages/Overview';
+import { Sources } from './pages/Sources';
 import { Viewer } from './pages/Viewer';
 import { REVIEWER_SHORT, STUDY } from './lib/format';
 import { ReviewProvider, useReview } from './data/review';
@@ -107,6 +108,7 @@ const router = createBrowserRouter([
       { path: '/', element: <Overview /> },
       { path: '/review/:sentenceId', element: <Viewer /> },
       { path: '/documents', element: <Documents /> },
+      { path: '/sources', element: <Sources /> },
       { path: '/section/:section', element: <SectionRedirect /> },
     ],
   },

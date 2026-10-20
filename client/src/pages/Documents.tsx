@@ -54,7 +54,7 @@ const TYPE: Record<string, { label: string; color: string }> = {
   page_footer: { label: 'Page footer', color: '#c98a1e' },
   page_number: { label: 'Page number', color: '#c98a1e' },
 };
-const typeOf = (t: string) => TYPE[t] ?? { label: t, color: '#5b6b80' };
+export const typeOf = (t: string) => TYPE[t] ?? { label: t, color: '#5b6b80' };
 
 async function getJson<T>(url: string): Promise<T> {
   const r = await fetch(url);
@@ -108,6 +108,7 @@ export function Documents() {
   const file = params.get('file') ?? docs.data?.find((d) => /Briefing/.test(d.file_path))?.file_path ?? docs.data?.[0]?.file_path ?? '';
   const page = Number(params.get('page') ?? '1');
   const term = params.get('q') ?? '';
+  const elParam = Number(params.get('el') ?? 'NaN');
   const [view, setView] = useState<'rendered' | 'json'>('rendered');
   const [zoom, setZoom] = useState(1);
   const [hover, setHover] = useState<number | null>(null);
@@ -119,7 +120,7 @@ export function Documents() {
   /* Reload when the document or page changes. */
   useEffect(() => {
     if (file) pageData.retry();
-    setSelected(null);
+    setSelected(Number.isInteger(elParam) ? elParam : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, page, nonce]);
 
@@ -129,6 +130,12 @@ export function Documents() {
     [p, term],
   );
   const active = hover ?? selected ?? matches[0] ?? null;
+
+  useEffect(() => {
+    if (p && Number.isInteger(elParam)) {
+      document.getElementById(`el-${elParam}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [p, elParam]);
 
   useEffect(() => {
     if (matches[0] !== undefined) {
@@ -141,6 +148,7 @@ export function Documents() {
     if (next.file !== undefined) sp.set('file', next.file);
     if (next.page !== undefined) sp.set('page', String(next.page));
     if (next.q === null) sp.delete('q');
+    if (next.file !== undefined || next.page !== undefined) sp.delete('el');
     setParams(sp);
     setNonce((n) => n + 1);
   }
