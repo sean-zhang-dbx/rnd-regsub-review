@@ -4,7 +4,7 @@ Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mik
 
 Jiajie is VP of AI/ML for R&D and previously led AI/ML at Sanofi R&D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.
 
-**Timing: about 14 minutes.** Slides 1 to 6 take about 4 minutes, the demo about 8 (in 4 workflow steps), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
+**Timing: about 15 minutes.** Slides 1 to 6 take about 4 minutes, the demo about 8 and a half (in 4 workflow steps, each told, shown and told), and slides 7 to 10 about 2 and a half. If you are running long, use "If time is short" near the end.
 
 Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
@@ -61,7 +61,7 @@ Keep in reserve, and use it only if Jiajie raises authoring maturity: a June 202
 
 ## Slide 6: the platform (45 seconds)
 
-**Say:** "Here's how the demo maps onto Databricks, in the 4 steps you'll see across the top of the app. The sources are of 2 kinds: Unity Catalog tables, where Table 14.2.1 is certified by Biostatistics with lineage back to the analysis datasets, and the protocol and the SAP, which ai_parse_document turns into elements with their place on the page. The draft is written by a fixed model version through Unity Gateway, and SQL fills every figure from a certified cell. When a table is re-delivered, Delta keeps both versions and the citation records find each sentence that quoted a changed cell. The reviewer then works in a Databricks App, asking a Genie Agent about the tables and AI Search about the documents, and signs off. MLflow traces every model call, and Unity Catalog governs all of it."
+**Say:** "Here's how the demo maps onto Databricks, in the 4 steps you'll see across the top of the app. The sources are of 2 kinds: Unity Catalog tables, where Table 14.2.1 is certified by Biostatistics with lineage back to the analysis datasets, and the protocol and the SAP, which ai_parse_document turns into elements with their place on the page. The draft is written by a fixed model version through Unity Gateway, and SQL fills every figure from a certified cell. When a table is re-delivered, Delta keeps both versions and the citation records find each sentence that quoted a changed cell. The reviewer then works in a Databricks App, asking a Genie Agent about the tables and AI Search about the documents, and signs off. MLflow traces every model call, and Unity Catalog governs all of it. What I'd ask you to watch for in each step is where the reviewer's time goes."
 
 Switch to the app.
 
@@ -71,10 +71,14 @@ Switch to the app.
 
 The demo follows the workflow bar across the top of the app: **1 Sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off**. "Next" at the right of the bar moves to the following step.
 
+Each step follows tell, show, tell. **Tell first** says what you're about to show and why it matters to Jiajie, the **Do** and **Say** lines are the show, and **Tell after** says what it changed. Keep each tell to 1 or 2 sentences, so the steps stay short.
+
 ### Step 1. Sources (1 minute 15 seconds)
 
 ![Step 1: the sources of CSR 11.4.1, structured on the left and unstructured on the right, with sentence 2 hovered.](screenshots/workflow/step1.png)
 *Step 1: the sources of CSR 11.4.1, structured on the left and unstructured on the right, with sentence 2 hovered.*
+
+**Tell first:** "The first question anyone asks about a sentence in a CSR is where it came from, so I'll start with the sources, and you'll see that the answer is both structured data and documents."
 
 **Do:** click "1 Sources" in the workflow bar. "Sources for CSR 11.4.1" opens in 3 columns: structured data on the left, the section in the middle, and the parsed documents on the right. Hover the second sentence, "In the primary analysis…".
 
@@ -89,10 +93,14 @@ The demo follows the workflow bar across the top of the app: **1 Sources, 2 Draf
 
 **If there is time:** in the document picker, choose the advisory briefing book, go to page 9 and hover the chart. "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1."
 
+**Tell after:** "So every sentence in this section traces to a certified cell or a parsed passage, and anything with no source, like 'about two-thirds', is visibly the writer's. The rest of the demo depends on that."
+
 ### Step 2. Draft (1 minute 15 seconds)
 
 ![Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.](screenshots/workflow/step2_done.png)
 *Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.*
+
+**Tell first:** "Next, the draft. Most of a reviewer's checking time goes on the figures, so I want to show a draft in which the model never types a number."
 
 **Do:** click "Next: Draft". CSR 11.4.1 opens as it was drafted against Table 14.2.1 version 3, with the Drafting workflow outlined in the Information panel. Click "Draft this section". 5 steps stream in over about 12 seconds.
 
@@ -110,7 +118,7 @@ The demo follows the workflow bar across the top of the app: **1 Sources, 2 Draf
 
 **Do:** point to the "about two-thirds" sentence on the CSR page.
 
-**Say:** "Because the model never sees the values, it can't describe them in words like 'about two-thirds'. That phrase is the writer's interpretation, and we'll come back to it."
+**Tell after:** "None of these figures can disagree with version 3, because none of them was typed, so the check that takes the most time is done when the draft is written. And because the model never sees the values, it can't write 'about two-thirds'. That phrase is the writer's, and we'll come back to it."
 
 Wording to avoid here: "this page was written by the model". The draft on the page is the seeded Draft 0.4, and the live draft appears in the panel.
 
@@ -118,6 +126,8 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 
 ![Step 3: the re-delivery card and 7 sentences ready for review.](screenshots/workflow/step3.png)
 *Step 3: the re-delivery card and 7 sentences ready for review.*
+
+**Tell first:** "Now the problem from slide 4: the table changes after the text was written. Watch how quickly we find everything the change touched."
 
 **Do:** click "Next: Re-delivery and QC". The QC log opens with the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.
 
@@ -129,10 +139,14 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 
 **Optional:** click "Open the parsed page" under the briefing book row to show page 6 with 412 highlighted, then press the back arrow.
 
+**Tell after:** "Without the citation records, someone would reread 4 documents looking for 412. Here the list was ready before anyone opened a document, and it includes the 2 documents outside the dossier."
+
 ### Step 4. Review and sign-off (2 minutes 45 seconds)
 
 ![Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3.](screenshots/workflow/step4.png)
 *Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3.*
+
+**Tell first:** "Last, the review. Once the mechanical checks are done, I want to show where the reviewer's time actually goes."
 
 **Do:** click "Next: Review and sign-off". The CSR page opens next to the Table 14.2.1 output. Hover "412" in the text.
 
@@ -156,19 +170,29 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 
 **Say:** "Each model call is traced, and each trace is checked again after the review. A code check confirms that the figures match Table 14.2.1, and a judge from a different model family checks that the verdict follows from the sentence. That's the same kind of evaluation a team would run before switching to a newer model."
 
-The trace from the live run has no scores yet, because the judges run after the review, so open one from the rehearsal. Switch back to the deck.
+The trace from the live run has no scores yet, because the judges run after the review, so open one from the rehearsal.
+
+**Tell after:** "The reviewer's time went on the one sentence that needed judgement, and the sign-off is stored against the table version. That's the split from slide 4: software checks the data and the model, and people own the interpretation."
+
+Switch back to the deck.
 
 ---
 
-## Slide 7: model changes (45 seconds)
+## Slide 7: what you just saw (20 seconds)
+
+**Say:** "To recap what you just saw: every sentence had a source, the model typed no figures, a late change reached 7 sentences in 4 documents before anyone opened one, and the reviewer spent their time on the 1 sentence that needed judgement. The next 2 slides cover what keeps that true over time, first when the model changes."
+
+---
+
+## Slide 8: model changes (45 seconds)
 
 **Say:** "The drafting model is a fixed version behind Unity Gateway, so moving to a newer one is a decision the team makes on purpose. Before the switch, the team runs an MLflow evaluation of the new model's drafts against sections that were already approved, including the reviewers' edits. The figure check is code, so it's exact, and judges score the prose against your style guide. The evaluation report goes into the change record, which is the evidence a validation team would ask for."
 
-## Slide 8: interpretation (30 seconds)
+## Slide 9: interpretation (30 seconds)
 
 **Say:** "Interpretation stays with the writer and the reviewer. They see the draft with the source of each figure, the evaluation scores and anything the model flagged, and they edit and sign off. I think their edits are the most useful data in the process, because they show where a draft fell short, so we'd add them to the evaluation set for the next model."
 
-## Slide 9: proposed pilot (45 seconds, then questions)
+## Slide 10: proposed pilot (45 seconds, then questions)
 
 **Say:** "I'd suggest we start with one document type and measure the time from database lock to sign-off against documents your team has already approved. In our experience the first piece of work is certifying the inputs, so that each table the section cites has an owner, a certification and lineage back to its source before a model drafts anything from it."
 
@@ -185,9 +209,9 @@ The trace from the live run has no scores yet, because the judges run after the 
 Cut in this order, about 3 and a half minutes in total:
 
 1. Skip the optional second assistant question in demo step 4, and the chart in step 1.
-2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
+2. Skip the MLflow traces at the end of demo step 4, and say the slide 8 line instead.
 3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
-4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.
+4. Merge slide 9 into slide 8, using the last sentence of slide 9 only.
 5. On slide 6, say only the first sentence and the last, and let the demo fill in each column.
 
 ## If something breaks
@@ -210,7 +234,7 @@ You can, and the code check in the demo does that kind of check anyway. Binding 
 Derived values come from a query as well, as a column of the certified table or a governed calculation. Fractions in words, such as "about two-thirds", are the writer's interpretation, and the wording check watches them. The drafting check lists any number the model types itself, so a drift like that shows up in the trace.
 
 **"Which model, and can you pin it?"**
-The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 7 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.
+The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 8 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.
 
 **"Is the drafting workflow an agent?"**
 Not in the strict sense, and it's worth saying so. The steps are fixed in code, the model drafts and the judge checks, which makes it predictable enough to validate. A fully autonomous agent that chooses its own tools would be built with the Agent Bricks CLI, which is in Beta, so I'd keep that in a pilot and off a validated path for now.

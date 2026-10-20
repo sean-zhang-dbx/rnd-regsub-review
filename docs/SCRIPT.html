@@ -4,7 +4,7 @@ pre{background:#f4f5f7;padding:12px;border-radius:6px;overflow-x:auto;font-size:
 strong{color:#0b4f8a}hr{border:0;border-top:2px solid #bbb;margin:36px 0}img{width:100%;border:1px solid #ddd;border-radius:6px;margin-top:8px}p em{color:#5a5755;font-size:14px}</style><h1>Script: AI for regulatory submission</h1>
 <p>Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mike Sanky's on clinical operations.</p>
 <p>Jiajie is VP of AI/ML for R&amp;D and previously led AI/ML at Sanofi R&amp;D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.</p>
-<p><strong>Timing: about 14 minutes.</strong> Slides 1 to 6 take about 4 minutes, the demo about 8 (in 4 workflow steps), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.</p>
+<p><strong>Timing: about 15 minutes.</strong> Slides 1 to 6 take about 4 minutes, the demo about 8 and a half (in 4 workflow steps, each told, shown and told), and slides 7 to 10 about 2 and a half. If you are running long, use "If time is short" near the end.</p>
 <p>Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <hr />
@@ -40,14 +40,16 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <h2>Slide 5: the drafting approach (45 seconds)</h2>
 <p><strong>Say:</strong> "In Pfizer's published design the model reads the tables and writes the numbers itself, so someone has to check each figure afterwards. Here a workflow drafts the section in 5 steps. It reads the protocol and the SAP, which ai_parse_document has already turned into elements with their place on the page, and it finds the certified table in Unity Catalog. The model then writes the text with a placeholder for each figure, SQL fills the placeholders and records the cell behind each one, and a code check and a judge check the result. I'll run it live in a moment."</p>
 <h2>Slide 6: the platform (45 seconds)</h2>
-<p><strong>Say:</strong> "Here's how the demo maps onto Databricks, in the 4 steps you'll see across the top of the app. The sources are of 2 kinds: Unity Catalog tables, where Table 14.2.1 is certified by Biostatistics with lineage back to the analysis datasets, and the protocol and the SAP, which ai_parse_document turns into elements with their place on the page. The draft is written by a fixed model version through Unity Gateway, and SQL fills every figure from a certified cell. When a table is re-delivered, Delta keeps both versions and the citation records find each sentence that quoted a changed cell. The reviewer then works in a Databricks App, asking a Genie Agent about the tables and AI Search about the documents, and signs off. MLflow traces every model call, and Unity Catalog governs all of it."</p>
+<p><strong>Say:</strong> "Here's how the demo maps onto Databricks, in the 4 steps you'll see across the top of the app. The sources are of 2 kinds: Unity Catalog tables, where Table 14.2.1 is certified by Biostatistics with lineage back to the analysis datasets, and the protocol and the SAP, which ai_parse_document turns into elements with their place on the page. The draft is written by a fixed model version through Unity Gateway, and SQL fills every figure from a certified cell. When a table is re-delivered, Delta keeps both versions and the citation records find each sentence that quoted a changed cell. The reviewer then works in a Databricks App, asking a Genie Agent about the tables and AI Search about the documents, and signs off. MLflow traces every model call, and Unity Catalog governs all of it. What I'd ask you to watch for in each step is where the reviewer's time goes."</p>
 <p>Switch to the app.</p>
 <hr />
 <h2>Demo</h2>
 <p>The demo follows the workflow bar across the top of the app: <strong>1 Sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off</strong>. "Next" at the right of the bar moves to the following step.</p>
+<p>Each step follows tell, show, tell. <strong>Tell first</strong> says what you're about to show and why it matters to Jiajie, the <strong>Do</strong> and <strong>Say</strong> lines are the show, and <strong>Tell after</strong> says what it changed. Keep each tell to 1 or 2 sentences, so the steps stay short.</p>
 <h3>Step 1. Sources (1 minute 15 seconds)</h3>
 <p><img alt="Step 1: the sources of CSR 11.4.1, structured on the left and unstructured on the right, with sentence 2 hovered." src="screenshots/workflow/step1.png" />
 <em>Step 1: the sources of CSR 11.4.1, structured on the left and unstructured on the right, with sentence 2 hovered.</em></p>
+<p><strong>Tell first:</strong> "The first question anyone asks about a sentence in a CSR is where it came from, so I'll start with the sources, and you'll see that the answer is both structured data and documents."</p>
 <p><strong>Do:</strong> click "1 Sources" in the workflow bar. "Sources for CSR 11.4.1" opens in 3 columns: structured data on the left, the section in the middle, and the parsed documents on the right. Hover the second sentence, "In the primary analysis…".</p>
 <p><strong>Say:</strong> "A CSR section is put together from 2 kinds of source. On the left is structured data in Unity Catalog: Table 14.2.1, certified by Biostatistics, and, through lineage, the 2 analysis datasets it's built from. On the right are documents, the protocol and the SAP, which ai_parse_document has parsed. When I hover a sentence you can see what it draws on. This one takes its 9 figures from cells of the certified table and its method from the SAP."</p>
 <p><strong>Do:</strong> hover the first sentence. The Protocol page 3 table and the SAP page 2 passage light up. Then click "Open the parsed page" under the Protocol passage.</p>
@@ -55,9 +57,11 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <em>Step 1, continued: the Protocol page 3 opened from the Sources page, with the endpoints table outlined.</em></p>
 <p><strong>Say:</strong> "This is the page as ai_parse_document sees it: each element with its type, its place on the page and a confidence score, and the content as text and tables. The endpoint table came through as a table, so the draft can quote the endpoint from it."</p>
 <p><strong>If there is time:</strong> in the document picker, choose the advisory briefing book, go to page 9 and hover the chart. "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1."</p>
+<p><strong>Tell after:</strong> "So every sentence in this section traces to a certified cell or a parsed passage, and anything with no source, like 'about two-thirds', is visibly the writer's. The rest of the demo depends on that."</p>
 <h3>Step 2. Draft (1 minute 15 seconds)</h3>
 <p><img alt="Step 2 after &quot;Draft this section&quot;: placeholders filled from version 3, then the code check and the judge." src="screenshots/workflow/step2_done.png" />
 <em>Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.</em></p>
+<p><strong>Tell first:</strong> "Next, the draft. Most of a reviewer's checking time goes on the figures, so I want to show a draft in which the model never types a number."</p>
 <p><strong>Do:</strong> click "Next: Draft". CSR 11.4.1 opens as it was drafted against Table 14.2.1 version 3, with the Drafting workflow outlined in the Information panel. Click "Draft this section". 5 steps stream in over about 12 seconds.</p>
 <p><strong>When step 1 finishes,</strong> the SAP page opens in the middle pane with the passage the draft uses outlined in blue.</p>
 <p><strong>Say:</strong> "The workflow starts where a writer would, with the sources we just saw. It takes the endpoint definition from the parsed SAP, shows where on the page it came from, and finds the certified table in Unity Catalog."</p>
@@ -66,19 +70,22 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><strong>When step 5 finishes,</strong> the table pane is back at version 3. Hover a blue figure in the draft to light up its cell.</p>
 <p><strong>Say:</strong> "SQL filled each placeholder from version 3 of the certified table, so each figure is tied to its cell from the start. A code check confirms the model typed no number itself, and a judge from a different model family checks the draft against the protocol and the SAP. Each step is a span in one MLflow trace."</p>
 <p><strong>Do:</strong> point to the "about two-thirds" sentence on the CSR page.</p>
-<p><strong>Say:</strong> "Because the model never sees the values, it can't describe them in words like 'about two-thirds'. That phrase is the writer's interpretation, and we'll come back to it."</p>
+<p><strong>Tell after:</strong> "None of these figures can disagree with version 3, because none of them was typed, so the check that takes the most time is done when the draft is written. And because the model never sees the values, it can't write 'about two-thirds'. That phrase is the writer's, and we'll come back to it."</p>
 <p>Wording to avoid here: "this page was written by the model". The draft on the page is the seeded Draft 0.4, and the live draft appears in the panel.</p>
 <h3>Step 3. Re-delivery and QC (1 minute)</h3>
 <p><img alt="Step 3: the re-delivery card and 7 sentences ready for review." src="screenshots/workflow/step3.png" />
 <em>Step 3: the re-delivery card and 7 sentences ready for review.</em></p>
+<p><strong>Tell first:</strong> "Now the problem from slide 4: the table changes after the text was written. Watch how quickly we find everything the change touched."</p>
 <p><strong>Do:</strong> click "Next: Re-delivery and QC". The QC log opens with the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.</p>
 <p><strong>Say:</strong> "Then Biostatistics re-delivers the primary efficacy table after a late data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."</p>
 <p><strong>Do:</strong> scroll to "Reference documents outside the dossier".</p>
 <p><strong>Say:</strong> "The Investigator's Brochure and the briefing book were written outside this workflow, so they have no citation records. AI Search finds the old result in their parsed text, on page 4 and page 6, and the app notifies their owners without editing either document. The chart we saw a minute ago is in the same briefing book."</p>
 <p><strong>Optional:</strong> click "Open the parsed page" under the briefing book row to show page 6 with 412 highlighted, then press the back arrow.</p>
+<p><strong>Tell after:</strong> "Without the citation records, someone would reread 4 documents looking for 412. Here the list was ready before anyone opened a document, and it includes the 2 documents outside the dossier."</p>
 <h3>Step 4. Review and sign-off (2 minutes 45 seconds)</h3>
 <p><img alt="Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3." src="screenshots/workflow/step4.png" />
 <em>Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3.</em></p>
+<p><strong>Tell first:</strong> "Last, the review. Once the mechanical checks are done, I want to show where the reviewer's time actually goes."</p>
 <p><strong>Do:</strong> click "Next: Review and sign-off". The CSR page opens next to the Table 14.2.1 output. Hover "412" in the text.</p>
 <p><strong>Say:</strong> "This is the tick and tie a QC reviewer already does, with each figure tied to its cell. The yellow cells are the ones that changed, and the text still quotes version 3."</p>
 <p><strong>Do:</strong> click "Recompute from Table 14.2.1 v4". The figures flip on the page, the yellow cells turn green, and after a few seconds the "about two-thirds" sentence turns amber with "With the writer". Hover the amber tag to show the reason.</p>
@@ -90,13 +97,18 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><strong>Say:</strong> "The sign-off is stored with a name, a time and the table version it was approved against."</p>
 <p><strong>Do:</strong> close the viewer with the X. The QC log shows the figure rows as Approved, 1 sentence with the writer and the label sentence with Labelling. Press <code>D</code>, open "MLflow traces in Databricks", and open a <code>wording_check</code> trace from the rehearsal.</p>
 <p><strong>Say:</strong> "Each model call is traced, and each trace is checked again after the review. A code check confirms that the figures match Table 14.2.1, and a judge from a different model family checks that the verdict follows from the sentence. That's the same kind of evaluation a team would run before switching to a newer model."</p>
-<p>The trace from the live run has no scores yet, because the judges run after the review, so open one from the rehearsal. Switch back to the deck.</p>
+<p>The trace from the live run has no scores yet, because the judges run after the review, so open one from the rehearsal.</p>
+<p><strong>Tell after:</strong> "The reviewer's time went on the one sentence that needed judgement, and the sign-off is stored against the table version. That's the split from slide 4: software checks the data and the model, and people own the interpretation."</p>
+<p>Switch back to the deck.</p>
 <hr />
-<h2>Slide 7: model changes (45 seconds)</h2>
+<h2>Slide 7: what you just saw (20 seconds)</h2>
+<p><strong>Say:</strong> "To recap what you just saw: every sentence had a source, the model typed no figures, a late change reached 7 sentences in 4 documents before anyone opened one, and the reviewer spent their time on the 1 sentence that needed judgement. The next 2 slides cover what keeps that true over time, first when the model changes."</p>
+<hr />
+<h2>Slide 8: model changes (45 seconds)</h2>
 <p><strong>Say:</strong> "The drafting model is a fixed version behind Unity Gateway, so moving to a newer one is a decision the team makes on purpose. Before the switch, the team runs an MLflow evaluation of the new model's drafts against sections that were already approved, including the reviewers' edits. The figure check is code, so it's exact, and judges score the prose against your style guide. The evaluation report goes into the change record, which is the evidence a validation team would ask for."</p>
-<h2>Slide 8: interpretation (30 seconds)</h2>
+<h2>Slide 9: interpretation (30 seconds)</h2>
 <p><strong>Say:</strong> "Interpretation stays with the writer and the reviewer. They see the draft with the source of each figure, the evaluation scores and anything the model flagged, and they edit and sign off. I think their edits are the most useful data in the process, because they show where a draft fell short, so we'd add them to the evaluation set for the next model."</p>
-<h2>Slide 9: proposed pilot (45 seconds, then questions)</h2>
+<h2>Slide 10: proposed pilot (45 seconds, then questions)</h2>
 <p><strong>Say:</strong> "I'd suggest we start with one document type and measure the time from database lock to sign-off against documents your team has already approved. In our experience the first piece of work is certifying the inputs, so that each table the section cites has an owner, a certification and lineage back to its source before a model drafts anything from it."</p>
 <p><strong>Ask (choose 1 or 2):</strong></p>
 <ol>
@@ -109,9 +121,9 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p>Cut in this order, about 3 and a half minutes in total:</p>
 <ol>
 <li>Skip the optional second assistant question in demo step 4, and the chart in step 1.</li>
-<li>Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.</li>
+<li>Skip the MLflow traces at the end of demo step 4, and say the slide 8 line instead.</li>
 <li>In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.</li>
-<li>Merge slide 8 into slide 7, using the last sentence of slide 8 only.</li>
+<li>Merge slide 9 into slide 8, using the last sentence of slide 9 only.</li>
 <li>On slide 6, say only the first sentence and the last, and let the demo fill in each column.</li>
 </ol>
 <h2>If something breaks</h2>
@@ -130,7 +142,7 @@ You can, and the code check in the demo does that kind of check anyway. Binding 
 <p><strong>"What about numbers written in words, or derived values such as a ratio?"</strong>
 Derived values come from a query as well, as a column of the certified table or a governed calculation. Fractions in words, such as "about two-thirds", are the writer's interpretation, and the wording check watches them. The drafting check lists any number the model types itself, so a drift like that shows up in the trace.</p>
 <p><strong>"Which model, and can you pin it?"</strong>
-The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 7 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.</p>
+The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 8 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.</p>
 <p><strong>"Is the drafting workflow an agent?"</strong>
 Not in the strict sense, and it's worth saying so. The steps are fixed in code, the model drafts and the judge checks, which makes it predictable enough to validate. A fully autonomous agent that chooses its own tools would be built with the Agent Bricks CLI, which is in Beta, so I'd keep that in a pilot and off a validated path for now.</p>
 <p><strong>"How does the assistant decide where to look?"</strong>
