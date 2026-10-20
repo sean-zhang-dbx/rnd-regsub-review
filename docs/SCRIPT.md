@@ -4,7 +4,7 @@ Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mik
 
 Jiajie is VP of AI/ML for R&D and previously led AI/ML at Sanofi R&D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.
 
-**Timing: about 13 and a half minutes.** Slides 1 to 6 take about 3 and a half minutes, the demo about 8 (in 4 workflow steps), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
+**Timing: about 14 minutes.** Slides 1 to 6 take about 4 minutes, the demo about 8 (in 4 workflow steps), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
 
 Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
@@ -59,9 +59,9 @@ Keep in reserve, and use it only if Jiajie raises authoring maturity: a June 202
 
 **Say:** "In Pfizer's published design the model reads the tables and writes the numbers itself, so someone has to check each figure afterwards. Here a workflow drafts the section in 5 steps. It reads the protocol and the SAP, which ai_parse_document has already turned into elements with their place on the page, and it finds the certified table in Unity Catalog. The model then writes the text with a placeholder for each figure, SQL fills the placeholders and records the cell behind each one, and a code check and a judge check the result. I'll run it live in a moment."
 
-## Slide 6: the scenario (15 seconds)
+## Slide 6: the platform (45 seconds)
 
-**Say:** "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. I'll show it in the 4 steps you'll see across the top of the app: the sources the section is built from, the draft itself, the table is re-delivered, and the reviewer checks and signs off."
+**Say:** "Here's how the demo maps onto Databricks, in the 4 steps you'll see across the top of the app. The sources are of 2 kinds: Unity Catalog tables, where Table 14.2.1 is certified by Biostatistics with lineage back to the analysis datasets, and the protocol and the SAP, which ai_parse_document turns into elements with their place on the page. The draft is written by a fixed model version through Unity Gateway, and SQL fills every figure from a certified cell. When a table is re-delivered, Delta keeps both versions and the citation records find each sentence that quoted a changed cell. The reviewer then works in a Databricks App, asking a Genie Agent about the tables and AI Search about the documents, and signs off. MLflow traces every model call, and Unity Catalog governs all of it."
 
 Switch to the app.
 
@@ -121,7 +121,7 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 
 **Do:** click "Next: Re-delivery and QC". The QC log opens with the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.
 
-**Say:** "Then Biostatistics re-delivers the primary efficacy table after a late data correction. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."
+**Say:** "Then Biostatistics re-delivers the primary efficacy table after a late data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."
 
 **Do:** scroll to "Reference documents outside the dossier".
 
@@ -182,12 +182,13 @@ The trace from the live run has no scores yet, because the judges run after the 
 
 ## If time is short
 
-Cut in this order, about 3 minutes in total:
+Cut in this order, about 3 and a half minutes in total:
 
 1. Skip the optional second assistant question in demo step 4, and the chart in step 1.
 2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
 3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
 4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.
+5. On slide 6, say only the first sentence and the last, and let the demo fill in each column.
 
 ## If something breaks
 
