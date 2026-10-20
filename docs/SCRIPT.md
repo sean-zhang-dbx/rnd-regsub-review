@@ -4,7 +4,7 @@ Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mik
 
 Jiajie is VP of AI/ML for R&D and previously led AI/ML at Sanofi R&D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.
 
-**Timing: about 15 minutes.** Slides 1 to 6 take about 4 minutes, the demo about 8 and a half (in 4 workflow steps, each told, shown and told), and slides 7 to 10 about 2 and a half. If you are running long, use "If time is short" near the end.
+**Timing: about 14 and a half minutes.** Slides 1 to 6 take about 4 minutes, the demo about 8 and a half (in 4 workflow steps, each told, shown and told), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.
 
 Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
@@ -178,21 +178,15 @@ Switch back to the deck.
 
 ---
 
-## Slide 7: what you just saw (20 seconds)
-
-**Say:** "To recap what you just saw: every sentence had a source, the model typed no figures, a late change reached 7 sentences in 4 documents before anyone opened one, and the reviewer spent their time on the 1 sentence that needed judgement. The next 2 slides cover what keeps that true over time, first when the model changes."
-
----
-
-## Slide 8: model changes (45 seconds)
+## Slide 7: model changes (45 seconds)
 
 **Say:** "The drafting model is a fixed version behind Unity Gateway, so moving to a newer one is a decision the team makes on purpose. Before the switch, the team runs an MLflow evaluation of the new model's drafts against sections that were already approved, including the reviewers' edits. The figure check is code, so it's exact, and judges score the prose against your style guide. The evaluation report goes into the change record, which is the evidence a validation team would ask for."
 
-## Slide 9: interpretation (30 seconds)
+## Slide 8: interpretation (30 seconds)
 
 **Say:** "Interpretation stays with the writer and the reviewer. They see the draft with the source of each figure, the evaluation scores and anything the model flagged, and they edit and sign off. I think their edits are the most useful data in the process, because they show where a draft fell short, so we'd add them to the evaluation set for the next model."
 
-## Slide 10: proposed pilot (45 seconds, then questions)
+## Slide 9: proposed pilot (45 seconds, then questions)
 
 **Say:** "I'd suggest we start with one document type and measure the time from database lock to sign-off against documents your team has already approved. In our experience the first piece of work is certifying the inputs, so that each table the section cites has an owner, a certification and lineage back to its source before a model drafts anything from it."
 
@@ -209,9 +203,9 @@ Switch back to the deck.
 Cut in this order, about 3 and a half minutes in total:
 
 1. Skip the optional second assistant question in demo step 4, and the chart in step 1.
-2. Skip the MLflow traces at the end of demo step 4, and say the slide 8 line instead.
+2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
 3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
-4. Merge slide 9 into slide 8, using the last sentence of slide 9 only.
+4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.
 5. On slide 6, say only the first sentence and the last, and let the demo fill in each column.
 
 ## If something breaks
@@ -234,7 +228,7 @@ You can, and the code check in the demo does that kind of check anyway. Binding 
 Derived values come from a query as well, as a column of the certified table or a governed calculation. Fractions in words, such as "about two-thirds", are the writer's interpretation, and the wording check watches them. The drafting check lists any number the model types itself, so a drift like that shows up in the trace.
 
 **"Which model, and can you pin it?"**
-The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 8 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.
+The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 7 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.
 
 **"Is the drafting workflow an agent?"**
 Not in the strict sense, and it's worth saying so. The steps are fixed in code, the model drafts and the judge checks, which makes it predictable enough to validate. A fully autonomous agent that chooses its own tools would be built with the Agent Bricks CLI, which is in Beta, so I'd keep that in a pilot and off a validated path for now.

@@ -4,7 +4,7 @@ pre{background:#f4f5f7;padding:12px;border-radius:6px;overflow-x:auto;font-size:
 strong{color:#0b4f8a}hr{border:0;border-top:2px solid #bbb;margin:36px 0}img{width:100%;border:1px solid #ddd;border-radius:6px;margin-top:8px}p em{color:#5a5755;font-size:14px}</style><h1>Script: AI for regulatory submission</h1>
 <p>Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mike Sanky's on clinical operations.</p>
 <p>Jiajie is VP of AI/ML for R&amp;D and previously led AI/ML at Sanofi R&amp;D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.</p>
-<p><strong>Timing: about 15 minutes.</strong> Slides 1 to 6 take about 4 minutes, the demo about 8 and a half (in 4 workflow steps, each told, shown and told), and slides 7 to 10 about 2 and a half. If you are running long, use "If time is short" near the end.</p>
+<p><strong>Timing: about 14 and a half minutes.</strong> Slides 1 to 6 take about 4 minutes, the demo about 8 and a half (in 4 workflow steps, each told, shown and told), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.</p>
 <p>Deck: https://docs.google.com/presentation/d/1NIuGc-eNnNr-bg7R1YbyLrsfTo9Lg75xaeHAVkOKkGQ/edit
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <hr />
@@ -101,14 +101,11 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><strong>Tell after:</strong> "The reviewer's time went on the one sentence that needed judgement, and the sign-off is stored against the table version. That's the split from slide 4: software checks the data and the model, and people own the interpretation."</p>
 <p>Switch back to the deck.</p>
 <hr />
-<h2>Slide 7: what you just saw (20 seconds)</h2>
-<p><strong>Say:</strong> "To recap what you just saw: every sentence had a source, the model typed no figures, a late change reached 7 sentences in 4 documents before anyone opened one, and the reviewer spent their time on the 1 sentence that needed judgement. The next 2 slides cover what keeps that true over time, first when the model changes."</p>
-<hr />
-<h2>Slide 8: model changes (45 seconds)</h2>
+<h2>Slide 7: model changes (45 seconds)</h2>
 <p><strong>Say:</strong> "The drafting model is a fixed version behind Unity Gateway, so moving to a newer one is a decision the team makes on purpose. Before the switch, the team runs an MLflow evaluation of the new model's drafts against sections that were already approved, including the reviewers' edits. The figure check is code, so it's exact, and judges score the prose against your style guide. The evaluation report goes into the change record, which is the evidence a validation team would ask for."</p>
-<h2>Slide 9: interpretation (30 seconds)</h2>
+<h2>Slide 8: interpretation (30 seconds)</h2>
 <p><strong>Say:</strong> "Interpretation stays with the writer and the reviewer. They see the draft with the source of each figure, the evaluation scores and anything the model flagged, and they edit and sign off. I think their edits are the most useful data in the process, because they show where a draft fell short, so we'd add them to the evaluation set for the next model."</p>
-<h2>Slide 10: proposed pilot (45 seconds, then questions)</h2>
+<h2>Slide 9: proposed pilot (45 seconds, then questions)</h2>
 <p><strong>Say:</strong> "I'd suggest we start with one document type and measure the time from database lock to sign-off against documents your team has already approved. In our experience the first piece of work is certifying the inputs, so that each table the section cites has an owner, a certification and lineage back to its source before a model drafts anything from it."</p>
 <p><strong>Ask (choose 1 or 2):</strong></p>
 <ol>
@@ -121,9 +118,9 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p>Cut in this order, about 3 and a half minutes in total:</p>
 <ol>
 <li>Skip the optional second assistant question in demo step 4, and the chart in step 1.</li>
-<li>Skip the MLflow traces at the end of demo step 4, and say the slide 8 line instead.</li>
+<li>Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.</li>
 <li>In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.</li>
-<li>Merge slide 9 into slide 8, using the last sentence of slide 9 only.</li>
+<li>Merge slide 8 into slide 7, using the last sentence of slide 8 only.</li>
 <li>On slide 6, say only the first sentence and the last, and let the demo fill in each column.</li>
 </ol>
 <h2>If something breaks</h2>
@@ -142,7 +139,7 @@ You can, and the code check in the demo does that kind of check anyway. Binding 
 <p><strong>"What about numbers written in words, or derived values such as a ratio?"</strong>
 Derived values come from a query as well, as a column of the certified table or a governed calculation. Fractions in words, such as "about two-thirds", are the writer's interpretation, and the wording check watches them. The drafting check lists any number the model types itself, so a drift like that shows up in the trace.</p>
 <p><strong>"Which model, and can you pin it?"</strong>
-The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 8 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.</p>
+The app calls a Unity Gateway model service that routes to a specific model, Claude Sonnet 5.5 in the demo, and logs each call to an inference table. Changing the model is a configuration change that should go through the slide 7 evaluation. One gap to state openly: managed Genie Agents don't let you pin the model version, so a validated drafting path should run on a pinned endpoint.</p>
 <p><strong>"Is the drafting workflow an agent?"</strong>
 Not in the strict sense, and it's worth saying so. The steps are fixed in code, the model drafts and the judge checks, which makes it predictable enough to validate. A fully autonomous agent that chooses its own tools would be built with the Agent Bricks CLI, which is in Beta, so I'd keep that in a pilot and off a validated path for now.</p>
 <p><strong>"How does the assistant decide where to look?"</strong>
