@@ -1,7 +1,7 @@
 <!doctype html><meta charset=utf-8><title>Script: AI for regulatory submission</title><style>body{font:17px/1.6 -apple-system,Segoe UI,sans-serif;max-width:820px;margin:40px auto;padding:0 24px;color:#1b1f24}
 h1{font-size:30px}h2{margin-top:36px;border-top:1px solid #ddd;padding-top:18px;font-size:22px}h3{font-size:18px;margin-top:24px}
 pre{background:#f4f5f7;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px}code{font-size:14px}
-strong{color:#0b4f8a}hr{border:0;border-top:2px solid #bbb;margin:36px 0}</style><h1>Script: AI for regulatory submission</h1>
+strong{color:#0b4f8a}hr{border:0;border-top:2px solid #bbb;margin:36px 0}img{width:100%;border:1px solid #ddd;border-radius:6px;margin-top:8px}p em{color:#5a5755;font-size:14px}</style><h1>Script: AI for regulatory submission</h1>
 <p>Jiajie Zhang call, Tuesday 20 October 2026, 14:00 UK. Sean's section follows Mike Sanky's on clinical operations.</p>
 <p>Jiajie is VP of AI/ML for R&amp;D and previously led AI/ML at Sanofi R&amp;D and Evinova, so the script stays out of regulatory basics and keeps the depth for questions. All data in the demo is synthetic, for the fictional study LMN-301.</p>
 <p><strong>Timing: about 13 and a half minutes.</strong> Slides 1 to 6 take about 3 and a half minutes, the demo about 8 (in 4 workflow steps), and slides 7 to 9 about 2. If you are running long, use "If time is short" near the end.</p>
@@ -9,18 +9,22 @@ strong{color:#0b4f8a}hr{border:0;border-top:2px solid #bbb;margin:36px 0}</style
 App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <hr />
 <h2>Before the call</h2>
-<p>Earlier in the day:
-1. Rehearse once in the app, including "Draft this section", "Recompute" and the assistant.
-2. Score the rehearsal traces, so judged traces are ready for the end of the demo:
+<p>Earlier in the day:</p>
+<ol>
+<li>Rehearse once in the app, including "Draft this section", "Recompute" and the assistant.</li>
+<li>Score the rehearsal traces, so judged traces are ready for the end of the demo:
    <code>bash
-   cd ~/Projects/gsk/rnd_regsub_review &amp;&amp; uv run --python 3.12 --with "mlflow[databricks]&gt;=3.5" --with databricks-sql-connector python scripts/judge_traces.py</code></p>
-<p>10 minutes before:
-1. Reset the demo:
+   cd ~/Projects/gsk/rnd_regsub_review &amp;&amp; uv run --python 3.12 --with "mlflow[databricks]&gt;=3.5" --with databricks-sql-connector python scripts/judge_traces.py</code></li>
+</ol>
+<p>10 minutes before:</p>
+<ol>
+<li>Reset the demo:
    <code>bash
-   cd ~/Projects/gsk/rnd_regsub_review &amp;&amp; uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py</code>
-2. Open the app in a window about 1440 pixels wide and wait for the QC log to load. This warms the SQL warehouse. Then click "1 Parse sources" so the demo starts there.
-3. Check that the "Databricks" switch in the top bar is off and the browser zoom is 100%.
-4. Open the deck in presenter view, and keep <code>docs/screenshots/vault/</code> open as the fallback.</p>
+   cd ~/Projects/gsk/rnd_regsub_review &amp;&amp; uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py</code></li>
+<li>Open the app in a window about 1440 pixels wide and wait for the QC log to load. This warms the SQL warehouse. Then click "1 Parse sources" so the demo starts there.</li>
+<li>Check that the "Databricks" switch in the top bar is off and the browser zoom is 100%.</li>
+<li>Open the deck in presenter view, and keep <code>docs/screenshots/vault/</code> open as the fallback.</li>
+</ol>
 <hr />
 <h2>Slide 1: section divider (15 seconds)</h2>
 <p><strong>Say:</strong> "Thanks, Mike. Clinical operations takes a study to database lock, and from there the results have to become the CSR, the Module 2 summaries and the label. I'd like to spend the next few minutes on that part, and in particular on what happens after the first draft is written. I'll show it on a fictional study and leave time for your questions."</p>
@@ -36,18 +40,22 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <h2>Slide 5: the drafting approach (45 seconds)</h2>
 <p><strong>Say:</strong> "In Pfizer's published design the model reads the tables and writes the numbers itself, so someone has to check each figure afterwards. Here a workflow drafts the section in 5 steps. It reads the protocol and the SAP, which ai_parse_document has already turned into elements with their place on the page, and it finds the certified table in Unity Catalog. The model then writes the text with a placeholder for each figure, SQL fills the placeholders and records the cell behind each one, and a code check and a judge check the result. I'll run it live in a moment."</p>
 <h2>Slide 6: the scenario (15 seconds)</h2>
-<p><strong>Say:</strong> "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. This is what the reviewer sees."</p>
+<p><strong>Say:</strong> "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. I'll show it in the 4 steps you'll see across the top of the app: the sources are parsed, the section is drafted from them, the table is re-delivered, and the reviewer checks and signs off."</p>
 <p>Switch to the app.</p>
 <hr />
 <h2>Demo</h2>
 <p>The demo follows the workflow bar across the top of the app: <strong>1 Parse sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off</strong>. "Next" at the right of the bar moves to the following step.</p>
 <h3>Step 1. Parse sources (1 minute)</h3>
+<p><img alt="Step 1: the SAP, page 2, with a box for each element and the parsed content on the right." src="screenshots/workflow/step1.png" />
+<em>Step 1: the SAP, page 2, with a box for each element and the parsed content on the right.</em></p>
 <p><strong>Do:</strong> click "1 Parse sources" in the workflow bar. Document parsing opens on the SAP, page 2: the page on the left with a coloured box for each element, and the parsed content on the right. Hover the text block.</p>
 <p><strong>Say:</strong> "Before anything is drafted, the source documents are parsed. ai_parse_document turns each PDF into elements with their type, position on the page and confidence, and the content as text and tables. This is the SAP section the draft will use."</p>
 <p><strong>Do:</strong> in the document picker, choose the advisory briefing book, then go to page 9. Hover the chart.</p>
 <p><strong>Say:</strong> "It handles figures too. It recognised this as a bar chart, described it, and read the values off it, 66.7 and 47.1."</p>
 <p><strong>Do:</strong> optionally switch to JSON for a second, then back to Rendered.</p>
 <h3>Step 2. Draft (1 minute 15 seconds)</h3>
+<p><img alt="Step 2 after &quot;Draft this section&quot;: placeholders filled from version 3, then the code check and the judge." src="screenshots/workflow/step2_done.png" />
+<em>Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.</em></p>
 <p><strong>Do:</strong> click "Next: Draft". CSR 11.4.1 opens as it was drafted against Table 14.2.1 version 3, with the Drafting workflow outlined in the Information panel. Click "Draft this section". 5 steps stream in over about 12 seconds.</p>
 <p><strong>When step 1 finishes,</strong> the SAP page opens in the middle pane with the passage the draft uses outlined in blue.</p>
 <p><strong>Say:</strong> "The workflow starts where a writer would, with the protocol and the SAP we just saw parsed, so it takes the endpoint definition from the SAP and shows where it came from."</p>
@@ -59,12 +67,16 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><strong>Say:</strong> "Because the model never sees the values, it can't describe them in words like 'about two-thirds'. That phrase is the writer's interpretation, and we'll come back to it."</p>
 <p>Wording to avoid here: "this page was written by the model". The draft on the page is the seeded Draft 0.4, and the live draft appears in the panel.</p>
 <h3>Step 3. Re-delivery and QC (1 minute)</h3>
+<p><img alt="Step 3: the re-delivery card and 7 sentences ready for review." src="screenshots/workflow/step3.png" />
+<em>Step 3: the re-delivery card and 7 sentences ready for review.</em></p>
 <p><strong>Do:</strong> click "Next: Re-delivery and QC". The QC log opens with the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.</p>
 <p><strong>Say:</strong> "Then Biostatistics re-delivers the primary efficacy table after a late data correction. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."</p>
 <p><strong>Do:</strong> scroll to "Reference documents outside the dossier".</p>
 <p><strong>Say:</strong> "The Investigator's Brochure and the briefing book were written outside this workflow, so they have no citation records. AI Search finds the old result in their parsed text, on page 4 and page 6, and the app notifies their owners without editing either document. The chart we saw a minute ago is in the same briefing book."</p>
 <p><strong>Optional:</strong> click "Open the parsed page" under the briefing book row to show page 6 with 412 highlighted, then press the back arrow.</p>
 <h3>Step 4. Review and sign-off (2 minutes 45 seconds)</h3>
+<p><img alt="Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3." src="screenshots/workflow/step4.png" />
+<em>Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3.</em></p>
 <p><strong>Do:</strong> click "Next: Review and sign-off". The CSR page opens next to the Table 14.2.1 output. Hover "412" in the text.</p>
 <p><strong>Say:</strong> "This is the tick and tie a QC reviewer already does, with each figure tied to its cell. The yellow cells are the ones that changed, and the text still quotes version 3."</p>
 <p><strong>Do:</strong> click "Recompute from Table 14.2.1 v4". The figures flip on the page, the yellow cells turn green, and after a few seconds the "about two-thirds" sentence turns amber with "With the writer". Hover the amber tag to show the reason.</p>
@@ -84,17 +96,21 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><strong>Say:</strong> "Interpretation stays with the writer and the reviewer. They see the draft with the source of each figure, the evaluation scores and anything the model flagged, and they edit and sign off. I think their edits are the most useful data in the process, because they show where a draft fell short, so we'd add them to the evaluation set for the next model."</p>
 <h2>Slide 9: proposed pilot (45 seconds, then questions)</h2>
 <p><strong>Say:</strong> "I'd suggest we start with one document type and measure the time from database lock to sign-off against documents your team has already approved. In our experience the first piece of work is certifying the inputs, so that each table the section cites has an owner, a certification and lineage back to its source before a model drafts anything from it."</p>
-<p><strong>Ask (choose 1 or 2):</strong>
-1. "Which document would you be comfortable handing to AI first, and which would you keep away from it?"
-2. "Where does most of the checking time go today: the figures, model changes or the wording?"
-3. "Do you have approved documents with reviewer edits that we could use as an evaluation set?"</p>
+<p><strong>Ask (choose 1 or 2):</strong></p>
+<ol>
+<li>"Which document would you be comfortable handing to AI first, and which would you keep away from it?"</li>
+<li>"Where does most of the checking time go today: the figures, model changes or the wording?"</li>
+<li>"Do you have approved documents with reviewer edits that we could use as an evaluation set?"</li>
+</ol>
 <hr />
 <h2>If time is short</h2>
-<p>Cut in this order, about 3 minutes in total:
-1. Skip the optional second assistant question in demo step 4, and the JSON view in step 1.
-2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
-3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
-4. Merge slide 8 into slide 7, using the last sentence of slide 8 only.</p>
+<p>Cut in this order, about 3 minutes in total:</p>
+<ol>
+<li>Skip the optional second assistant question in demo step 4, and the JSON view in step 1.</li>
+<li>Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.</li>
+<li>In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.</li>
+<li>Merge slide 8 into slide 7, using the last sentence of slide 8 only.</li>
+</ol>
 <h2>If something breaks</h2>
 <ul>
 <li><strong>Warehouse slow on first load:</strong> wait, and talk through the QC log layout. The toast at the bottom left shows progress.</li>

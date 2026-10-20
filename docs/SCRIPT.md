@@ -14,6 +14,7 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
 ## Before the call
 
 Earlier in the day:
+
 1. Rehearse once in the app, including "Draft this section", "Recompute" and the assistant.
 2. Score the rehearsal traces, so judged traces are ready for the end of the demo:
    ```bash
@@ -21,6 +22,7 @@ Earlier in the day:
    ```
 
 10 minutes before:
+
 1. Reset the demo:
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py
@@ -59,7 +61,7 @@ Keep in reserve, and use it only if Jiajie raises authoring maturity: a June 202
 
 ## Slide 6: the scenario (15 seconds)
 
-**Say:** "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. This is what the reviewer sees."
+**Say:** "In this example Biostatistics re-delivers the primary efficacy table late, after a data correction. 3 participants in the treatment arm are no longer counted as responders, so 412 of 618 becomes 409, and the difference from placebo goes from 19.5 to 19.1 points. I'll show it in the 4 steps you'll see across the top of the app: the sources are parsed, the section is drafted from them, the table is re-delivered, and the reviewer checks and signs off."
 
 Switch to the app.
 
@@ -70,6 +72,9 @@ Switch to the app.
 The demo follows the workflow bar across the top of the app: **1 Parse sources, 2 Draft, 3 Re-delivery and QC, 4 Review and sign-off**. "Next" at the right of the bar moves to the following step.
 
 ### Step 1. Parse sources (1 minute)
+
+![Step 1: the SAP, page 2, with a box for each element and the parsed content on the right.](screenshots/workflow/step1.png)
+*Step 1: the SAP, page 2, with a box for each element and the parsed content on the right.*
 
 **Do:** click "1 Parse sources" in the workflow bar. Document parsing opens on the SAP, page 2: the page on the left with a coloured box for each element, and the parsed content on the right. Hover the text block.
 
@@ -82,6 +87,9 @@ The demo follows the workflow bar across the top of the app: **1 Parse sources, 
 **Do:** optionally switch to JSON for a second, then back to Rendered.
 
 ### Step 2. Draft (1 minute 15 seconds)
+
+![Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.](screenshots/workflow/step2_done.png)
+*Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.*
 
 **Do:** click "Next: Draft". CSR 11.4.1 opens as it was drafted against Table 14.2.1 version 3, with the Drafting workflow outlined in the Information panel. Click "Draft this section". 5 steps stream in over about 12 seconds.
 
@@ -105,6 +113,9 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 
 ### Step 3. Re-delivery and QC (1 minute)
 
+![Step 3: the re-delivery card and 7 sentences ready for review.](screenshots/workflow/step3.png)
+*Step 3: the re-delivery card and 7 sentences ready for review.*
+
 **Do:** click "Next: Re-delivery and QC". The QC log opens with the re-delivery card for Table 14.2.1 (v3 Superseded, v4 Current), the dossier tree with a count on each affected document, and the QC log.
 
 **Say:** "Then Biostatistics re-delivers the primary efficacy table after a late data correction. Because each figure was tied to its cell when it was drafted, the reviewer can see each sentence that quotes a changed cell, across the CSR, Module 2.7.3, Module 2.5 and the label, before anyone opens a document."
@@ -116,6 +127,9 @@ Wording to avoid here: "this page was written by the model". The draft on the pa
 **Optional:** click "Open the parsed page" under the briefing book row to show page 6 with 412 highlighted, then press the back arrow.
 
 ### Step 4. Review and sign-off (2 minutes 45 seconds)
+
+![Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3.](screenshots/workflow/step4.png)
+*Step 4 before Recompute: yellow cells changed in version 4, and the text still quotes version 3.*
 
 **Do:** click "Next: Review and sign-off". The CSR page opens next to the Table 14.2.1 output. Hover "412" in the text.
 
@@ -156,6 +170,7 @@ The trace from the live run has no scores yet, because the judges run after the 
 **Say:** "I'd suggest we start with one document type and measure the time from database lock to sign-off against documents your team has already approved. In our experience the first piece of work is certifying the inputs, so that each table the section cites has an owner, a certification and lineage back to its source before a model drafts anything from it."
 
 **Ask (choose 1 or 2):**
+
 1. "Which document would you be comfortable handing to AI first, and which would you keep away from it?"
 2. "Where does most of the checking time go today: the figures, model changes or the wording?"
 3. "Do you have approved documents with reviewer edits that we could use as an evaluation set?"
@@ -165,6 +180,7 @@ The trace from the live run has no scores yet, because the judges run after the 
 ## If time is short
 
 Cut in this order, about 3 minutes in total:
+
 1. Skip the optional second assistant question in demo step 4, and the JSON view in step 1.
 2. Skip the MLflow traces at the end of demo step 4, and say the slide 7 line instead.
 3. In step 3, skip the scroll to documents outside the dossier and mention them in one sentence.
