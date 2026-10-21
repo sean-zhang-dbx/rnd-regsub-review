@@ -4,13 +4,15 @@ Uses the fe-vm-sean-zhang CLI profile. Two profiles share this host, so the toke
 fetched with an explicit --profile instead of through the SDK's CLI credential strategy.
 """
 import json
+import os
 import subprocess
 
-PROFILE = "fe-vm-sean-zhang"
-HOST = "https://fevm-sean-zhang.cloud.databricks.com"
-WAREHOUSE_ID = "16ad82bead3f55b5"
-CATALOG = "sean_zhang_catalog"
-SCHEMA = "rnd_regsub_review"
+# Override with environment variables to run the scripts against another workspace.
+PROFILE = os.environ.get("REGSUB_PROFILE", "fe-vm-sean-zhang")
+HOST = os.environ.get("REGSUB_HOST", "https://fevm-sean-zhang.cloud.databricks.com")
+WAREHOUSE_ID = os.environ.get("REGSUB_WAREHOUSE_ID", "16ad82bead3f55b5")
+CATALOG = os.environ.get("REGSUB_CATALOG", "sean_zhang_catalog")
+SCHEMA = os.environ.get("REGSUB_SCHEMA", "rnd_regsub_review")
 FQ = f"{CATALOG}.{SCHEMA}"
 
 

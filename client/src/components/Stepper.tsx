@@ -13,12 +13,13 @@ export const DRAFT_FINDING = 'csr-11.4.1-02';
 
 const STEPS = [
   { n: 1, title: 'Sources', sub: 'Structured and unstructured', to: '/sources' },
-  { n: 2, title: 'Draft', sub: 'CSR 11.4.1 from Table 14.2.1 v3', to: `/review/${DRAFT_FINDING}?step=draft` },
+  { n: 2, title: 'Draft', sub: 'Whole CSR, drafted by the CSR Pod', to: '/csr' },
   { n: 3, title: 'Re-delivery and QC', sub: 'Table 14.2.1 v3 to v4', to: '/' },
   { n: 4, title: 'Review and sign-off', sub: 'Recompute, check, approve', to: `/review/${DRAFT_FINDING}` },
 ] as const;
 
 function activeStep(pathname: string, search: string): number {
+  if (pathname.startsWith('/csr')) return 2;
   if (pathname.startsWith('/sources') || pathname.startsWith('/documents')) return 1;
   if (pathname.startsWith('/review/')) return new URLSearchParams(search).get('step') === 'draft' ? 2 : 4;
   return 3;

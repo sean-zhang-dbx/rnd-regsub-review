@@ -2,7 +2,7 @@
 
     uv run --python 3.12 --with databricks-sql-connector python scripts/grant_app_sp.py <app-service-principal-client-id>
 
-Covers the Unity Catalog data side (read the schema, write sign-offs and wording checks, read the
+Covers the Unity Catalog data side (read the schema, write sign-offs, wording checks, section drafts and the CSR Pod run tables csr_runs, csr_sections, csr_figure_citations and csr_signoffs, read the
 volume and the AI Search index). The service principal also needs EXECUTE on the Unity Gateway model
 service sean_zhang_catalog.rnd_regsub_review.wording_check (grant it in Catalog Explorer, tab
 Permissions); the Genie Agent and the MLflow experiment are granted by the app resources in
@@ -24,6 +24,10 @@ for stmt in [
     f"GRANT MODIFY ON TABLE {fq}.review_signoffs TO `{sp}`",
     f"GRANT MODIFY ON TABLE {fq}.wording_checks TO `{sp}`",
     f"GRANT MODIFY ON TABLE {fq}.section_drafts TO `{sp}`",
+    f"GRANT MODIFY ON TABLE {fq}.csr_runs TO `{sp}`",
+    f"GRANT MODIFY ON TABLE {fq}.csr_sections TO `{sp}`",
+    f"GRANT MODIFY ON TABLE {fq}.csr_figure_citations TO `{sp}`",
+    f"GRANT MODIFY ON TABLE {fq}.csr_signoffs TO `{sp}`",
     f"GRANT READ VOLUME ON VOLUME {fq}.source_docs TO `{sp}`",
 ]:
     q(stmt)

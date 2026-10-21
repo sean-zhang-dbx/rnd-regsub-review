@@ -4,6 +4,7 @@ import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider, useNavigat
 import { Kbd, Label, Switch } from '@databricks/appkit-ui/react';
 import { Search } from 'lucide-react';
 import { Stepper } from './components/Stepper';
+import { Csr } from './pages/Csr';
 import { Documents } from './pages/Documents';
 import { Overview } from './pages/Overview';
 import { Sources } from './pages/Sources';
@@ -109,6 +110,7 @@ const router = createBrowserRouter([
       { path: '/review/:sentenceId', element: <Viewer /> },
       { path: '/documents', element: <Documents /> },
       { path: '/sources', element: <Sources /> },
+      { path: '/csr', element: <Csr /> },
       { path: '/section/:section', element: <SectionRedirect /> },
     ],
   },

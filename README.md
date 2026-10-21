@@ -15,6 +15,29 @@ The full plan is in `docs/DEMO_PLAN.md`, and every workspace object is listed in
 
 Presenter toggle: press `D`, or use the "Databricks" switch at the top right, to show the "See it in Databricks" links. They are hidden by default.
 
+## The whole CSR: the CSR Pod (`/csr`, demo step 2)
+
+The CSR for LMN-301 is drafted from an empty template by a pod: a team of agents that runs the process left to right, where each agent acts for a responsible department. Each agent is a skill (its instructions, `server/lib/pod/skills.ts`), its tools and what it calls, and each is a real tool-calling loop on Claude Sonnet 5.5 through the Unity Gateway model service (`server/lib/pod/llm.ts`).
+
+| Column | Member | Acts for | Tools |
+|---|---|---|---|
+| Context | Certified context | | Certified TLF tables in Unity Catalog, the parsed protocol and SAP, `section_registry` |
+| Plan | Document Planner | Medical Writing | `read_registry`, `list_certified_tables`, `find_passages` (AI Search), `save_plan` |
+| Draft & check | CSR Author Agent | Medical Writing | `get_section_brief`, `search_documents` (AI Search), `save_csr_draft` |
+| | Safety Narrative Agent | Clinical Safety | `get_patient_record`, `save_narrative` |
+| | QC & Consistency Agent | Biostatistics | `run_section_checks`, `judge_section` (GPT 5.5), `flag_for_person`, `tick_and_tie` (Genie Agent) |
+| Assemble | CSR Assembler | Regulatory Operations | `assemble_fixed_parts`, `run_document_checks`, `finalise_document` |
+| Sign-off | Departmental sign-off | Medical Writing, Biostatistics, Clinical Safety, Regulatory Affairs | `csr_signoffs` |
+
+- The model never sees a figure. Briefs list placeholder names only, and `save_csr_draft` and `save_narrative` reject any number the model typed that is not in its instructions, its cited passages or a table row label. The agent then has to fix the sentence and save again.
+- Waves: 14 drafted sections and 10 patient narratives in parallel, then the discussion (13), then the synopsis (2), which may only use figures the body already uses. Efficacy figures are bound to `efficacy_primary` version 3, the version the draft was written against.
+- Document checks: all template sections present, no typed figures, every figure bound to a certified cell, the same cell has the same value everywhere, synopsis figures appear in the body, every table reference exists, abbreviations defined, required content covered (judged by GPT 5.5), a narrative for every death and SAE leading to withdrawal.
+- Re-delivery: the banner lists the sentences that cite `efficacy_primary` cells that changed from version 3 to 4, and the QC agent ties the headline figures out against the Genie Agent, which reads version 4.
+- Sign-off: each department signs its part with the table versions it was bound to; Regulatory Affairs release returns 409 until the other 3 have approved. These are named approvers in a governed table, not a validated e-signature.
+- Runs: the full CSR takes about 3 minutes (21 Oct 2026: 3 min 01 s on the deployed app, 438 figures, 9 of 9 document checks). "Redraft this section" reruns chosen sections and copies the rest from the latest run. Every run is one MLflow trace (`csr_pod_run`) with a span per agent, model call and tool call.
+- Stored in `csr_runs`, `csr_sections`, `csr_figure_citations` and `csr_signoffs`. Data: `scripts/generate_csr_data.py` (analysis datasets, 7 certified TLF tables built with CREATE TABLE AS SELECT for lineage, `study_metadata`, `narrative_patients`, `section_registry`). Build contract: `docs/CSR_POD_BUILD.md`.
+- The pod runs inside the app for the demo. For production, the PRD recommends Lakeflow Jobs for the full-document run and keeping Beta components off the validated path.
+
 ## Databricks features used
 
 Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026, unless an item is marked unverified.
@@ -33,6 +56,12 @@ Statuses come from plan section 3 and the Azure release notes up to 19 Oct 2026,
 | Genie Agent and Conversation API, on behalf of the user | The reviewer assistant's answers about the certified tables (beat 4), with follow-up questions in the same conversation | GA |
 | AI Search (hybrid) in the reviewer assistant | Answers about the source documents, cited by page | GA |
 | Foundation Model API endpoint `databricks-gpt-5-5` | The live judge in the drafting workflow (a different model family from the drafting model) | GA |
+| Unity Gateway model service with tool calling (OpenAI-compatible chat completions, parallel tool calls) | The 5 agents of the CSR Pod (`/csr`) | GA (Unity Gateway since 4 Aug 2026) |
+| Unity Catalog certified tables built with CREATE TABLE AS SELECT, certification tag, column comments | The 7 new TLF tables the CSR Pod binds figures to, with lineage to the analysis datasets | GA |
+| Delta time travel (`VERSION AS OF 3`) | CSR Pod efficacy figures bound to the version the draft was written against | GA |
+| Genie Agent and Conversation API, as the app identity | The QC agent's tick and tie of headline figures | GA |
+| Foundation Model API endpoint `databricks-gpt-5-5` | The QC agent's judge on each CSR section (source support and required content) | GA |
+| MLflow 3 tracing (`mlflow-tracing` Node SDK), AGENT, CHAT_MODEL and TOOL spans | One trace per CSR Pod run | GA (MLflow 3 tracing); Node SDK status unverified |
 | SQL warehouse (AppKit analytics plugin) | Every query in `config/queries/` | GA |
 | Databricks Apps (AppKit) | The app | GA |
 
@@ -50,6 +79,10 @@ pnpm run dev          # http://localhost:8000
 ```
 
 Set `DATABRICKS_CONFIG_PROFILE`, because 2 profiles share this host and typegen reports every query as OFFLINE without it.
+
+### Configuration for another workspace
+
+The server reads `REGSUB_CATALOG`, `REGSUB_SCHEMA`, `REGSUB_MODEL_SERVICE` and `REGSUB_REVIEWER` from the app environment (defaults: `sean_zhang_catalog`, `rnd_regsub_review`, the `wording_check` model service, Dr. Amara Okafor). The warehouse, Genie Agent and MLflow experiment come from the bundle variables in `databricks.yml`. The scripts read `REGSUB_PROFILE`, `REGSUB_HOST`, `REGSUB_WAREHOUSE_ID`, `REGSUB_CATALOG` and `REGSUB_SCHEMA` in `scripts/dbx.py`. Still hard-coded: the catalog in `config/queries/*.sql`, the volume path in `/api/page-image`, and the `information_schema` lookups in `server/routes/draftRun.ts` and `sources.ts`.
 
 ## Rebuild and check the data
 

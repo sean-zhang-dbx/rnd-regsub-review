@@ -70,7 +70,7 @@ interface Passage {
   text: string;
 }
 
-async function searchDocs(query: string): Promise<Passage[]> {
+export async function searchDocs(query: string): Promise<Passage[]> {
   const out = await dbxFetch<{ result?: { data_array?: [string, string, number, string, number][] } }>(
     `/api/2.0/vector-search/indexes/${INDEX_NAME}/query`,
     { body: { query_text: query, columns: ['doc_title', 'file_path', 'page', 'chunk_text'], num_results: 4, query_type: 'HYBRID' } },

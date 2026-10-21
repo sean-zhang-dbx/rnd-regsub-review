@@ -1,17 +1,18 @@
 import { ServiceContext, getWarehouseId } from '@databricks/appkit';
 import type { Request } from 'express';
 
-export const CATALOG = 'sean_zhang_catalog';
-export const SCHEMA = 'rnd_regsub_review';
+// Set by app environment variables for another workspace; config/queries/*.sql still name the catalog.
+export const CATALOG = process.env.REGSUB_CATALOG ?? 'sean_zhang_catalog';
+export const SCHEMA = process.env.REGSUB_SCHEMA ?? 'rnd_regsub_review';
 export const FQ = `${CATALOG}.${SCHEMA}`;
 
 export const GENIE_SPACE_ID =
   process.env.DATABRICKS_GENIE_SPACE_ID ?? '01f1cbc34f071871a047d7a3489ce6d3';
 export const INDEX_NAME = `${FQ}.doc_chunks_index`;
 /** Unity Gateway model service (custom, with an inference table) that routes to Claude Sonnet 5.5. */
-export const MODEL_SERVICE = `${FQ}.wording_check`;
-export const MODEL_LABEL = 'sean_zhang_catalog.rnd_regsub_review.wording_check';
-export const REVIEWER = 'Dr. Amara Okafor, Regulatory Review';
+export const MODEL_SERVICE = process.env.REGSUB_MODEL_SERVICE ?? `${FQ}.wording_check`;
+export const MODEL_LABEL = MODEL_SERVICE;
+export const REVIEWER = process.env.REGSUB_REVIEWER ?? 'Dr. Amara Okafor, Regulatory Review';
 
 /**
  * Bearer token to use for a call. When the request carries the Apps proxy header

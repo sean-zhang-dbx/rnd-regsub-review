@@ -16,6 +16,7 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
 Earlier in the day:
 
 1. Rehearse once in the app, including "Draft this section", "Recompute" and the assistant.
+   On `/csr`, check that the pre-run draft loads (9 of 9 document checks). A rehearsal "Draft the whole CSR" is fine; the newest finished run is the one shown.
 2. Score the rehearsal traces, so judged traces are ready for the end of the demo:
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with "mlflow[databricks]>=3.5" --with databricks-sql-connector python scripts/judge_traces.py
@@ -23,7 +24,7 @@ Earlier in the day:
 
 10 minutes before:
 
-1. Reset the demo:
+1. Reset the demo (this clears `review_signoffs` and `csr_signoffs`, and keeps the CSR draft):
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py
    ```
@@ -95,32 +96,44 @@ Each step follows tell, show, tell. **Tell first** says what you're about to sho
 
 **Tell after:** "So every sentence in this section traces to a certified cell or a parsed passage, and anything with no source, like 'about two-thirds', is visibly the writer's. The rest of the demo depends on that."
 
-### Step 2. Draft (1 minute 15 seconds)
+### Step 2. Draft the whole CSR (2 minutes)
 
-![Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.](screenshots/workflow/step2_done.png)
-*Step 2 after "Draft this section": placeholders filled from version 3, then the code check and the judge.*
+![Step 2: the CSR Pod on /csr, with the draft prepared before the call.](screenshots/csr/1_pod.png)
+*Step 2: the CSR Pod on /csr, with the draft prepared before the call.*
 
-**Tell first:** "Next, the draft. Most of a reviewer's checking time goes on the figures, so I want to show a draft in which the model never types a number."
+**Tell first:** "On the last call you asked how we would write a whole CSR from an empty template. This is the whole CSR, drafted by a pod: a small team of agents that runs the process the way your departments do, where each agent acts for a responsible department."
 
-**Do:** click "Next: Draft". CSR 11.4.1 opens as it was drafted against Table 14.2.1 version 3, with the Drafting workflow outlined in the Information panel. Click "Draft this section". 5 steps stream in over about 12 seconds.
+**Do:** click "Next: Draft". The CSR page opens with the draft that was run before the call; the header shows the run time, the figures bound and "9 of 9 document checks passed". Move left to right along the pod.
 
-**When step 1 finishes,** the SAP page opens in the middle pane with the passage the draft uses outlined in blue.
+**Say:** "The context is what Biostatistics already certifies in Unity Catalog, plus the protocol and SAP parsed by ai_parse_document. The Document Planner turns the company template, which is a table, into a plan. Then 3 agents work in parallel: the CSR Author drafts each section, the Safety Narrative Agent writes one narrative per death or serious event, and the QC agent checks every section as it lands. The Assembler puts together the parts that are never written, such as the title page, the contents and the section 14 tables."
 
-**Say:** "The workflow starts where a writer would, with the sources we just saw. It takes the endpoint definition from the parsed SAP, shows where on the page it came from, and finds the certified table in Unity Catalog."
+**Do:** click the CSR Author Agent card. The drawer shows its skill under HOW and its tool calls below.
 
-**When step 3 appears,** point to the grey placeholders.
+**Say:** "Each agent is a skill, its tools and what it calls. The rule in this skill is the one we showed last time: the model never sees a figure and never types one. Its save tool is a code check, so if it types a number, the save is refused and it has to rewrite the sentence with a placeholder."
 
-**Say:** "The model drafts the text, but it's never given the numbers. It writes a placeholder for each figure."
+If the tool log shows a rejected save (amber), point to it and to the corrected save below it. Do not promise one; it depends on the run.
 
-**When step 5 finishes,** the table pane is back at version 3. Hover a blue figure in the draft to light up its cell.
+![The CSR Author Agent drawer: the skill (HOW) and the tool calls.](screenshots/csr/2_author_drawer.png)
+*The CSR Author Agent drawer: the skill (HOW) and the tool calls.*
 
-**Say:** "SQL filled each placeholder from version 3 of the certified table, so each figure is tied to its cell from the start. A code check confirms the model typed no number itself, and a judge from a different model family checks the draft against the protocol and the SAP. Each step is a span in one MLflow trace."
+**Do:** close the drawer and click "Show document". Section 11.4.1 opens. Hover a blue figure to see its table, row, column and version, then point to "Needs a person" on the right.
 
-**Do:** point to the "about two-thirds" sentence on the CSR page.
+**Say:** "Every one of these figures was filled by SQL from a certified cell, and the QC agent lists the sentences that need a person, mostly where a sentence interprets a result. The synopsis can only use figures the body already uses, so it can't disagree with the body."
 
-**Tell after:** "None of these figures can disagree with version 3, because none of them was typed, so the check that takes the most time is done when the draft is written. And because the model never sees the values, it can't write 'about two-thirds'. That phrase is the writer's, and we'll come back to it."
+![Section 11.4.1 in the whole draft, with figures bound to cells and the review panel.](screenshots/csr/3_document.png)
+*Section 11.4.1 in the whole draft, with figures bound to cells and the review panel.*
 
-Wording to avoid here: "this page was written by the model". The draft on the page is the seeded Draft 0.4, and the live draft appears in the panel.
+**Do:** scroll down to "Accountability & sign-off".
+
+**Say:** "Delegating the work doesn't remove a department's oversight. Medical Writing, Biostatistics and Clinical Safety each sign their part against the table versions the figures came from, and Regulatory Affairs can't release the CSR until all 3 have signed."
+
+**Tell after:** "About half of a CSR is assembled rather than written, and the rest is drafted from passages and certified cells, so the writer starts from a complete draft with a short list of sentences that need judgement. The banner at the top already shows what happens next: Table 14.2.1 was re-delivered, and the draft knows which sentences quote the changed cells."
+
+**If asked to see it run:** click "Redraft this section" on 12.2 (about 1 minute 45 seconds) and keep talking; the pod cards light up and the tool log fills in. "Draft the whole CSR" takes about 3 minutes, so only start it if there is time, and the new run replaces the draft on screen.
+
+**If asked about the single-section view:** in section 11.4.1 click "Open the section view" for the 5-step drafting workflow from the last call.
+
+Wording to avoid here: "the AI wrote the CSR" (the pod drafts and checks, people interpret and sign) and "validated e-signature" (these are named approvers in governed tables, which the customer validates).
 
 ### Step 3. Re-delivery and QC (1 minute)
 

@@ -23,6 +23,11 @@
   --attention-soft: #fff0c2;
   --open-soft: #e6eaf0;
   --unchanged: #8b95a3;
+  --kit-skill: #c2570c;
+  --kit-tool: #6b4fb3;
+  --kit-agent: #1f5fae;
+  --gate-soft: #fbf1e1;
+  --gate-line: #e3c9a0;
 
   --radius: 4px;
   --radius-page: 0px;
@@ -87,6 +92,11 @@
   --color-attention: var(--attention);
   --color-attention-soft: var(--attention-soft);
   --color-unchanged: var(--unchanged);
+  --color-kit-skill: var(--kit-skill);
+  --color-kit-tool: var(--kit-tool);
+  --color-kit-agent: var(--kit-agent);
+  --color-gate-soft: var(--gate-soft);
+  --color-gate-line: var(--gate-line);
   --radius-page: var(--radius-page);
   --shadow-page: var(--shadow-page);
 }
@@ -164,4 +174,35 @@
   .figure-new-in {
     animation: none;
   }
+}
+
+/* Assembled CSR sections (title page, contents, abbreviations, TLF tables) arrive as server HTML. */
+.csr-html table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  margin: 0.5rem 0 1rem;
+}
+.csr-html th,
+.csr-html td {
+  border-bottom: 1px solid var(--line);
+  padding: 4px 8px;
+  text-align: left;
+}
+.csr-html th {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+.csr-html h3,
+.csr-html h4 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0.75rem 0 0.25rem;
+}
+.csr-html ol,
+.csr-html ul {
+  padding-left: 1.25rem;
+  list-style: revert;
 }
