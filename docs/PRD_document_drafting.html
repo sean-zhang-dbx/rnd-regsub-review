@@ -1,0 +1,805 @@
+<!doctype html><meta charset=utf-8><title>PRD: drafting whole regulated documents on Databricks</title><style>body{font:17px/1.6 -apple-system,Segoe UI,sans-serif;max-width:820px;margin:40px auto;padding:0 24px;color:#1b1f24}
+h1{font-size:30px}h2{margin-top:36px;border-top:1px solid #ddd;padding-top:18px;font-size:22px}h3{font-size:18px;margin-top:24px}
+pre{background:#f4f5f7;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px}code{font-size:14px}
+strong{color:#0b4f8a}hr{border:0;border-top:2px solid #bbb;margin:36px 0}img{width:100%;border:1px solid #ddd;border-radius:6px;margin-top:8px}p em{color:#5a5755;font-size:14px}table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}th,td{border:1px solid #ddd;padding:6px 8px;vertical-align:top;text-align:left}th{background:#f4f5f7}</style><h1>PRD: drafting whole regulated documents on Databricks, starting with the full CSR</h1>
+<p><strong>Internal: Databricks only.</strong> Owner: Sean Zhang (Solutions Architect, HLS UK). Draft 1, 21 October 2026.
+Readers: Mike Sanky and Christina Busmalis (HLS GTM), the Elanco account team (Johnathan Jackson, Hayley Johanson), and the GSK account team.
+Research behind every claim: <code>docs/research/internal_genie_one_2026-10-21.md</code> (internal) and <code>docs/research/external_2026-10-21.md</code> (public). Claims without a source are marked UNVERIFIED.</p>
+<hr />
+<h2>Friday brief (23 October)</h2>
+<p><strong>Why this exists.</strong> On 20 October, Jiajie Zhang (VP AI and Data Science, GSK) watched the CSR section demo and said: "Nobody would be interested in the small subsection of a CSR. Everybody's interested in how to write a whole CSR." Mike asked for a version he can put in front of many customers, and Christina introduced the Elanco team, who want a regulatory-submission POC for animal health. This PRD describes how we would draft a whole document, the CSR first and then other large documents, and what it would take to build a demo of it.</p>
+<p><strong>The idea in one paragraph.</strong> A large regulated document is mostly assembled, not written. In a CSR, the title pages, contents, tables (section 14) and appendices (section 16) are assembled from metadata and outputs that already exist. Sections 9 to 12 are written from the protocol, the SAP and the analysis tables, and only the synopsis, the discussion and the interpretation sentences need judgement. So the system plans the document from a template, drafts each section with a placeholder for every figure, fills the figures from certified tables with SQL, checks every section and the document as a whole, and gives the writer a short list of the sentences that need a person. Every sentence keeps a record of its sources, so a re-delivered table can be traced to every sentence it affects, across documents.</p>
+<p><strong>For the Mike 1:1 (16:30)</strong>
+1. What exists: the 1-section demo (CSR 11.4.1), deployed and scripted, with tracing and judges. Genie One found no other packaged Databricks asset for regulatory writing; the closest are Bimal's Agent Pod spec and partner accelerators (Part A, section 13).
+2. Proposal: build the full-CSR demo described in Part B. It takes about 5 working days, plus a customer-ready package: configurable catalog, README, reset script and a short recording.
+3. Decisions for Mike:
+   - Is about 5 days the right investment, and is it for GSK first or for the field?
+   - Should it be listed under go/industry-hls or become a named FY27 play?
+   - Which other accounts want it? Internal research found Biogen (Project Vector, launching in November) and AstraZeneca Velocia.
+   - What is the GSK next step? Jiajie asked for 3 things: a technical deep dive, a map of where GSK already uses Databricks, and our engagement and cost model.</p>
+<p><strong>For the Elanco call (afternoon)</strong>
+1. Questions to settle before scoping:
+   - Which documents? For example, FDA CVM technical sections and final study reports, EMA veterinary dossiers, or USDA CVB filings.
+   - Where do the inputs live (analysis outputs, protocols, Veeva Vault)?
+   - What does Elanco's architecture review board (SARB) need?
+   - Is this for the November briefing or a real POC with success criteria?
+2. What carries over unchanged: placeholders filled from certified tables, citation records, re-delivery tracing, the review and sign-off flow, and parsing with <code>ai_parse_document</code>.
+3. A suggested first document: one FDA CVM effectiveness final study report (VICH GL9, section 7), because its structure maps closely to a CSR. Part A, section 3.</p>
+<hr />
+<h1>Part A: solution design (customer-neutral)</h1>
+<h2>1. Problem</h2>
+<p>Drafting has become fast, but finishing a document has not.</p>
+<ul>
+<li><strong>Today's cycle.</strong> The EMWA survey puts database lock to final CSR at about 15 weeks for a moderately complex Phase III study, summed by stage. That is about 3 weeks to final TLFs, 3 to 4 weeks to a first draft, and about 5 weeks from first draft to final. The data is from 2008 to 2013, so use it as a planning reference rather than a current median. A 2026 paper by authors from 8 companies reports an average of 5.25 weeks from data availability to CSR approval at companies with lean authoring.</li>
+<li><strong>Generated drafts.</strong> Pfizer reports about 18 minutes per PK section draft, at about 90% of expert quality as rated blind. That covered 7 reports and PK sections only, and revision time was not measured. Merck reports 180 to 80 hours for a fully reviewed first draft, and Novo Nordisk reports CSR first drafts in minutes.</li>
+<li><strong>Where the time goes now.</strong> It goes into checking (tick and tie of every figure against its TLF), cross-section and cross-document consistency, re-delivery when a TLF changes late, and interpretation.</li>
+<li><strong>What peers' designs have in common.</strong> The model reproduces numbers from the TLFs, so every figure still has to be checked by a person.</li>
+</ul>
+<p>The customer problem, in Jiajie's words, is the whole document, end to end, from an empty template. Our answer is that most of the document should never be "written" by a model at all.</p>
+<h2>2. Users and their jobs</h2>
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Job in the process</th>
+<th>What they need from the system</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Medical writer</td>
+<td>Owns the document, the narrative and the interpretation</td>
+<td>A complete first draft in the company template, with the sentences that need judgement listed, and every figure already tied to its source</td>
+</tr>
+<tr>
+<td>Biostatistician</td>
+<td>Delivers and certifies TLFs and analysis datasets</td>
+<td>To certify a TLF once, and know which sentences use each cell</td>
+</tr>
+<tr>
+<td>QC reviewer</td>
+<td>Numerical QC (tick and tie), consistency</td>
+<td>To check sources, not retype numbers; a list of what changed since the last review</td>
+</tr>
+<tr>
+<td>Clinical scientist or physician</td>
+<td>Clinical interpretation, discussion, safety narratives</td>
+<td>Narratives drafted from patient data, with the interpretation left to them</td>
+</tr>
+<tr>
+<td>Regulatory lead</td>
+<td>Submission readiness, cross-document consistency</td>
+<td>One place to see the status of each section and document, and the evidence behind sign-off</td>
+</tr>
+<tr>
+<td>Quality and validation</td>
+<td>GxP validation of the system</td>
+<td>A defined intended use, fixed model versions, traces, evaluation evidence and change control</td>
+</tr>
+<tr>
+<td>Document owner outside the workflow</td>
+<td>Owns documents written elsewhere (IB, briefing books)</td>
+<td>A notification when their document quotes a changed result</td>
+</tr>
+</tbody>
+</table>
+<h2>3. Scope</h2>
+<p><strong>Document types.</strong> Each gets its own template, which becomes a section registry, and its own source map.</p>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Why it fits</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Clinical study report (ICH E3)</td>
+<td>Large, mostly built from TLFs and the protocol and SAP; first ask from GSK</td>
+<td>1 (this PRD)</td>
+</tr>
+<tr>
+<td>CTD Module 2.5 and 2.7 summaries</td>
+<td>Reuse CSR content and the same TLF cells across studies</td>
+<td>2</td>
+</tr>
+<tr>
+<td>DSUR and PBRER</td>
+<td>Rewritten every reporting period on new data, so re-delivery tracing pays off each cycle</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Animal-health submissions (FDA CVM)</td>
+<td>Final study reports (VICH GL9 section 7, VICH GL43 section 2.8) and technical sections (CVM GFI #104) follow the same pattern</td>
+<td>2 (Elanco)</td>
+</tr>
+<tr>
+<td>CMC Module 3</td>
+<td>Built from process, stability and QC data; one Databricks prospect has asked for it</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Protocol (ICH M11)</td>
+<td>Structured protocols feed every downstream document</td>
+<td>Input, not output, in this PRD</td>
+</tr>
+</tbody>
+</table>
+<p><strong>In scope:</strong>
+- Planning a document from a template.
+- Drafting each section from structured and unstructured sources.
+- Figures filled from certified tables.
+- Patient narratives.
+- Checks within each section and across the document.
+- Assembly into the company template.
+- Reviewer workflow and sign-off records.
+- Re-delivery tracing across documents.
+- Evaluation and model change control.</p>
+<p><strong>Out of scope:</strong>
+- eCTD publishing and submission.
+- Producing TLFs. Biostatistics still produces and certifies them.
+- Replacing the company's document management system. Drafts are exported to it.
+- Writing the interpretation for the writer.</p>
+<h2>4. What a whole document is made of</h2>
+<p>For the CSR (ICH E3), each section has a different main source and a different way of being produced. E3 allows structural adaptation, so the template is the company's version of E3.</p>
+<table>
+<thead>
+<tr>
+<th>ICH E3 section</th>
+<th>Main source</th>
+<th>How the system produces it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 Title page, 3 Contents, 4 Abbreviations</td>
+<td>Study metadata, the drafted document</td>
+<td>Assembled, no model</td>
+</tr>
+<tr>
+<td>2 Synopsis</td>
+<td>The approved sections</td>
+<td>Drafted last, from approved section text; its figures are bound to the same cells as the body, so they cannot disagree</td>
+</tr>
+<tr>
+<td>5 Ethics, 6 Investigators and administrative structure</td>
+<td>Protocol, site and investigator lists</td>
+<td>Company boilerplate with placeholders filled from study metadata tables</td>
+</tr>
+<tr>
+<td>7 Introduction, 8 Study objectives</td>
+<td>Protocol (parsed, or an ICH M11 structured protocol)</td>
+<td>Drafted from protocol passages, each sentence citing its passage</td>
+</tr>
+<tr>
+<td>9 Investigational plan</td>
+<td>Protocol, SAP, amendments</td>
+<td>Drafted from protocol and SAP passages; changes in conduct or analysis drafted from amendments and SAP versions</td>
+</tr>
+<tr>
+<td>10 Study patients</td>
+<td>Disposition and deviation TLFs (14.1), listings (16.2.1, 16.2.2)</td>
+<td>Placeholders bound to certified disposition tables</td>
+</tr>
+<tr>
+<td>11 Efficacy evaluation</td>
+<td>Efficacy TLFs (14.2), the SAP</td>
+<td>Placeholders bound to efficacy cells; interpretation sentences flagged for the writer</td>
+</tr>
+<tr>
+<td>12 Safety evaluation</td>
+<td>Exposure, AE, SAE, lab and vital sign TLFs (14.3); patient data for narratives</td>
+<td>Placeholders bound to safety cells; a narrative step drafts each patient narrative (12.3.2 or 14.3.3) from analysis data rows, each with its own figure bindings</td>
+</tr>
+<tr>
+<td>13 Discussion and overall conclusions</td>
+<td>Approved sections 11 and 12</td>
+<td>Drafted with each claim linked to a section; owned by the writer</td>
+</tr>
+<tr>
+<td>14 Tables, figures and graphs</td>
+<td>Biostatistics outputs</td>
+<td>Inserted, not generated</td>
+</tr>
+<tr>
+<td>15 Reference list</td>
+<td>Literature list</td>
+<td>Assembled</td>
+</tr>
+<tr>
+<td>16 Appendices</td>
+<td>Protocol, SAP, sample CRF, patient listings, CRFs</td>
+<td>Assembled from documents and listings, not written</td>
+</tr>
+</tbody>
+</table>
+<p>So about half of the document is assembled from things that already exist. Most of the rest is drafted from passages and certified cells, and only a few sentences per section need judgement. Structured protocols (ICH M11, final November 2025) and TransCelerate's content-reuse templates make sections 7 to 9 easier, because the protocol content arrives as data rather than as a PDF.</p>
+<p><strong>The animal-health equivalent.</strong> A CVM final study report follows its protocol's format and VICH GL9 section 7:
+- Study identification.
+- Materials and methods.
+- Amendments and deviations.
+- Statistical methods.
+- Results, including adverse events.
+- Evaluation, conclusions and signatures.</p>
+<p>A technical section (GFI #104) assembles integrated summaries, the individual study reports, labelling and FOI summary material. The same split applies: assembled, drafted from sources, and judgement.</p>
+<h2>5. Principles</h2>
+<ol>
+<li><strong>The model never types a figure.</strong></li>
+<li>It writes a placeholder, and SQL fills it from a certified table cell at a recorded version.</li>
+<li>A code check rejects any section in which the model wrote a number itself.</li>
+<li>Numbers read from parsed PDFs are never used as figures, only as context.</li>
+<li><strong>Every sentence has a recorded source.</strong> Figures carry a cell, table and version; text carries a passage in a parsed document; anything else is marked as the writer's.</li>
+<li><strong>Assemble before you generate.</strong> Anything that exists already (tables, appendices, boilerplate, metadata) is assembled, not regenerated.</li>
+<li><strong>Workflow first, agents where judgement is needed.</strong> The document plan for a known template is a fixed workflow, which is easier to validate. Agents are used where the path cannot be fixed in advance, for example choosing the passages for a section or drafting a discussion.</li>
+<li><strong>Fixed model versions, changed on purpose.</strong> Models are called through Unity Gateway at a fixed version, and a new version is a change-control event backed by an evaluation.</li>
+<li><strong>Everything is traced and scored.</strong> Every model call is an MLflow trace, and every section is scored by code checks and judges.</li>
+<li><strong>People own interpretation and sign-off.</strong> The system lists what needs a person, and records who signed off, when, and against which table versions.</li>
+</ol>
+<p>These map onto the 10 FDA and EMA Good AI Practice principles (January 2026):
+- A defined context of use.
+- Risk-based controls.
+- Data governance and documentation.
+- Performance assessment of the whole system, including the human step.
+- Life-cycle management.
+- Clear communication of limits.</p>
+<h2>6. Solution overview: the document pod</h2>
+<pre><code>Template (company E3)    Study metadata    TLF catalogue (certified UC tables)    Protocol, SAP, amendments (parsed)
+            \                   |                        |                                   /
+             +------------------+-------- PLAN ----------+----------------------------------+
+                                         |
+                    Document plan: sections, sources, slots, dependencies
+                                         |
+                  +----------------------+-----------------------+
+                  |                      |                       |
+          Section drafting        Narrative drafting       Assembly of fixed parts
+        (per section, in waves)   (per patient, batch)     (title, contents, 14, 16)
+                  |                      |                       |
+                  +----------- CHECK (section, then whole document) -----------+
+                                         |
+                          Assembled draft + &quot;needs a person&quot; list
+                                         |
+                    REVIEW (app): status board, assistant, sign-off
+                                         |
+                RE-DELIVERY: changed TLF cell -&gt; every affected sentence, every document
+</code></pre>
+<p><strong>Plan.</strong>
+- A planner reads the template (a section registry: order, title, instructions, source types, expected TLFs, slots and dependencies), the study metadata, the TLF catalogue and the parsed sources.
+- It produces a document plan, which says for each section which passages and TLF cells it will use and what it depends on. For example, the synopsis waits for every section, and the discussion waits for sections 11 and 12.
+- The plan is a table that a writer can review and edit before drafting starts.
+- For a known template the planner is mostly code. A model is used to match passages to sections.</p>
+<p><strong>Section drafting.</strong> Each section runs the 5 steps already in the demo:
+1. Read the sources.
+2. Find the certified tables.
+3. Draft with a placeholder for each figure.
+4. Fill the figures with SQL.
+5. Check.</p>
+<p>Sections without dependencies run in parallel, and dependent sections run in later waves.</p>
+<p><strong>Narrative drafting.</strong> Patient narratives for deaths, serious adverse events and other significant events are drafted per patient from analysis data rows. They use the same placeholder rule, so every date, dose and lab value comes from a row. A CSR can need hundreds of them, so this runs as a batch job.</p>
+<p><strong>Checks.</strong>
+- Section-level code checks:
+  - No typed figures.
+  - Every slot bound.
+  - Every referenced TLF exists.
+  - Coverage against the template's required content.
+- A judge from a second model family checks that each section is supported by its sources and contradicts nothing.
+- Document-level checks:
+  - The same result has the same value everywhere. This holds by construction when cells are shared, and is checked for text.
+  - Terminology and abbreviations are consistent.
+  - Cross-references resolve.
+  - The synopsis matches the body.
+- Whatever fails, and every interpretation sentence, goes on the "needs a person" list.</p>
+<p><strong>Assembly.</strong> Section text, inserted TLFs, cross-references and the table of contents are put together in the company template. The draft is exported as DOCX, or handed to the document management system.</p>
+<p><strong>Review.</strong> A Databricks App shows:
+- The status of each section: drafted, checked, with the writer, approved.
+- A reviewer assistant: a Genie Agent over the certified tables and AI Search over the parsed documents, with citations.
+- Sign-off per section and per document, stored with the table versions.</p>
+<p><strong>Re-delivery.</strong> When Biostatistics re-delivers a TLF:
+1. Delta keeps both versions.
+2. The citation records list every sentence that quotes a changed cell, in every document.
+3. Figures are recomputed.
+4. A wording check flags sentences whose wording may no longer hold.
+5. Each owner gets their sentences.</p>
+<p>AI Search finds the old result in documents written outside the system. This is the part of the current demo that already works.</p>
+<h2>7. Functional requirements</h2>
+<p>Priority: M = must, S = should, C = could.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-1</td>
+<td>Store a document template as a section registry: order, numbering, title, instructions, source types, expected TLFs, slots, dependencies, assembled or drafted</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-2</td>
+<td>Parse source documents (protocol, SAP, amendments) into typed elements with page positions; accept structured protocols (ICH M11) when available</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-3</td>
+<td>Maintain a TLF catalogue: certified tables in Unity Catalog with TLF number, version, certifier and lineage to the analysis datasets</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-4</td>
+<td>Produce a document plan per run, reviewable and editable by the writer before drafting</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-5</td>
+<td>Draft each section with placeholders only; reject any section in which the model typed a figure</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-6</td>
+<td>Fill every placeholder from a certified cell at a recorded version, and write a figure citation</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-7</td>
+<td>Record a source citation (document, page, element, quote) for each sentence drafted from a passage; mark sentences with no source as the writer's</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-8</td>
+<td>Run sections in dependency order, in parallel where possible, with visible progress and resumable runs</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-9</td>
+<td>Section checks: typed figures, unbound slots, missing TLFs, template coverage, a judge on source support and contradiction</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Document checks: consistency of the same result across sections, terminology and abbreviations, cross-references, synopsis against body</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Assemble the full document in the company template, with TLFs and appendices inserted; export DOCX</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>A "needs a person" list per section: interpretation sentences, failed checks, low-confidence passages</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>Reviewer app: section status board, side-by-side source view, reviewer assistant, sign-off per section and document</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>Re-delivery: list the affected sentences across all documents, recompute the figures, check the wording, route to the owners</td>
+<td>M</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>Patient narratives drafted per patient from analysis data rows, in batch</td>
+<td>S</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>Reuse approved text across documents (CSR to Module 2.7), keeping the same cell bindings</td>
+<td>S</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>Feed reviewer edits back into the evaluation set</td>
+<td>S</td>
+</tr>
+<tr>
+<td>FR-18</td>
+<td>Notify owners of documents outside the system when they quote a changed result (AI Search)</td>
+<td>S</td>
+</tr>
+<tr>
+<td>FR-19</td>
+<td>Redraft one section on request without rerunning the document</td>
+<td>S</td>
+</tr>
+<tr>
+<td>FR-20</td>
+<td>Templates for other document types (Module 2, DSUR, CVM study report)</td>
+<td>C</td>
+</tr>
+</tbody>
+</table>
+<h2>8. Non-functional requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Traceability</td>
+<td>Every figure traceable to a cell and version, every drafted sentence to a passage or to the writer, every model call to an MLflow trace</td>
+</tr>
+<tr>
+<td>Model control</td>
+<td>Model versions fixed per document type and called through Unity Gateway; no change without a recorded evaluation</td>
+</tr>
+<tr>
+<td>Reproducibility</td>
+<td>Figures are deterministic (SQL), and only the wording varies between runs. We say this plainly and do not claim more</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td>A full CSR draft in under 1 hour of wall-clock time for a typical Phase III study (target, to be measured); a single section in under 1 minute</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>Hundreds of narratives per study; dozens of TLFs; multiple documents sharing cells</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>Unity Catalog permissions on every table, volume and model; the app runs with the signed-in user's permissions where the API allows it</td>
+</tr>
+<tr>
+<td>Audit</td>
+<td>Sign-offs, citations and check results stored in governed tables; audit logs copied on a schedule, because system table retention can be shorter than expected</td>
+</tr>
+<tr>
+<td>Portability</td>
+<td>Catalog, schema, warehouse, model service, Genie Agent and experiment set by configuration, not code</td>
+</tr>
+</tbody>
+</table>
+<h2>9. Architecture on Databricks</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Databricks component</th>
+<th>Status (Oct 2026)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Certified analysis tables, versions, lineage</td>
+<td>Unity Catalog tables with certification tags and lineage; Delta version history</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Source documents</td>
+<td>Unity Catalog volumes; <code>ai_parse_document</code> (typed elements, page images, confidence)</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Search over documents</td>
+<td>AI Search (hybrid index over parsed text)</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Ingestion from Veeva Vault</td>
+<td>Lakeflow Connect Veeva Vault connector</td>
+<td>Beta</td>
+</tr>
+<tr>
+<td>Model calls at a fixed version</td>
+<td>Unity Gateway model services</td>
+<td>GA (service policies Beta)</td>
+</tr>
+<tr>
+<td>Second-family judge</td>
+<td>Model Serving, Foundation Model APIs</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Batch drafting (sections, narratives)</td>
+<td>Lakeflow Jobs with for-each tasks</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Agentic planner and long runs</td>
+<td>Agent Bricks CLI with Durable Agent Runtime (run state on Lakebase)</td>
+<td>CLI Beta</td>
+</tr>
+<tr>
+<td>Run state, review state</td>
+<td>Lakebase or Delta tables</td>
+<td>GA (agent sessions and memory Beta)</td>
+</tr>
+<tr>
+<td>Tracing and evaluation</td>
+<td>MLflow 3 tracing and <code>mlflow.genai.evaluate</code> with code scorers and judges</td>
+<td>GA (production monitoring Beta)</td>
+</tr>
+<tr>
+<td>Reviewer assistant</td>
+<td>Genie Agents over the certified tables, plus AI Search</td>
+<td>GA</td>
+</tr>
+<tr>
+<td>Reviewer app</td>
+<td>Databricks Apps (AppKit)</td>
+<td>GA</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation.</strong>
+- Run the production drafting path on GA components: Lakeflow Jobs, Unity Gateway, MLflow, Unity Catalog and Apps.
+- Use the Agent Bricks CLI where an agent is needed and the customer accepts Beta, and keep it off the validated path until it is GA.
+- The Knowledge Assistant and Supervisor Agent have been legacy since 12 October 2026 and should not appear in new designs.</p>
+<p><strong>Data model (core tables).</strong>
+- <code>section_registry</code>: template sections.
+- <code>document_runs</code> and <code>document_plans</code>.
+- <code>section_drafts</code>: exists in the demo.
+- <code>figure_citations</code>: exists.
+- <code>source_citations</code>: exists.
+- <code>check_results</code>.
+- <code>narratives</code>.
+- <code>review_signoffs</code>: exists.
+- <code>wording_checks</code>: exists.</p>
+<h2>10. Evaluation and model change control</h2>
+<ul>
+<li><strong>Scorers per section:</strong></li>
+<li>Figures bound to cells (code; exists in the demo as <code>figures_bound_to_cells</code>).</li>
+<li>Template coverage (code).</li>
+<li>Source support and no contradiction (judge from a second model family; exists in the demo as <code>verdict_supported</code> for wording checks and a live judge for drafts).</li>
+<li>Style against the company style guide (judge).</li>
+<li><strong>Evaluation set:</strong> approved CSRs and their reviewer edits, by section. Reviewer edits are the most useful data, because they show where drafts fell short.</li>
+<li><strong>Model change:</strong> a new model version drafts the evaluation set, and the scores are compared with the current version. The report goes into the change record, and only then is the version changed in Unity Gateway.</li>
+<li><strong>Monitoring:</strong> live traces are scored after each run, and the same scorers run offline and on live traffic.</li>
+</ul>
+<h2>11. GxP, validation and the honest gaps</h2>
+<p><strong>Position.</strong>
+- Validation is a shared responsibility. Databricks provides controls, logs, SDLC evidence and change management, with the GxP whitepaper (v2.3, shareable with customers), the Due Diligence Package and IQ and some OQ material.
+- The customer owns the intended use, the validation scope and IQ, OQ and PQ.
+- The usual pattern is to qualify the platform once and validate each use case.
+- For this system, the intended use is "drafting support with human review and sign-off". That keeps the risk lower than a system that decides anything.
+- A GxP workstream belongs in the statement of work from the start, as AstraZeneca did on Velocia.
+- Partners such as Purgo AI can automate IQ, OQ and Part 11 work.</p>
+<p><strong>Gaps to state openly</strong> (internal research, section 5):
+1. <strong>Run-to-run reproducibility of wording.</strong>
+   - Concede it.
+   - Figures are deterministic, and only wording varies.
+   - Fixed model versions, traces and human sign-off cover the rest.
+2. <strong>No native e-signature.</strong> Sign-off records are custom tables, which the customer validates.
+3. <strong>Model retirement windows.</strong> These are about 3 months for pay-per-token and about 6 months for provisioned throughput, which may be shorter than a revalidation cycle. Plan evaluation-backed model changes as routine.
+4. <strong>Audit log retention</strong> in system tables can be shorter than documented. Copy logs on a schedule.
+5. <strong>Regional data processing for model calls</strong> needs checking per customer. For example, UK South and cross-geo processing.
+6. <strong>A Sev1 report</strong> describes the document parser changing or inventing values on clean PDFs while reporting confidence 1.00. That is why parsed numbers are never used as figures in this design, and parsed text is cited and shown to the reviewer rather than trusted silently.
+7. <strong>Serverless compute has no pinnable runtime version</strong>, which complicates some validation evidence.
+8. <strong>Beta components</strong> (Agent Bricks CLI, agent sessions, Unity Gateway service policies, the Veeva connector) should stay off the validated path.</p>
+<h2>12. Vendors, references and positioning</h2>
+<p><strong>Vendors.</strong>
+- <strong>Certara CoAuthor:</strong> Word-based authoring with templates, content reuse and source-restricted AI.
+- <strong>Yseop Copilot:</strong> whole-document first drafts in Word and Veeva Vault.
+- <strong>Weave Bio:</strong> dossier authoring with sentence-level source tracing and AI reviewers for cross-document inconsistencies, plus an NDA workflow with Parexel from April 2026.</p>
+<p>None publicly claims unattended generation of a complete submission, and all keep expert review.</p>
+<p><strong>Databricks references</strong> (internal; check before naming externally):
+- <strong>AstraZeneca Velocia:</strong> study design and authoring workspace on Apps and Lakebase.
+- <strong>Biogen with MathCo, Project Vector:</strong> CSRs from protocol, SAP and TLFs, launching in November 2026.
+- <strong>Royal FrieslandCampina:</strong> regulatory dossiers.
+- <strong>Tiger Analytics:</strong> CSR generator accelerator from a partner.
+- <strong>Paradigm Health and Accumulus:</strong> partners in submission data exchange.</p>
+<p><strong>Positioning.</strong>
+- Vendors draft inside their own tools. Our difference is that the figures, sources and evidence live in the customer's governed data, where Biostatistics already certifies the tables.
+- Re-delivery is traced across every document and not just inside one tool.
+- The customer can use any model at a fixed version.
+- Vendors and SIs can build on top of it.
+- Anthropic and other model providers are partners on the reasoning layer.</p>
+<h2>13. Engagement model</h2>
+<p>This is the proposal, and the account team (Tansy, Mike) owns the commercial terms.</p>
+<ol>
+<li><strong>Scoping, free.</strong> The account's solution architects and HLS industry specialists work with the customer's business stakeholders (medical writing, biostatistics, regulatory, quality) to map one document type end to end.</li>
+<li>It covers templates, sources, review steps, where the time goes, and validation expectations.</li>
+<li>This answers Jiajie's ask for people who learn the business process before a technology is chosen.</li>
+<li><strong>Pilot, about 4 to 6 weeks, often investment-backed.</strong></li>
+<li>One document type and one or 2 completed studies with approved CSRs.</li>
+<li>The approved CSRs are the comparison, and their reviewer edits become the evaluation set.</li>
+<li>It runs on the customer's data in their workspace.</li>
+<li><strong>Build, fixed price.</strong> Production pipeline, templates, validation workstream and integration with the document management system. FDE-led, with a GxP workstream from the start.</li>
+<li><strong>Extend.</strong> Further document types (Module 2, DSUR and PBRER, CMC), more studies and more teams.</li>
+</ol>
+<h2>14. Pilot measures</h2>
+<table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>Baseline</th>
+<th>Target (to agree with the customer)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Final TLFs to approved CSR</td>
+<td>The customer's current figure, or about 8 to 10 weeks from published surveys</td>
+<td>To be set in scoping</td>
+</tr>
+<tr>
+<td>Writer and QC hours per CSR</td>
+<td>Measured on the pilot studies</td>
+<td>To be set in scoping</td>
+</tr>
+<tr>
+<td>Figures typed by the model</td>
+<td>(by design)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Numerical QC findings at review</td>
+<td>Measured on the approved CSRs</td>
+<td>Fewer than today</td>
+</tr>
+<tr>
+<td>Reviewer edit rate by section</td>
+<td>Measured</td>
+<td>Falling across runs</td>
+</tr>
+<tr>
+<td>Time from TLF re-delivery to updated, rechecked sentences</td>
+<td>Measured today</td>
+<td>Minutes</td>
+</tr>
+</tbody>
+</table>
+<h2>15. Risks and open questions</h2>
+<ul>
+<li><strong>Template variety.</strong> Every company adapts E3. Mitigation: the template is data (a section registry) that is configured per customer.</li>
+<li><strong>Source quality.</strong> Protocols and SAPs arrive as PDFs of varying quality. Mitigation: show the parsed passage next to every cited sentence; accept ICH M11 structured protocols when available.</li>
+<li><strong>Long runs.</strong> A full CSR with narratives runs for a long time. Mitigation: batch jobs, resumable runs, progress per section, and caching of drafts that passed their checks.</li>
+<li><strong>Expectations.</strong> "Write the whole CSR" can be heard as "no writer". Mitigation: say from the start that the system drafts and checks, and people interpret and sign.</li>
+<li><strong>Open:</strong> which customer templates and approved CSRs are available for an evaluation set; who owns validation; how drafts reach the customer's document management system (Veeva Vault, other).</li>
+</ul>
+<hr />
+<h1>Part B: internal build plan for the full-CSR demo</h1>
+<p>Goal: on the existing app, draft a whole synthetic CSR for study LMN-301 from an empty template, and keep the 4 workflow steps (Sources, Draft, Re-delivery and QC, Review and sign-off) working on the whole document. Budget about 5 working days.</p>
+<h2>B1. Reuse as is</h2>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Placeholder binding and the typed-figure check</td>
+<td><code>bind()</code>, <code>server/routes/draftSection.ts:94</code></td>
+</tr>
+<tr>
+<td>Model call through Unity Gateway</td>
+<td><code>callModel()</code>, <code>server/routes/draftSection.ts:122</code></td>
+</tr>
+<tr>
+<td>Storing drafts</td>
+<td><code>persist()</code> and <code>lastDraft()</code>, <code>server/routes/draftSection.ts:149</code>, <code>:166</code></td>
+</tr>
+<tr>
+<td>Streamed steps with MLflow spans</td>
+<td><code>registerDraftRun()</code>, <code>server/routes/draftRun.ts:153</code>; <code>server/lib/tracing.ts</code></td>
+</tr>
+<tr>
+<td>Live judge on a second model family</td>
+<td><code>judge()</code>, <code>server/routes/draftRun.ts:131</code></td>
+</tr>
+<tr>
+<td>Wording check, reviewer assistant, sign-off</td>
+<td><code>server/routes/wordingCheck.ts</code>, <code>assistant.ts</code>, <code>signoff.ts</code></td>
+</tr>
+<tr>
+<td>Parsing and citations</td>
+<td><code>scripts/parse_elements.py</code>, <code>scripts/build_source_citations.py</code>, Sources and Document parsing pages</td>
+</tr>
+<tr>
+<td>Evaluation</td>
+<td><code>scripts/judge_traces.py</code> (<code>figures_bound_to_cells</code>, <code>verdict_supported</code>)</td>
+</tr>
+</tbody>
+</table>
+<h2>B2. Generalise</h2>
+<ul>
+<li><strong>Section registry.</strong> <code>OUTLINES</code> and <code>SLOTS</code> (<code>server/routes/draftSection.ts:15</code>, <code>:27</code>) become a <code>section_registry</code> table: section, title, instructions, slots and their cells, source passages, dependencies, assembled or drafted.</li>
+<li><strong>Sources per section.</strong> <code>SOURCE_QUERIES</code> (<code>server/routes/draftRun.ts:34</code>) becomes source passages per section, chosen by the planner and stored in the plan.</li>
+<li><strong>Table versions.</strong> <code>SOURCE_VERSION = 3</code> (<code>server/routes/draftSection.ts:12</code>) and the 5 queries with <code>VERSION AS OF 3</code> in <code>config/queries/</code> become a parameter: the version each document run was drafted against.</li>
+<li><strong>Sources page.</strong> <code>SECTION = '11.4.1'</code> (<code>server/routes/sources.ts:12</code>) becomes a section parameter.</li>
+<li><strong>Configuration for a customer-ready version.</strong></li>
+<li>Catalog and schema (<code>server/lib/dbx.ts:4</code>).</li>
+<li>Model service.</li>
+<li>Genie Agent.</li>
+<li>MLflow experiment.</li>
+<li>Warehouse.</li>
+<li>Reviewer name.</li>
+<li>The volume paths in the scripts.</li>
+<li>These move to bundle variables and app environment settings.</li>
+</ul>
+<h2>B3. New synthetic data (LMN-301)</h2>
+<ul>
+<li><strong>Analysis datasets:</strong></li>
+<li>Disposition and protocol deviations.</li>
+<li>Demographics and baseline characteristics.</li>
+<li>2 secondary endpoints and 4 subgroups.</li>
+<li>Exposure.</li>
+<li>Adverse events by system organ class and preferred term.</li>
+<li>Serious adverse events and deaths.</li>
+<li>Selected labs.</li>
+<li><strong>Certified TLF tables:</strong> 14.1.x, 14.2.2 to 14.2.4 and 14.3.x, with lineage from the analysis datasets.</li>
+<li><strong>Documents:</strong> a longer protocol and SAP (all sections that 7 to 9 draw from), re-parsed.</li>
+<li><strong>Narratives:</strong> about 10 patients with serious events.</li>
+</ul>
+<h2>B4. New pieces</h2>
+<ul>
+<li><strong>Planner:</strong> builds the document plan from the registry, the TLF catalogue and the parsed sources, and shows it for review.</li>
+<li><strong>Fan-out:</strong> sections run in dependency waves with streamed progress. A Lakeflow Job runs the full document, and the app runs single sections live.</li>
+<li><strong>Narrative step:</strong> drafts the narratives in batch.</li>
+<li><strong>Document checks:</strong> consistency, terminology, cross-references and synopsis against body.</li>
+<li><strong>Assembly:</strong> HTML preview and DOCX export with TLFs inserted.</li>
+<li><strong>Whole-document views:</strong> a status board for the document, and the Viewer and Sources pages extended to any section.</li>
+</ul>
+<h2>B5. Milestones</h2>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Content</th>
+<th>Estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>Synthetic data, TLF tables, longer protocol and SAP, section registry</td>
+<td>About 1 day</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Planner, section fan-out for sections 7 to 13, narratives</td>
+<td>About 1 to 2 days</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>Document checks, assembly and DOCX export, document status board</td>
+<td>About 1 day</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>Customer-ready package: configuration, README, reset script, a 5-minute recording</td>
+<td>About 1 day</td>
+</tr>
+</tbody>
+</table>
+<h2>B6. Demo plan and risks</h2>
+<ul>
+<li><strong>On stage:</strong> show the plan, run 1 or 2 sections live, then open the full document drafted beforehand with its "needs a person" list. Then do the re-delivery across the whole document.</li>
+<li><strong>Risks:</strong></li>
+<li>Model latency over many sections. Mitigation: pre-run, and cache drafts that passed their checks.</li>
+<li>Beta components. Mitigation: use Lakeflow Jobs and the app, not the Agent Bricks CLI, for the demo path.</li>
+<li>Scope creep into Module 2. Mitigation: only the shared-cell reuse already in the demo.</li>
+</ul>
+<hr />
+<h2>Appendix: open questions</h2>
+<p><strong>For Elanco.</strong>
+- Which documents, and for which agency (FDA CVM, EMA veterinary, USDA CVB)?
+- Where do the analysis outputs and protocols live?
+- Is Veeva Vault in use?
+- What does SARB require for a Databricks App?
+- Is this for the November briefing or a POC with success criteria?</p>
+<p><strong>For Mike.</strong>
+- A named FY27 play or a go/industry-hls listing?
+- Which accounts besides GSK and Elanco want it (Biogen, AstraZeneca)?
+- Who funds a GSK pilot?
+- Who joins the London session with Jiajie?</p>
+<p><strong>For GSK (through Tansy).</strong>
+- Which document type first?
+- Are there approved CSRs with reviewer edits to use as an evaluation set?
+- Who owns validation?
+- How does Sonata, or any existing authoring workstream, relate to this?</p>
+<p><strong>UNVERIFIED items to check before external use.</strong>
+- FDA Real-Time Clinical Trials initiative (April 2026).
+- Public 2026 announcements from AstraZeneca, Sanofi and Lilly on CSR generation.
+- Partner names (Paradigm, Accumulus): check go/reffy.
+- The full-CSR wall-clock target, which will be measured in M2.</p>
