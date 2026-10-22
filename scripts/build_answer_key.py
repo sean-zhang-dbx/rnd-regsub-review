@@ -45,6 +45,31 @@ def parse_rows(content):
     return rows
 
 
+def parse_grid(content):
+    """Rows as (is_head, cells, grid_cols, row_idx) plus the table's row and column counts.
+
+    grid_cols[i] is the grid column where cell i starts once colspan and rowspan are applied, so the position is the one
+    a reader sees in the rendered table. row_idx is the 0-based <tr> index. Values are read exactly as in parse_rows."""
+    rows, occupied, ncols = [], {}, 0
+    trs = re.findall(r"<tr>(.*?)</tr>", content or "", flags=re.S)
+    for ri, tr in enumerate(trs):
+        cells, gcols, col = [], [], 0
+        for attrs, inner in re.findall(r"<t[dh]([^>]*)>(.*?)</t[dh]>", tr, flags=re.S):
+            while occupied.get((ri, col)):
+                col += 1
+            cs = int((re.search(r"colspan=\"?(\d+)", attrs) or [0, 1])[1])
+            rs = int((re.search(r"rowspan=\"?(\d+)", attrs) or [0, 1])[1])
+            cells.append(html.unescape(re.sub(r"<[^>]+>", "", inner)).strip())
+            gcols.append(col)
+            for dr in range(rs):
+                for dc in range(cs):
+                    occupied[(ri + dr, col + dc)] = True
+            col += cs
+            ncols = max(ncols, col)
+        rows.append(("<th" in tr, cells, gcols, ri))
+    return rows, len(trs), ncols
+
+
 def tokens(text):
     return TOKEN.findall(text.replace("%", "").replace("*", "").replace("[", " ").replace("]", " "))
 
@@ -106,7 +131,7 @@ def cells_for(table, rows_spec, kind, rows, unmatched):
     group = None
     block = 1
     occ = {}
-    for is_head, cells, page, eid in rows:
+    for is_head, cells, page, eid, gcols, ri, nrows, ncols in rows:
         if is_head or not cells:
             continue
         if kind == "flat":
@@ -144,13 +169,13 @@ def cells_for(table, rows_spec, kind, rows, unmatched):
                     continue
                 tk = tokens(cells[pc])
                 if tok < len(tk):
-                    out.append((table, rr["key"], col, tk[tok], page, eid))
+                    out.append((table, rr["key"], col, tk[tok], page, eid, ri, nrows, gcols[pc], ncols))
     return out
 
 
-def ae_cells(table, rows, page, eid, socs, pts, unmatched):
+def ae_cells(table, rows, page, eid, socs, pts, unmatched, nrows, ncols):
     out = []
-    for is_head, cells in rows:
+    for is_head, cells, gcols, ri in rows:
         if is_head or len(cells) < 2:
             continue
         label = cells[0].strip().upper()
@@ -174,16 +199,19 @@ def ae_cells(table, rows, page, eid, socs, pts, unmatched):
                 continue
             else:
                 key = "pt_" + D.slug(full)
-        rest = " ".join(c for c in cells[1:] if c)
+        # the cell list of an AE row is label then one cell per arm; the grid column of the arm's cell is recorded
+        nz = [i for i in range(1, len(cells)) if cells[i]]
+        rest = " ".join(cells[i] for i in nz)
         pos = 0
-        for arm in ("pbo", "low", "high"):
+        for ai, arm in enumerate(("pbo", "low", "high")):
             m = re.compile(r"\s*(\d+)(?:\s*\(\s*([<>]?[\d.]+)%\s*\))?(?:\s*\[(\d+)\])?").match(rest, pos)
             if not m:
                 break
             pos = m.end()
-            out.append((table, key, f"{arm}_n", m.group(1), page, eid))
+            gc = gcols[nz[min(ai, len(nz) - 1)]] if nz else gcols[-1]
+            out.append((table, key, f"{arm}_n", m.group(1), page, eid, ri, nrows, gc, ncols))
             if m.group(2) is not None:
-                out.append((table, key, f"{arm}_pct", m.group(2), page, eid))
+                out.append((table, key, f"{arm}_pct", m.group(2), page, eid, ri, nrows, gc, ncols))
     return out
 
 
@@ -198,11 +226,15 @@ def build_cells(q):
             AND page IN ({','.join(map(str, pages))}) ORDER BY page, element_id""")
         if table in kinds:
             # a table can span pages (14-2.01): the group carries over, so parse the pages in sequence
-            allrows = [(h, c, page, eid) for page, eid, content in els for h, c in parse_rows(content)]
+            allrows = []
+            for page, eid, content in els:
+                grid, nrows, ncols = parse_grid(content)
+                allrows += [(h, c, page, eid, g, ri, nrows, ncols) for h, c, g, ri in grid]
             out += cells_for(table, meta["rows"], kinds[table], allrows, unmatched)
         else:
             for page, eid, content in els:
-                out += ae_cells(table, parse_rows(content), page, eid, socs, pts, unmatched)
+                grid, nrows, ncols = parse_grid(content)
+                out += ae_cells(table, grid, page, eid, socs, pts, unmatched, nrows, ncols)
     # a cell can only be printed once
     seen, dedup = set(), []
     for c in out:
@@ -212,9 +244,9 @@ def build_cells(q):
             continue
         seen.add(k)
         dedup.append(c)
-    q(f"""CREATE OR REPLACE TABLE {FQ}.submitted_tlf_cells (tlf STRING, row_key STRING, column_name STRING, printed_value STRING, page INT, element_id INT)
-        COMMENT 'ANSWER KEY. Printed numbers of the in-scope section 14 tables of the submitted CDISCPILOT01 CSR, as printed, mapped to our table (tlf), row_key and column. The pod never reads this table. {dbx.SOURCE_NOTE}'""")
-    vals = [f"({lit(a)},{lit(b)},{lit(c)},{lit(d)},{e},{f})" for a, b, c, d, e, f in dedup]
+    q(f"""CREATE OR REPLACE TABLE {FQ}.submitted_tlf_cells (tlf STRING, row_key STRING, column_name STRING, printed_value STRING, page INT, element_id INT, row_idx INT, row_count INT, col_idx INT, col_count INT)
+        COMMENT 'ANSWER KEY. Printed numbers of the in-scope section 14 tables of the submitted CDISCPILOT01 CSR, as printed, mapped to our table (tlf), row_key and column, with the cell position in the printed table element (0-based row_idx and col_idx, row_count and col_count of the table, colspan and rowspan applied). The pod never reads this table. {dbx.SOURCE_NOTE}'""")
+    vals = [f"({lit(a)},{lit(b)},{lit(c)},{lit(d)},{e},{f},{g},{h},{i},{j})" for a, b, c, d, e, f, g, h, i, j in dedup]
     for i in range(0, len(vals), 200):
         q(f"INSERT INTO {FQ}.submitted_tlf_cells VALUES " + ",".join(vals[i:i + 200]))
     q(f"ALTER TABLE {FQ}.submitted_tlf_cells SET TAGS ({dbx.TAGS})")
@@ -228,5 +260,7 @@ def build_cells(q):
 
 if __name__ == "__main__":
     q = dbx.runner()
-    build_sections(q)
+    # --cells-only rebuilds just submitted_tlf_cells (for example to refresh the grid positions).
+    if "--cells-only" not in sys.argv:
+        build_sections(q)
     build_cells(q)

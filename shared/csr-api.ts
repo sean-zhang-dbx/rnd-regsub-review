@@ -34,7 +34,15 @@ export interface ScorecardRow {
 
 export interface Scorecard {
   run: CsrRunRow;
-  headline: { wall_ms: number | null; figures_total: number; figures_matched: number; typed_figures: number };
+  headline: {
+    /** Wall time of the full-CSR run the current draft is based on (the pre-run), never a single-section redraft. */
+    wall_ms: number | null;
+    figures_total: number;
+    figures_matched: number;
+    typed_figures: number;
+    /** Set when the shown run is a redraft (it has a base run): the redraft run, its sections and its own wall time. */
+    redraft: { run_id: string; sections: string[]; wall_ms: number | null } | null;
+  };
   rows: ScorecardRow[];
 }
 
@@ -83,6 +91,15 @@ export interface Tick {
   printed_value: string;
   printed_page: number;
   printed_element_id: number;
+  /** Printed row label (the row label of the TLF table, for example "Baseline: mean"). */
+  row_label: string;
+  /** Arm name of the column (for example "Placebo"), or "p value". */
+  column_label: string;
+  /** Position of the printed cell inside its table element, 0-based, from the parsed table HTML (colspan and rowspan applied); null when unknown. */
+  printed_row_idx: number | null;
+  printed_row_count: number | null;
+  printed_col_idx: number | null;
+  printed_col_count: number | null;
   match: boolean;
 }
 
@@ -95,10 +112,39 @@ export interface Compare {
   wording: { coverage_score: number | null; notes: string; left_for_person: string[] };
 }
 
+/** One AI Search call: the query text and the passages it returned. */
+export interface SearchCallDetail {
+  query: string;
+  passages: { id: string | null; doc: string; doc_part: string; page: number; element_id: number; text: string }[];
+}
+
+/** A tool call of any agent. `detail.searches` is set for find_passages and search_documents. */
+export interface PodToolCall {
+  type: 'tool';
+  agent: string;
+  section?: string;
+  tool: string;
+  args: unknown;
+  ok: boolean;
+  result_summary: string;
+  ms: number;
+  at: string;
+  /** reconstructed is true for runs recorded before queries and passages were stored: replayed from the stored arguments and the index. */
+  detail?: { searches: SearchCallDetail[]; reconstructed?: boolean };
+}
+
 export interface RedeliverResult {
+  /** Releases of the table (1 and 2). */
   old_version: number;
   new_version: number;
+  /** Delta versions of the table. */
+  old_delta_version: number;
+  new_delta_version: number;
   changed_cells: number;
-  affected: { section: string; sentence_idx: number; slot: string; old_value: string; new_value: string }[];
+  /** sentence_idx is 0-based into the drafted sentences. label is "<row label>, <arm>, n" or "<row label>, <arm>, %". */
+  affected: { section: string; sentence_idx: number; slot: string; label: string; old_value: string; new_value: string }[];
   run_id: string | null;
 }
+
+/** GET /api/redeliver/latest: the last re-delivery plus the status of its redraft run; null after a reset. */
+export type RedeliverLatest = (RedeliverResult & { run_status: 'running' | 'done' | 'error' | null }) | null;

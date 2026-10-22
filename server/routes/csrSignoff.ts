@@ -87,6 +87,15 @@ export function registerCsrSignoff(app: Application) {
           return;
         }
       }
+      if (decision === 'approved') {
+        // A second approval from the same department for the same run changes nothing: no new row.
+        const current = await signoffsFor(run_id);
+        const last = [...current.signoffs].reverse().find((s) => s.department === dept.department);
+        if (last?.decision === 'approved') {
+          res.json(current);
+          return;
+        }
+      }
       const versions = await runTableVersions(run_id);
       const email = req.headers['x-forwarded-email'];
       const recordedBy = typeof email === 'string' && email ? `Recorded by ${email}.` : '';

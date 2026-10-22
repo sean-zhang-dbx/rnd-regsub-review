@@ -24,6 +24,7 @@ export interface ToolCall {
   ok: boolean;
   result_summary: string;
   ms: number;
+  detail?: unknown;
 }
 export interface CsrSection {
   section: string;

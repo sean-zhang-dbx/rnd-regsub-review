@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { ROOT_CONTEXT, context } from '@opentelemetry/api';
 import type { LiveSpan } from 'mlflow-tracing';
 import { FQ, MODEL_LABEL, dbxFetch, sqlRows } from '../dbx';
+import { memo } from '../cache';
 import { initTracing, mlflow } from '../tracing';
 import { SKILLS } from './skills';
 import { agentLoop } from './llm';
@@ -18,9 +19,10 @@ import {
   loadStudyMetadata,
   loadTlf,
   refuseAnswerKey,
+  searchDetail,
   searchPassages,
 } from './data';
-import type { AgentId, RegistrySection, Sentence, Slot, SourceRef, TlfData, TlfRef } from './data';
+import type { AgentId, RegistrySection, SearchDetail, Sentence, Slot, SourceRef, TlfData, TlfRef } from './data';
 import { assembleFixedParts, documentChecks, textOf } from './assemble';
 import type { Check, CsrSection, NeedsPerson } from './assemble';
 import { JUDGE_ENDPOINT, JUDGE_LABEL, clearPrintedCache, judgeCoverage, loadScores, persistScore, tickSection } from './score';
@@ -40,7 +42,7 @@ export type PodEvent =
   | { type: 'run'; status: 'running' | 'done' | 'error'; run_id: string; at: string; error?: string; wall_ms?: number }
   | { type: 'agent'; agent: AgentId; status: 'idle' | 'running' | 'done' | 'error'; at: string; summary?: string; progress?: { done: number; total: number } }
   | { type: 'section'; section: string; status: 'planned' | 'drafting' | 'drafted' | 'checked' | 'needs_person' | 'failed' | 'assembled'; agent: AgentId; at: string }
-  | { type: 'tool'; agent: AgentId; section?: string; tool: string; args: unknown; ok: boolean; result_summary: string; ms: number; at: string }
+  | { type: 'tool'; agent: AgentId; section?: string; tool: string; args: unknown; ok: boolean; result_summary: string; ms: number; at: string; detail?: unknown }
   | { type: 'log'; agent: AgentId; section?: string; text: string; at: string };
 
 export interface PlanEntry {
@@ -86,8 +88,24 @@ export function subscribe(runId: string, listener: (e: PodEvent) => void): { rep
   return { replay: [...st.events], done: st.status !== 'running', unsubscribe: () => st.listeners.delete(listener) };
 }
 
+/** The run that is running now, or null. A run that has finished (done or error) is never reported as active. */
 export function activeRunId() {
+  if (activeRun && runs.get(activeRun)?.status !== 'running') activeRun = null;
   return activeRun;
+}
+
+/** Status of a run started by this server or stored in csr_runs; null when the run is unknown. */
+export async function runStatus(runId: string): Promise<'running' | 'done' | 'error' | null> {
+  const live = runs.get(runId);
+  if (live) return live.status;
+  const r = await sqlRows(`SELECT status FROM ${FQ}.csr_runs WHERE run_id = :r`, [{ name: 'r', value: runId }]);
+  return (r[0]?.status as 'running' | 'done' | 'error' | undefined) ?? null;
+}
+
+const finishedListeners: (() => void)[] = [];
+/** Call back whenever a run on this server has finished (done or error), for example to warm caches. */
+export function onRunFinished(cb: () => void) {
+  finishedListeners.push(cb);
 }
 
 export function startRun(sections?: string[]): string {
@@ -113,9 +131,15 @@ export function startRun(sections?: string[]): string {
   runs.set(run_id, st);
   for (const old of [...runs.keys()].slice(0, -5)) runs.delete(old);
   activeRun = run_id;
-  void execute(st).finally(() => {
-    activeRun = null;
-  });
+  void execute(st)
+    .catch((e: Error) => {
+      st.status = 'error';
+      emit(st, { type: 'run', status: 'error', run_id: st.run_id, at: now(), error: e.message });
+    })
+    .finally(() => {
+      if (activeRun === st.run_id) activeRun = null;
+      for (const cb of finishedListeners) cb();
+    });
   return run_id;
 }
 
@@ -514,12 +538,15 @@ async function execute(st: RunState) {
         { name: 'run', value: st.run_id },
       ],
     );
+    // The run is no longer active the moment it is done: a client that reacts to the done event must not see it as running.
+    if (activeRun === st.run_id) activeRun = null;
     emit(st, doneEv);
     root.end({ outputs: { sections: st.sections.size, document_checks: `${passed}/${st.document_checks.length}`, rejected_saves: rejected, figures: `${matched}/${figs}`, wall_ms: st.wall_ms } });
   } catch (e) {
     st.status = 'error';
     st.finished_at = now();
     root.end({ status: mlflow.SpanStatusCode.ERROR, outputs: { error: (e as Error).message } });
+    if (activeRun === st.run_id) activeRun = null;
     emit(st, { type: 'run', status: 'error', run_id: st.run_id, at: now(), error: (e as Error).message });
     await sqlRows(`UPDATE ${FQ}.csr_runs SET status = 'error', finished_at = current_timestamp(), events_json = :ev WHERE run_id = :run`, [
       { name: 'ev', value: JSON.stringify(st.events) },
@@ -593,19 +620,27 @@ async function runPlanner(
         if (queries.length === 0) queries.push(`${reg.title}. ${reg.instructions[0] ?? ''}`);
         const m = candidates.get(reg.section) ?? new Map<string, SourceRef>();
         let n = m.size;
+        const searches: SearchDetail[] = [];
         for (const query of queries.slice(0, 4)) {
-          const hits = await searchPassages(query, 3).catch(() => []);
+          const hits = (await searchPassages(query, 3).catch(() => [])).filter((h) => !refuseAnswerKey(h.doc_part));
+          const ids: (string | null)[] = [];
           for (const h of hits) {
-            if (refuseAnswerKey(h.doc_part)) continue;
-            if ([...m.values()].some((x) => x.kind === 'passage' && x.element_id === h.element_id)) continue;
+            const known = [...m.entries()].find(([, x]) => x.kind === 'passage' && x.element_id === h.element_id);
+            if (known) {
+              ids.push(known[0]);
+              continue;
+            }
             m.set(`A${++n}`, asSourceRef(h));
+            ids.push(`A${n}`);
           }
+          searches.push(searchDetail(query, hits, ids));
         }
         candidates.set(reg.section, m);
         return {
           ok: true,
           summary: `${reg.section}: ${m.size} candidate passages from ${queries.length} search${queries.length === 1 ? '' : 'es'}`,
           content: [...m.entries()].map(([id, p]) => (p.kind === 'passage' ? { id, doc: p.doc_title, page: p.page, text: p.quote.slice(0, 400) } : { id })),
+          detail: { searches },
         };
       },
     },
@@ -755,7 +790,12 @@ async function runAuthor(
           refs.set(id, el);
           out.push({ id, doc: el.doc_title, page: el.page, text: el.quote });
         }
-        return { ok: true, summary: `"${q.slice(0, 60)}": ${out.length} passages`, content: out };
+        return {
+          ok: true,
+          summary: `"${q.slice(0, 60)}": ${out.length} passages`,
+          content: out,
+          detail: { searches: [searchDetail(q, hits.filter((h) => !refuseAnswerKey(h.doc_part)), out.map((o) => o.id))] },
+        };
       },
     },
     {
@@ -1156,6 +1196,11 @@ export interface CsrDocument {
   sections: CsrSection[];
   document_checks: Check[];
   scores: ScoreRow[];
+  /**
+   * Every tool call of the run, all agents (the planner, QC and the assembler have no per-section log). Filled by
+   * loadDocument(runId, { withTools: true }); empty otherwise.
+   */
+  tool_calls: ToolEvent[];
   /** Sentences that quote a cell whose value changed in a later version of its table. */
   redelivery: { section: string; sentence_idx: number; slot: string; table: string; old_version: number; new_version: number; old_value: string; new_value: string }[];
 }
@@ -1167,11 +1212,43 @@ export async function latestDoneRunId(): Promise<string | null> {
   return (r[0]?.run_id as string) ?? null;
 }
 
-/** Events of a finished run, replayed from the stored state (also after a server restart). */
+/**
+ * Events of a finished run, replayed from the stored state (also after a server restart).
+ * Runs recorded before AI Search calls carried their query text and passages store only the arguments and a summary.
+ * For those, the searches are replayed from what the run recorded: the planner's queries are the section's search hints
+ * (the code that built them is deterministic), the author's queries are in the stored arguments. The passages shown are
+ * what the same query returns from the index now, and the event is marked detail.reconstructed = true.
+ */
 export async function loadStoredEvents(runId: string): Promise<PodEvent[] | null> {
-  const r = await sqlRows(`SELECT status, events_json FROM ${FQ}.csr_runs WHERE run_id = :r`, [{ name: 'r', value: runId }]);
-  if (!r[0] || !r[0].events_json) return null;
-  return JSON.parse(r[0].events_json) as PodEvent[];
+  return memo('stored-events', runId, async () => {
+    const r = await sqlRows(`SELECT status, events_json FROM ${FQ}.csr_runs WHERE run_id = :r`, [{ name: 'r', value: runId }]);
+    if (!r[0] || !r[0].events_json) return null;
+    const events = JSON.parse(r[0].events_json) as PodEvent[];
+    const legacy = events.filter((e) => e.type === 'tool' && e.detail === undefined && (e.tool === 'find_passages' || e.tool === 'search_documents'));
+    if (legacy.length === 0) return events;
+    const registry = await loadRegistry();
+    await Promise.all(
+      legacy.map(async (e) => {
+        if (e.type !== 'tool') return;
+        const args = (e.args ?? {}) as { section?: unknown; query?: unknown };
+        let queries: string[] = [];
+        if (e.tool === 'search_documents') {
+          if (typeof args.query === 'string') queries = [args.query];
+        } else {
+          const reg = registry.find((x) => x.section === args.section);
+          if (!reg) return;
+          queries = [...reg.search_hints.map((h) => `${reg.title}: ${h}`), ...(typeof args.query === 'string' && args.query ? [args.query] : [])];
+          if (queries.length === 0) queries.push(`${reg.title}. ${reg.instructions[0] ?? ''}`);
+          queries = queries.slice(0, 4);
+        }
+        const searches: SearchDetail[] = await Promise.all(
+          queries.map(async (q) => searchDetail(q, (await searchPassages(q, 3).catch(() => [])).filter((h) => !refuseAnswerKey(h.doc_part)))),
+        );
+        e.detail = { searches, reconstructed: true };
+      }),
+    );
+    return events;
+  }, (v) => v !== null);
 }
 
 async function redelivery(sections: CsrSection[]) {
@@ -1205,7 +1282,9 @@ const pj = <T>(s: string | null | undefined, f: T): T => {
   }
 };
 
-export async function loadDocument(runId: string): Promise<CsrDocument | null> {
+export type ToolEvent = Extract<PodEvent, { type: 'tool' }>;
+
+export async function loadDocument(runId: string, opts: { withTools?: boolean } = {}): Promise<CsrDocument | null> {
   const st = runs.get(runId);
   if (st && st.status === 'running') {
     const sections = [...st.sections.values()].sort((a, b) => a.ord - b.ord);
@@ -1223,6 +1302,7 @@ export async function loadDocument(runId: string): Promise<CsrDocument | null> {
       sections,
       document_checks: st.document_checks,
       scores: st.scores,
+      tool_calls: opts.withTools ? st.events.filter((e): e is ToolEvent => e.type === 'tool') : [],
       redelivery: [],
     };
   }
@@ -1263,6 +1343,7 @@ export async function loadDocument(runId: string): Promise<CsrDocument | null> {
     sections,
     document_checks: pj<Check[]>(run.document_checks_json, []),
     scores: await loadScores(runId).catch(() => []),
+    tool_calls: opts.withTools ? ((await loadStoredEvents(runId).catch(() => null)) ?? []).filter((e): e is ToolEvent => e.type === 'tool') : [],
     redelivery: await redelivery(sections).catch(() => []),
   };
 }

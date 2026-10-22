@@ -13,6 +13,17 @@ import { loadScores } from '../lib/pod/score';
 
 const RUN_ID = /^csr-[\w-]{6,40}$/;
 
+/** The full-CSR run a draft is based on: follow base_run_id until a run without one (a redraft has one). */
+async function baseFullRun(start: Record<string, string | null>): Promise<Record<string, string | null>> {
+  let cur = start;
+  for (let i = 0; i < 10 && cur.base_run_id; i++) {
+    const [next] = await sqlRows(`SELECT run_id, base_run_id, wall_ms FROM ${FQ}.csr_runs WHERE run_id = :r`, [{ name: 'r', value: cur.base_run_id }]);
+    if (!next) break;
+    cur = next;
+  }
+  return cur;
+}
+
 export function registerScorecard(app: Application) {
   app.get('/api/scorecard', async (req: Request, res: Response) => {
     try {
@@ -41,6 +52,14 @@ export function registerScorecard(app: Application) {
         res.status(404).json({ error: 'no such run' });
         return;
       }
+      const baseRun = await baseFullRun(run);
+      const fullWall = baseRun.wall_ms === null || baseRun.wall_ms === undefined ? null : Number(baseRun.wall_ms);
+      let redraftSections: string[] = [];
+      try {
+        redraftSections = (JSON.parse((run.sections_requested as string) || '[]') as unknown[]).filter((s): s is string => typeof s === 'string');
+      } catch {
+        redraftSections = [];
+      }
       const needs = new Map(sections.map((s) => [s.section as string, (JSON.parse((s.needs_person_json as string) || '[]') as unknown[]).length]));
       const rows = registry
         .filter((r) => r.kind === 'drafted')
@@ -62,10 +81,11 @@ export function registerScorecard(app: Application) {
       res.json({
         run: { ...run, table_versions: releasesOfVersions(JSON.parse((run.table_versions_json as string) || '{}') as Record<string, number>, await teaeReleases()), wall_ms: run.wall_ms === null ? null : Number(run.wall_ms), superseded: run.superseded === 'true' },
         headline: {
-          wall_ms: run.wall_ms === null ? null : Number(run.wall_ms),
+          wall_ms: fullWall,
           figures_total: rows.reduce((a, r) => a + r.figures_total, 0),
           figures_matched: rows.reduce((a, r) => a + r.figures_matched, 0),
           typed_figures: 0,
+          redraft: run.base_run_id ? { run_id: runId, sections: redraftSections, wall_ms: run.wall_ms === null ? null : Number(run.wall_ms) } : null,
         },
         rows,
       });

@@ -288,6 +288,16 @@ export async function searchPassages(query: string, n = 4): Promise<Passage[]> {
   return found;
 }
 
+/** One AI Search call as shown in the pod drawer: the query text and the passages it returned. */
+export interface SearchDetail {
+  query: string;
+  passages: { id: string | null; doc: string; doc_part: string; page: number; element_id: number; text: string }[];
+}
+export const searchDetail = (query: string, hits: Passage[], ids: (string | null)[] = []): SearchDetail => ({
+  query,
+  passages: hits.map((h, i) => ({ id: ids[i] ?? null, doc: h.doc_title, doc_part: h.doc_part, page: h.page, element_id: h.element_id, text: h.quote })),
+});
+
 export const asSourceRef = (p: Passage): SourceRef => ({ kind: 'passage', doc_title: p.doc_title, doc_part: p.doc_part, file_path: p.file_path, page: p.page, element_id: p.element_id, quote: p.quote });
 
 const BASE_ALLOWED = ['24', '26', '95'];

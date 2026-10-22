@@ -16,6 +16,8 @@ export interface ToolResult {
   summary: string;
   /** What the model reads back. */
   content: unknown;
+  /** Shown in the drawer and stored with the event; not sent to the model. */
+  detail?: unknown;
   /** True when this result ends the agent's work (for example an accepted save). */
   stop?: boolean;
 }
@@ -33,6 +35,8 @@ export interface ToolCallRecord {
   ok: boolean;
   result_summary: string;
   ms: number;
+  /** What the call returned in more detail, for the drawer (the AI Search queries and the passages found). */
+  detail?: unknown;
 }
 
 type ChatMessage =
@@ -149,7 +153,7 @@ export async function agentLoop(opts: {
             r = { ok: false, summary: (e as Error).message.slice(0, 160), content: { error: (e as Error).message } };
           }
           ts.end({ outputs: { ok: r.ok, summary: r.summary, content: r.content } });
-          const rec: ToolCallRecord = { tool: c.function.name, args, ok: r.ok, result_summary: r.summary, ms: Date.now() - t0 };
+          const rec: ToolCallRecord = { tool: c.function.name, args, ok: r.ok, result_summary: r.summary, ms: Date.now() - t0, ...(r.detail === undefined ? {} : { detail: r.detail }) };
           log.push(rec);
           opts.onTool?.(rec);
           messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(r.content) });
