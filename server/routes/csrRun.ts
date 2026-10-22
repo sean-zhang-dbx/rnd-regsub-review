@@ -46,7 +46,7 @@ export function registerCsrRun(app: Application) {
   app.get('/api/csr-run/latest', async (_req: Request, res: Response) => {
     try {
       const id = await latestDoneRunId();
-      res.json(id ? await loadDocument(id) : null);
+      res.json(id ? await loadDocument(id, { withTools: true }) : null);
     } catch (e) {
       res.status(500).json({ error: (e as Error).message });
     }
@@ -105,7 +105,7 @@ export function registerCsrRun(app: Application) {
       return;
     }
     try {
-      const doc = await loadDocument(id);
+      const doc = await loadDocument(id, { withTools: true });
       if (!doc) res.status(404).json({ error: 'no such run' });
       else res.json(doc);
     } catch (e) {
