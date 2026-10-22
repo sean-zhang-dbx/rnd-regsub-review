@@ -44,7 +44,7 @@ Content checksum per Delta table (SHA-256 over the canonical text of the sorted 
 | adam_adae | 1191 | 55 | 9b72d626b98075c9d4a645c5df874e17ea6f178b1b8832e4cfbdc750df115615 |
 | adam_adqsadas | 12463 | 40 | ffc90d6a7d0d9561c7acd8450cff19530005a2c4c5bb68f3bf8a23b5a6f8bdf0 |
 | adam_adqscibc | 730 | 36 | 51ad3d297330a5340123f9e27e7a349afd04e467f5286d04a2bddef004eb603f |
-| adam_adtte | 254 | 26 | 3f453b4b4a90831b6220c5606302203b8b2ad9bb4c2ba110ca9d6dcc264b2588 |
+| adam_adtte | 254 | 26 | 2364d1fd79eb02c43ea527b1f93c896f7ceed394398fd4673b02689ba95ace9a |
 
 ## Page ranges per `doc_part`
 

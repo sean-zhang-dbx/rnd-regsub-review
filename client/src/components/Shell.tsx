@@ -3,7 +3,6 @@ import { Switch } from '@databricks/appkit-ui/react';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '../lib/format';
 import { useScorecard } from '../hooks/scorecard';
-import { USE_FIXTURES } from '../fixtures/switch';
 import { useXRay } from '../xray/XRay';
 
 const STOPS = [
@@ -25,7 +24,6 @@ export function Shell() {
           <span className="num font-medium">CDISCPILOT01</span>
           <span className="ml-3 text-muted-foreground">Xanomeline TTS in mild to moderate Alzheimer&apos;s disease</span>
         </p>
-        {USE_FIXTURES ? <span className="text-[12px] text-muted-foreground">Fixture data</span> : null}
         {wall ? <p className="text-[14px] text-muted-foreground">run {formatDuration(wall)}</p> : null}
         <label className="flex cursor-pointer items-center gap-2 text-[13px] text-muted-foreground">
           <Switch checked={on} onCheckedChange={toggle} aria-label="Show Databricks objects" />

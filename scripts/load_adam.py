@@ -26,7 +26,7 @@ EXPECTED_SHA = {
     "cdiscpilot01.pdf": "0cab016c76abb3dcaef31110611c95dbd9cd00df083b35e6d28fd69fca0d842d",
 }
 ROWS = {"adsl": 254, "adae": 1191, "adqsadas": 12463, "adqscibc": 730, "adtte": 254}
-DATE_COLS = {"TRTSDT", "TRTEDT", "ASTDT", "AENDT", "DISONSDT", "VISIT1DT", "RFENDT", "ADT"}
+DATE_FORMATS = ("DATE", "YYMMDD", "E8601DA", "MMDDYY", "DDMMYY")
 EPOCH = date(1960, 1, 1)
 TITLES = {
     "adsl": "Subject-level analysis dataset (ADSL)",
@@ -83,11 +83,14 @@ def main(data_dir: str) -> None:
     for t, n_expected in ROWS.items():
         # pyreadstat, not pandas.read_sas: pandas decodes a SAS 0 as 5.397605346934028e-79 (IBM float zero bug),
         # which would change values. pyreadstat returns exactly the values in the file (checked: identical otherwise).
-        df, _meta = pyreadstat.read_xport(str(src / f"{t}.xpt"), disable_datetime_conversion=True)
+        df, meta = pyreadstat.read_xport(str(src / f"{t}.xpt"), disable_datetime_conversion=True)
         assert len(df) == n_expected, (t, len(df))
         cols = list(df.columns)
+        # Date columns come from the SAS format in the file (DATE9. and similar), so none is missed.
+        date_cols = {c for c, f in meta.original_variable_types.items() if (f or "").upper().startswith(DATE_FORMATS)}
+        print(f"adam_{t}: date columns {sorted(date_cols)}")
         for c in cols:
-            if c in DATE_COLS:
+            if c in date_cols:
                 df[c] = df[c].map(lambda d: None if d != d else EPOCH + timedelta(days=int(d)))
         rows_x = [tuple(None if (isinstance(v, float) and v != v) else v for v in r)
                   for r in df.itertuples(index=False, name=None)]

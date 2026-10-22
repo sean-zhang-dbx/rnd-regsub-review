@@ -1,6 +1,4 @@
-/* Fetch helpers for the routes in docs/DEMO_PLAN.md section 4. With USE_FIXTURES on, they answer from src/fixtures. */
-import { fx } from '../fixtures';
-import { USE_FIXTURES } from '../fixtures/switch';
+/* Fetch helpers for the routes in docs/DEMO_PLAN.md section 4. */
 import type { Compare, CsrDocument, PodDef, PodEvent, Redelivery, Scorecard, SignoffState, Sources } from './types';
 
 async function readError(url: string, res: Response): Promise<Error> {
@@ -39,35 +37,27 @@ function emptyScorecard(e: unknown): Scorecard {
   }
   throw e;
 }
-export const getScorecard = (): Promise<Scorecard> => (USE_FIXTURES ? fx.scorecard() : getJson<Scorecard>('/api/scorecard').catch(emptyScorecard));
-export const getSources = (): Promise<Sources> => (USE_FIXTURES ? fx.sources() : getJson('/api/sources'));
-export const getPod = (): Promise<PodDef> => (USE_FIXTURES ? fx.pod() : getJson('/api/csr/pod'));
-export const getLatestRun = (): Promise<CsrDocument | null> => (USE_FIXTURES ? fx.latestRun() : getJson('/api/csr-run/latest'));
+export const getScorecard = (): Promise<Scorecard> => getJson<Scorecard>('/api/scorecard').catch(emptyScorecard);
+export const getSources = (): Promise<Sources> => getJson('/api/sources');
+export const getPod = (): Promise<PodDef> => getJson('/api/csr/pod');
+export const getLatestRun = (): Promise<CsrDocument | null> => getJson('/api/csr-run/latest');
 export const getActiveRun = (): Promise<string | null> =>
-  USE_FIXTURES ? fx.active().then((r) => r.run_id) : getJson<{ run_id: string | null }>('/api/csr-run/active').then((r) => r.run_id);
+  getJson<{ run_id: string | null }>('/api/csr-run/active').then((r) => r.run_id);
 export const getCompare = (runId: string | undefined, section: string): Promise<Compare> =>
-  USE_FIXTURES ? fx.compare(section) : getJson(`/api/compare?${runId ? `run_id=${encodeURIComponent(runId)}&` : ''}section=${encodeURIComponent(section)}`);
+  getJson(`/api/compare?${runId ? `run_id=${encodeURIComponent(runId)}&` : ''}section=${encodeURIComponent(section)}`);
 export const getSignoffs = (runId: string): Promise<SignoffState> =>
-  USE_FIXTURES ? fx.signoffs() : getJson(`/api/csr/signoffs?run_id=${encodeURIComponent(runId)}`);
+  getJson(`/api/csr/signoffs?run_id=${encodeURIComponent(runId)}`);
 export const postSignoff = async (body: { run_id: string; department: string; decision: 'approved' | 'changes_requested'; note?: string }): Promise<void> => {
-  if (USE_FIXTURES) return fx.signoff(body.department, body.decision);
   await postJson<unknown>('/api/csr/signoff', body);
 };
-export const postRedeliver = (): Promise<Redelivery> => (USE_FIXTURES ? fx.redeliver() : postJson('/api/redeliver', { table: 'tlf_14_5_01_teae' }));
+export const postRedeliver = (): Promise<Redelivery> => postJson('/api/redeliver', { table: 'tlf_14_5_01_teae' });
 export const exportUrl = (runId: string) => `/api/csr-run/${encodeURIComponent(runId)}/export.doc`;
 
-/** Page images are served from the volume by path. Fixture pages carry a data URI. */
-export const pageImageUrl = (path: string) => (path.startsWith('data:') ? path : `/api/page-image?path=${encodeURIComponent(path)}`);
+/** Page images are served from the volume by path. */
+export const pageImageUrl = (path: string) => `/api/page-image?path=${encodeURIComponent(path)}`;
 
 /** Subscribes to the run's event stream (replayed from the start, then live). Returns the unsubscribe function. */
 export function subscribeRun(runId: string, onEvent: (e: PodEvent) => void, onLost?: () => void): () => void {
-  if (USE_FIXTURES) {
-    const redraft = runId === 'fixture-redraft';
-    return fx.stream(redraft ? fx.redraftEvents(runId) : fx.replayEvents(runId), (e) => {
-      onEvent(e);
-      if (redraft && e.type === 'run' && e.status === 'done') fx.finishRedeliver();
-    });
-  }
   const es = new EventSource(`/api/csr-run/${encodeURIComponent(runId)}/events`);
   es.onmessage = (m: MessageEvent<string>) => {
     try {

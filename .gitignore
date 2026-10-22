@@ -19,3 +19,6 @@ data_raw/
 # Auto-generated types (endpoint-specific, varies per developer)
 shared/appkit-types/serving.d.ts
 
+
+# Claude worktrees
+.claude/
