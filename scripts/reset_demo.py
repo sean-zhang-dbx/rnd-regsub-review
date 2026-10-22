@@ -2,7 +2,7 @@
 
     uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py
 
-1. Delete all rows of csr_signoffs.
+1. Delete all rows of csr_signoffs and the stored last re-delivery (demo_state 'redeliver_latest').
 2. If tlf_14_5_01_teae was re-delivered (its content differs from version 1), RESTORE TABLE to the Delta version of
    the first state (recorded in demo_state by scripts/tlf_build.py). Restore adds a new Delta version with the old content.
 3. Mark every run after the pre-run as superseded, so the pre-run is the latest done run. The pre-run is the
@@ -18,6 +18,8 @@ import dbx  # noqa: E402
 FQ = dbx.FQ
 q = dbx.runner()
 q(f"DELETE FROM {FQ}.csr_signoffs")
+# The last re-delivery shown by GET /api/redeliver/latest.
+q(f"DELETE FROM {FQ}.demo_state WHERE state_key = 'redeliver_latest'")
 v1 = int(q(f"SELECT state_value FROM {FQ}.demo_state WHERE state_key = 'teae_v1_delta_version'")[0][0])
 cur = int(q(f"SELECT max(version) FROM (DESCRIBE HISTORY {FQ}.tlf_14_5_01_teae)")[0][0])
 if cur != v1:
