@@ -5,7 +5,19 @@ variables:
   sql_warehouse_id:
     description: SQL Warehouse ID
   serving_endpoint_name:
-    description: Serving endpoint name
+    description: Foundation Model API endpoint used by the judge (second model family)
+  catalog:
+    description: Unity Catalog catalog
+    default: sean_zhang_catalog
+  schema:
+    description: Schema holding every table, volume and index of this demo
+    default: rnd_csr_pod
+  model_service:
+    description: Unity Gateway model service for the five agents (Claude Sonnet 5.5)
+    default: sean_zhang_catalog.rnd_csr_pod.csr_author
+  mlflow_experiment_id:
+    description: MLflow experiment for the pod traces
+    default: ""
 
 resources:
   apps:
@@ -39,4 +51,4 @@ targets:
 
     variables:
       sql_warehouse_id: 16ad82bead3f55b5
-      serving_endpoint_name: databricks-claude-sonnet-5-5
+      serving_endpoint_name: databricks-gpt-5-5

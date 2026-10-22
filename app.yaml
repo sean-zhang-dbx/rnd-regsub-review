@@ -4,3 +4,11 @@ env:
     valueFrom: sql-warehouse
   - name: DATABRICKS_SERVING_ENDPOINT_NAME
     valueFrom: serving-endpoint
+  - name: CSRPOD_CATALOG
+    value: sean_zhang_catalog
+  - name: CSRPOD_SCHEMA
+    value: rnd_csr_pod
+  - name: CSRPOD_MODEL_SERVICE
+    value: sean_zhang_catalog.rnd_csr_pod.csr_author
+  - name: MLFLOW_EXPERIMENT_ID
+    value: "1287687295923748"
