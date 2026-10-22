@@ -1,0 +1,19 @@
+{
+  "comment": "CSR Pod: the five agents of the CSR Pod route to Claude Sonnet 5.5 (rnd_csr_pod demo)",
+  "config": {
+    "inference_table": {
+      "parent": "schemas/sean_zhang_catalog.rnd_csr_pod",
+      "table_name_prefix": "csr_author"
+    },
+    "routing": {
+      "destinations": [
+        {
+          "destination_type": "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL",
+          "name": "primary",
+          "pay_per_token_config": { "model": "models/system.ai.databricks-claude-sonnet-5-5" },
+          "traffic_percentage": 100
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "beat1": { "label": "Schema rnd_csr_pod in Unity Catalog", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod" },
+  "beat1_adam": { "label": "adam_adsl in Catalog Explorer", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/adam_adsl" },
+  "beat1_tlf": { "label": "tlf_14_3_01_adascog_w24 (open the Lineage tab)", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/tlf_14_3_01_adascog_w24" },
+  "beat1_docs": { "label": "Volume source_docs (cdiscpilot01.pdf)", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/volumes/sean_zhang_catalog/rnd_csr_pod/source_docs" },
+  "beat1_search": { "label": "AI Search index doc_elements_index", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/doc_elements_index" },
+  "beat2": { "label": "MLflow experiment rnd_csr_pod (traces)", "url": "https://fevm-sean-zhang.cloud.databricks.com/ml/experiments/1287687295923748/traces" },
+  "beat2_gateway": { "label": "Inference table csr_author_payload of the Unity Gateway model service csr_author", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/csr_author_payload" },
+  "beat3": { "label": "tlf_14_3_01_adascog_w24", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/tlf_14_3_01_adascog_w24" },
+  "beat3_scores": { "label": "csr_scores", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/csr_scores" },
+  "beat4": { "label": "tlf_14_5_01_teae (open the History tab)", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/tlf_14_5_01_teae" },
+  "beat4_signoffs": { "label": "csr_signoffs", "url": "https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/csr_signoffs" },
+  "app": { "label": "Databricks App rnd-csr-pod (after deploy)", "url": "https://fevm-sean-zhang.cloud.databricks.com/apps/rnd-csr-pod" }
+}
