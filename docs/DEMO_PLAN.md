@@ -157,6 +157,14 @@ flowchart LR
 | `POST /api/redeliver` body `{ table: 'tlf_14_5_01_teae' }` | 4 | runs the version 2 build SQL on the warehouse, then starts a redraft run for the sections that quote changed cells. `{ old_version, new_version, changed_cells, affected: [{ section, sentence_idx, slot, old_value, new_value }], run_id }` |
 | `GET /api/csr/signoffs`, `POST /api/csr/signoff` | 4 | as in `rnd_regsub_review` |
 
+**Contract additions after review round 1 (22 Oct 2026, additive only; existing fields keep their meaning):**
+- `GET /api/scorecard`: `headline.wall_ms` is always the wall time of the full-CSR run the current draft is based on (the pre-run), never a single-section redraft. New `headline.redraft: { run_id, sections: string[], wall_ms } | null`, set when the latest done run is a redraft (has `base_run_id`).
+- `GET /api/compare` ticks gain `row_label` (printed row label, for example "Baseline mean"), `column_label` (arm name, for example "Placebo"), and the printed cell's grid position inside its table element: `printed_row_idx`, `printed_row_count`, `printed_col_idx`, `printed_col_count` (0-based, from the parsed table HTML; null when unknown). `sentence_idx` is 0-based into `drafted`.
+- `POST /api/redeliver` affected items gain `label` (for example "Skin and subcutaneous tissue disorders, Placebo, n"); `sentence_idx` is 0-based. `old_version` and `new_version` are releases (1 and 2); `old_delta_version` and `new_delta_version` are the Delta versions.
+- New `GET /api/redeliver/latest`: the last re-delivery result in the `POST /api/redeliver` shape plus `run_status`, or `null` after a reset (`scripts/reset_demo.py` clears it).
+- `POST /api/csr/signoff`: a second `approved` from the same department for the same run is a no-op (200, no new row).
+- Latency: `/api/compare` and `/api/sources` answer in under 1 s when warm (cached per run and table version, warmed at server start); page images are served with long-lived cache headers.
+
 **Engine changes from `rnd_regsub_review` (backend):**
 - Study context, people and skills read the study from `study_metadata`, not the hard-coded LMN-301 text.
 - `find_passages` (planner) and `search_documents` (author) query AI Search with filter `doc_part IN ('protocol', 'sap')`; the registry has `search_hints`, never passages. The code refuses any cited element whose `doc_part` starts with `csr_`.
