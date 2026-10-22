@@ -37,9 +37,11 @@ export function agentOfSection(a: string): AgentId {
 }
 
 /** Tool calls of one agent: the live stream while a replay is on, else the stored logs of the finished run. */
-export function toolsFor(agent: AgentId, live: RunLive, doc: CsrDocument | null): ToolEntry[] {
+export function toolsFor(agent: AgentId, live: RunLive, doc: CsrDocument | null, acts?: string[]): ToolEntry[] {
   if (live.runId) return live.tools.filter((t) => t.agent === agent);
   if (!doc) return [];
+  /* A stored section log mixes the calls of every agent that touched the section: keep the ones this agent owns. */
+  if (acts?.length) return doc.sections.flatMap((s) => s.tool_log.filter((t) => acts.includes(t.tool)).map((t) => ({ ...t, agent, section: s.section })));
   return doc.sections.filter((s) => agentOfSection(s.agent) === agent).flatMap((s) => s.tool_log.map((t) => ({ ...t, agent, section: s.section })));
 }
 

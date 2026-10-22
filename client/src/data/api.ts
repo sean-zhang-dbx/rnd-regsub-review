@@ -1,5 +1,5 @@
 /* Fetch helpers for the routes in docs/DEMO_PLAN.md section 4. */
-import type { Compare, CsrDocument, PodDef, PodEvent, Redelivery, Scorecard, SignoffState, Sources } from './types';
+import type { Compare, CsrDocument, PodDef, PodEvent, Redelivery, RedeliveryLatest, Scorecard, SignoffState, Sources } from './types';
 
 async function readError(url: string, res: Response): Promise<Error> {
   let detail = '';
@@ -43,14 +43,26 @@ export const getPod = (): Promise<PodDef> => getJson('/api/csr/pod');
 export const getLatestRun = (): Promise<CsrDocument | null> => getJson('/api/csr-run/latest');
 export const getActiveRun = (): Promise<string | null> =>
   getJson<{ run_id: string | null }>('/api/csr-run/active').then((r) => r.run_id);
-export const getCompare = (runId: string | undefined, section: string): Promise<Compare> =>
-  getJson(`/api/compare?${runId ? `run_id=${encodeURIComponent(runId)}&` : ''}section=${encodeURIComponent(section)}`);
+/* One request: without run_id the server answers for the latest done run. */
+export const getCompare = (section: string): Promise<Compare> => getJson(`/api/compare?section=${encodeURIComponent(section)}`);
 export const getSignoffs = (runId: string): Promise<SignoffState> =>
   getJson(`/api/csr/signoffs?run_id=${encodeURIComponent(runId)}`);
 export const postSignoff = async (body: { run_id: string; department: string; decision: 'approved' | 'changes_requested'; note?: string }): Promise<void> => {
   await postJson<unknown>('/api/csr/signoff', body);
 };
 export const postRedeliver = (): Promise<Redelivery> => postJson('/api/redeliver', { table: 'tlf_14_5_01_teae' });
+/** The last re-delivery, or null when there is none yet (a 404, a null body, or a server without the route). */
+export async function getRedeliverLatest(): Promise<RedeliveryLatest | null> {
+  const res = await fetch('/api/redeliver/latest');
+  if (res.status === 404) return null;
+  if (!res.ok) throw await readError('/api/redeliver/latest', res);
+  try {
+    const body = (await res.json()) as RedeliveryLatest | null;
+    return body && Array.isArray(body.affected) ? body : null;
+  } catch {
+    return null;
+  }
+}
 export const exportUrl = (runId: string) => `/api/csr-run/${encodeURIComponent(runId)}/export.doc`;
 
 /** Page images are served from the volume by path. */

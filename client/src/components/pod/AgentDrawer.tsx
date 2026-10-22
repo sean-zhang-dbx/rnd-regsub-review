@@ -1,5 +1,6 @@
 /* Tool calls have no ids and the list is append-only, so index keys are correct. */
 /* eslint-disable react/no-array-index-key */
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@databricks/appkit-ui/react';
 import { cn } from '@/lib/utils';
 import type { CsrDocument, PodMember, SourceRef } from '../../data/types';
@@ -42,6 +43,47 @@ function ToolRow({ t }: { t: ToolEntry }) {
   );
 }
 
+const TOOL_CAP = 6;
+
+/** The calls the agent made in this run: the first 6, the rest behind a toggle. */
+function ToolList({ tools }: { tools: ToolEntry[] }) {
+  const [all, setAll] = useState(false);
+  if (tools.length === 0) return <p className="text-[14px] text-muted-foreground">No tool calls recorded for this agent in this run.</p>;
+  const shown = all ? tools : tools.slice(0, TOOL_CAP);
+  return (
+    <>
+      <ol className="space-y-1.5">
+        {shown.map((t, i) => (
+          <ToolRow key={`${t.tool}-${t.section ?? ''}-${i}`} t={t} />
+        ))}
+      </ol>
+      {tools.length > TOOL_CAP ? (
+        <button type="button" onClick={() => setAll((v) => !v)} className="mt-2 text-[13px] font-medium text-primary underline underline-offset-4">
+          {all ? 'Show the first 6' : `Show all ${tools.length}`}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+function SkillToggle({ name, text }: { name: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section>
+      <h3 className="mb-1.5 text-[13px] font-medium text-muted-foreground">Skill</h3>
+      <div className="rounded-control border border-border bg-card p-3">
+        <div className="flex items-baseline gap-3">
+          <p className="num text-[13px] font-medium text-primary">{name}</p>
+          <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="ml-auto text-[13px] font-medium text-primary underline underline-offset-4">
+            {open ? 'Hide the skill' : 'Show the skill'}
+          </button>
+        </div>
+        {open ? <p className="mt-2 text-[14px] leading-relaxed whitespace-pre-line">{text}</p> : null}
+      </div>
+    </section>
+  );
+}
+
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -52,7 +94,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function AgentDrawer({ member, live, doc, onClose }: { member: PodMember | null; live: RunLive; doc: CsrDocument | null; onClose: () => void }) {
-  const tools = member ? toolsFor(member.id, live, doc) : [];
+  const tools = member ? toolsFor(member.id, live, doc, member.acts) : [];
   const state = member ? stateFor(member.id, live, doc) : undefined;
   const passages: { section: string; ref: Extract<SourceRef, { kind: 'passage' }> }[] =
     member && (member.id === 'author' || member.id === 'planner')
@@ -76,45 +118,9 @@ export function AgentDrawer({ member, live, doc, onClose }: { member: PodMember 
                   {state.summary ? `. ${state.summary}` : ''}
                 </p>
               ) : null}
-              {member.how ? (
-                <Block title="Skill">
-                  <div className="rounded-control border border-border bg-card p-3">
-                    <p className="num mb-1 text-[13px] font-medium text-primary">{member.how.name}</p>
-                    <p className="text-[14px] leading-relaxed whitespace-pre-line">{member.how.text}</p>
-                  </div>
-                </Block>
-              ) : null}
-              {member.acts?.length ? (
-                <Block title="Tools it can call">
-                  <div className="flex flex-wrap gap-1.5">
-                    {member.acts.map((a) => (
-                      <span key={a} className="num rounded-control border border-border bg-card px-1.5 py-0.5 text-[12px]">
-                        {a}
-                      </span>
-                    ))}
-                  </div>
-                </Block>
-              ) : null}
-              {member.calls?.length ? (
-                <Block title="Calls">
-                  <ul className="space-y-0.5 text-[14px]">
-                    {member.calls.map((c) => (
-                      <li key={c}>{c}</li>
-                    ))}
-                  </ul>
-                </Block>
-              ) : null}
               {member.kind === 'agent' ? (
                 <Block title={live.runId ? 'Tool calls, live' : 'Tool calls of the run'}>
-                  {tools.length === 0 ? (
-                    <p className="text-[14px] text-muted-foreground">No tool calls recorded for this agent.</p>
-                  ) : (
-                    <ol className="space-y-1.5">
-                      {tools.map((t, i) => (
-                        <ToolRow key={`${t.tool}-${t.section ?? ''}-${i}`} t={t} />
-                      ))}
-                    </ol>
-                  )}
+                  <ToolList tools={tools} />
                 </Block>
               ) : null}
               {passages.length ? (
@@ -127,6 +133,27 @@ export function AgentDrawer({ member, live, doc, onClose }: { member: PodMember 
                         </p>
                         <p className="mt-1 text-[14px] leading-snug">&ldquo;{ref.quote}&rdquo;</p>
                       </li>
+                    ))}
+                  </ul>
+                </Block>
+              ) : null}
+              {member.how ? <SkillToggle name={member.how.name} text={member.how.text} /> : null}
+              {member.acts?.length ? (
+                <Block title="Tools it can call">
+                  <div className="flex flex-wrap gap-1.5">
+                    {member.acts.map((a) => (
+                      <span key={a} className="num rounded-control border border-border bg-card px-1.5 py-0.5 text-[12px]">
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                </Block>
+              ) : null}
+              {member.calls?.length ? (
+                <Block title="Works with">
+                  <ul className="space-y-0.5 text-[14px]">
+                    {member.calls.map((c) => (
+                      <li key={c}>{c}</li>
                     ))}
                   </ul>
                 </Block>

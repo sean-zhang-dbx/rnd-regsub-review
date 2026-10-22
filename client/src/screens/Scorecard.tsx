@@ -57,7 +57,10 @@ export function ScoreLine({ r, to }: { r: ScoreRow; to?: string }) {
   );
   const cls = cn(ROW_GRID, 'relative border-b border-border/70 px-5 py-2 last:border-b-0', differs && 'bg-differs/[0.06]');
   return to ? (
-    <Link to={to} className={cn(cls, 'transition-colors hover:bg-accent')}>
+    <Link to={to} className={cn(cls, 'group cursor-pointer transition-colors hover:bg-accent focus-visible:bg-accent')}>
+      <svg viewBox="0 0 16 16" className="absolute top-1/2 right-0.5 size-4 -translate-y-1/2 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M6 3.5 L10.5 8 L6 12.5" />
+      </svg>
       {differs ? <span className="absolute inset-y-0 left-0 w-[3px] bg-differs" aria-hidden="true" /> : null}
       {body}
     </Link>
@@ -73,7 +76,7 @@ export function Scorecard() {
   const sc = useScorecard();
   const d = sc.data;
   return (
-    <div className="mx-auto max-w-[1180px]">
+    <div className="w-full max-w-[1760px]">
       {sc.loading ? (
         <LoadingBlock rows={8} />
       ) : sc.error || !d ? (
@@ -86,6 +89,9 @@ export function Scorecard() {
             Drafted in {formatDuration(d.headline.wall_ms)} from an empty ICH E3 template. {d.headline.typed_figures} figures typed by a model.{' '}
             <span className="num text-[28px] font-medium">{d.headline.figures_matched}</span> of <span className="num text-[28px] font-medium">{d.headline.figures_total}</span>{' '}
             figures match the submitted CSR.
+            {d.headline.redraft ? (
+              <span className="text-muted-foreground"> {d.headline.redraft.sections.join(', ')} redrafted in {formatDuration(d.headline.redraft.wall_ms)}.</span>
+            ) : null}
           </h1>
           <Panel className="mt-7">
             <XRayMarker id="scorecard" />

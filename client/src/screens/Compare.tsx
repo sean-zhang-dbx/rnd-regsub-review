@@ -19,7 +19,7 @@ import { XRayMarker } from '../xray/XRay';
 const keyOf = (t: { sentence_idx: number; slot: string }) => `${t.sentence_idx}:${t.slot}`;
 
 function reading(t: Tick): string {
-  return `${tlfLabel(t.tlf)}, ${armLabel(t.column_name)}, ${rowWords(t.row_key)}: drafted ${t.drafted_value}, printed ${t.printed_value}`;
+  return `${tlfLabel(t.tlf)}, ${t.column_label || armLabel(t.column_name)}, ${t.row_label || rowWords(t.row_key)}: drafted ${t.drafted_value}, printed ${t.printed_value}`;
 }
 
 function TickMark({ match }: { match: boolean }) {
@@ -38,13 +38,14 @@ function usePrefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** Reveals the ticks one by one, about 7 seconds in total, after a short pause. */
+/** Reveals the ticks one by one, about 6 seconds in total, starting as soon as the data is on screen. */
+const REVEAL_MS = 6000;
 function useReveal(total: number, resetKey: string) {
   const reduced = usePrefersReducedMotion();
   const [count, setShown] = useState(0);
   useEffect(() => {
     if (total === 0 || reduced) return;
-    const step = Math.min(700, Math.max(250, 7000 / total));
+    const step = Math.min(380, Math.max(140, REVEAL_MS / total));
     let timer: ReturnType<typeof setInterval> | undefined;
     const start = setTimeout(() => {
       timer = setInterval(() => {
@@ -53,7 +54,7 @@ function useReveal(total: number, resetKey: string) {
           return n + 1;
         });
       }, step);
-    }, 1800);
+    }, 250);
     return () => {
       clearTimeout(start);
       if (timer) clearInterval(timer);
@@ -62,19 +63,99 @@ function useReveal(total: number, resetKey: string) {
   return reduced ? total : count;
 }
 
-function PageView({ page, active, label }: { page: ComparePage; active: Tick | null; label: string }) {
-  const el = active ? page.elements.find((e) => e.element_id === active.printed_element_id) : undefined;
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+/**
+ * Line weights of the rows of a parsed table, in print lines: the header row is taller (wrapped arm names) and the
+ * printed p-value rows carry a blank line above them. Equal weights when the HTML is missing or does not match the grid.
+ */
+function rowLines(html: string, rowCount: number): { lines: number; lead: number }[] {
+  const equal = Array.from({ length: rowCount }, () => ({ lines: 1, lead: 0 }));
+  if (!/<table/i.test(html)) return equal;
+  const rows = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('tr')];
+  if (rows.length !== rowCount) return equal;
+  return rows.map((r, i) => {
+    const first = r.querySelector('th,td')?.textContent?.trim() ?? '';
+    if (i === 0 && r.querySelector('th')) return { lines: 3, lead: 2 };
+    if (/^p-value/i.test(first)) return { lines: 2, lead: 1 };
+    return { lines: 1, lead: 0 };
+  });
+}
+
+/**
+ * The submitted page. At rest it shows whole. While a figure is hovered it crops to the table element that holds
+ * the printed cell, scaled to the panel width, and boxes the cell (or the whole element when the grid position is unknown).
+ */
+type Rect = { x: number; y: number; w: number; h: number };
+
+/** A window onto the page image: shows `crop` scaled to the frame width, and optionally a box around `box`. One <img>, so hovering never reloads it. */
+function Frame({ page, src, label, crop, box, testid }: { page: ComparePage; src: string; label: string; crop: Rect; box: Rect | null; testid: string }) {
   return (
-    <div className="relative overflow-hidden rounded-control border border-border bg-card">
-      <img src={pageImageUrl(page.image_path)} alt={label} className="block w-full" draggable={false} />
-      {el && active?.printed_page === page.page ? (
-        <div
-          className="pointer-events-none absolute rounded-[2px] border-2 border-primary bg-primary/10"
-          style={{ left: `${(el.x0 / page.width) * 100}%`, top: `${(el.y0 / page.height) * 100}%`, width: `${((el.x1 - el.x0) / page.width) * 100}%`, height: `${((el.y1 - el.y0) / page.height) * 100}%` }}
-          data-testid="element-box"
-        />
-      ) : null}
+    <div className="relative overflow-hidden rounded-control border border-border bg-card" style={{ aspectRatio: `${crop.w} / ${crop.h}` }} data-testid={testid}>
+      <div className="absolute" style={{ width: `${(page.width / crop.w) * 100}%`, left: `${-(crop.x / crop.w) * 100}%`, top: `${-(crop.y / crop.h) * 100}%` }}>
+        <img src={src} alt={label} className="block w-full" draggable={false} />
+        {box ? (
+          <div
+            className="pointer-events-none absolute rounded-[2px] border-2 border-primary bg-primary/10"
+            style={{ left: `${clamp01(box.x / page.width) * 100}%`, top: `${clamp01(box.y / page.height) * 100}%`, width: `${(box.w / page.width) * 100}%`, height: `${(box.h / page.height) * 100}%` }}
+            data-testid="element-box"
+          />
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+/**
+ * The submitted page. At rest it shows whole. While a figure is hovered it crops to the table element that holds the
+ * printed cell, scaled to the panel width, and boxes the cell (the whole element when the grid position is unknown).
+ * A second strip magnifies the row of that cell so the printed number can be read from the back of the room.
+ */
+function PageView({ page, active, label }: { page: ComparePage; active: Tick | null; label: string }) {
+  const src = pageImageUrl(page.image_path);
+  const el = active && active.printed_page === page.page ? page.elements.find((e) => e.element_id === active.printed_element_id) : undefined;
+  const whole: Rect = { x: 0, y: 0, w: page.width, h: page.height };
+  if (!el || !active) {
+    return (
+      <div className="space-y-2">
+        <Frame page={page} src={src} label={label} crop={whole} box={null} testid="page-whole" />
+      </div>
+    );
+  }
+
+  const padX = page.width * 0.012;
+  const padY = page.height * 0.012;
+  const x0 = Math.max(0, el.x0 - padX);
+  const y0 = Math.max(0, el.y0 - padY);
+  const crop: Rect = { x: x0, y: y0, w: Math.min(page.width, el.x1 + padX) - x0, h: Math.min(page.height, el.y1 + padY) - y0 };
+  const { printed_row_idx: ri, printed_row_count: rn, printed_col_idx: ci, printed_col_count: cn } = active;
+  let box: Rect = { x: el.x0, y: el.y0, w: el.x1 - el.x0, h: el.y1 - el.y0 };
+  let strip: Rect | null = null;
+  if (ri != null && rn && ci != null && cn) {
+    const w = rowLines(el.content, rn);
+    const total = w.reduce((a, r) => a + r.lines, 0);
+    const before = w.slice(0, ri).reduce((a, r) => a + r.lines, 0) + (w[ri]?.lead ?? 0);
+    const own = (w[ri]?.lines ?? 1) - (w[ri]?.lead ?? 0);
+    const unit = (el.y1 - el.y0) / total;
+    box = { x: el.x0 + ((el.x1 - el.x0) * ci) / cn, y: el.y0 + unit * before, w: (el.x1 - el.x0) / cn, h: unit * own };
+    const sy = Math.max(0, box.y - unit * 1.6);
+    const sx = Math.max(0, el.x0 - padX);
+    strip = { x: sx, y: sy, w: Math.min(page.width, box.x + box.w + padX * 3) - sx, h: Math.min(page.height, box.y + box.h + unit * 1.6) - sy };
+  }
+  return (
+    <div className="space-y-2">
+      <Frame page={page} src={src} label={label} crop={crop} box={box} testid="page-zoom" />
+      {strip ? <Frame page={page} src={src} label={`${label}, the row of the printed cell`} crop={strip} box={box} testid="page-strip" /> : null}
+    </div>
+  );
+}
+
+/** The reading of one figure, next to the figure it belongs to. */
+function Callout({ t }: { t: Tick }) {
+  return (
+    <span role="tooltip" data-testid="callout" className={cn('num pointer-events-none absolute top-full left-0 z-20 mt-1 w-max max-w-[360px] rounded-control border bg-card px-2.5 py-1.5 text-[13px] leading-snug font-normal whitespace-normal shadow-page', t.match ? 'border-border' : 'border-differs/50 text-differs')}>
+      {reading(t)}
+    </span>
   );
 }
 
@@ -86,16 +167,21 @@ function Body({ data, title }: { data: CompareData; title: string }) {
   const done = shown >= ticks.length;
   const indexOf = useMemo(() => new Map(ticks.map((t, i) => [keyOf(t), i])), [ticks]);
   const hoveredTick = hover ? ticks[indexOf.get(hover) ?? -1] : undefined;
-  const current = done ? hoveredTick : (hoveredTick ?? ticks[Math.max(0, shown - 1)]);
   const matched = ticks.filter((t) => t.match).length;
   const tables = [...new Set(ticks.map((t) => tlfLabel(t.tlf)))];
   const pages = data.submitted.pages;
+  /* Warm the page images so the first hover does not wait for them. */
+  useEffect(() => {
+    pages.forEach((p) => {
+      new Image().src = pageImageUrl(p.image_path);
+    });
+  }, [pages]);
   const firstPage = ticks[0]?.printed_page ?? pages[0]?.page;
   const page = pages.find((p) => p.page === (hoveredTick?.printed_page ?? pageNo ?? firstPage)) ?? pages[0];
 
   return (
     <>
-      <h1 className="min-h-[1.3em] max-w-[960px] text-[28px] leading-tight font-semibold tracking-[-0.01em]" aria-live="polite">
+      <h1 className="min-h-[1.3em] max-w-[1100px] text-[28px] leading-tight font-semibold tracking-[-0.01em]" aria-live="polite">
         {done ? (
           <>
             <span className={cn('num text-[27px] font-medium', matched < ticks.length && 'text-differs')}>{matched}</span> of <span className="num text-[27px] font-medium">{ticks.length}</span>{' '}
@@ -107,11 +193,8 @@ function Body({ data, title }: { data: CompareData; title: string }) {
           </span>
         )}
       </h1>
-      <p className="num mt-1 min-h-[1.5em] text-[13px] text-muted-foreground" data-testid="reading">
-        {current && (shown > 0 || hoveredTick) ? reading(current) : ''}
-      </p>
 
-      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)] items-start gap-5">
+      <div className="mt-5 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-start gap-5">
         <Panel className="shadow-page">
           <XRayMarker id="compare" />
           <header className="border-b border-border px-6 py-3 pr-12">
@@ -122,48 +205,37 @@ function Body({ data, title }: { data: CompareData; title: string }) {
             </h2>
           </header>
           <div className="divide-y divide-border/60">
-            {data.drafted.map((s, si) => {
-              const own = ticks.filter((t) => t.sentence_idx === si);
-              return (
-                <div key={si} className="grid grid-cols-[minmax(0,1fr)_52px] items-center">
-                  <p className="px-6 py-3 text-[16px] leading-[1.7]">
-                    {s.parts.map((p, pi) => {
-                      if ('text' in p) return <span key={pi}>{p.text}</span>;
-                      const k = `${si}:${p.slot}`;
-                      const t = ticks[indexOf.get(k) ?? -1];
-                      const bad = t && !t.match;
-                      return (
-                        <span
-                          key={pi}
-                          tabIndex={0}
-                          data-figure={k}
-                          title={t ? reading(t) : undefined}
-                          onMouseEnter={() => setHover(k)}
-                          onMouseLeave={() => setHover(null)}
-                          onFocus={() => setHover(k)}
-                          onBlur={() => setHover(null)}
-                          className={cn('num cursor-default rounded-[3px] px-[3px] py-px text-[14px]', bad ? 'bg-differs/10 text-differs' : 'bg-bound', hover === k && 'ring-2 ring-primary')}
-                        >
-                          {p.value}
-                        </span>
-                      );
-                    })}
-                    {s.interpretation ? <span className="ml-2 text-[12px] text-muted-foreground">Left for a person</span> : null}
-                  </p>
-                  <div className="flex flex-col items-center justify-center gap-1 py-2">
-                    {own.map((t) => {
-                      const i = indexOf.get(keyOf(t)) ?? 0;
-                      const visible = i < shown;
-                      return (
-                        <span key={keyOf(t)} className="flex size-[22px] items-center justify-center" onMouseEnter={() => setHover(keyOf(t))} onMouseLeave={() => setHover(null)}>
-                          {visible ? <TickMark match={t.match} /> : <span className="size-[7px] rounded-full bg-border" aria-hidden="true" />}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+            {data.drafted.map((s, si) => (
+              <p key={si} className="px-6 py-3 text-[16px] leading-[1.9]">
+                {s.parts.map((p, pi) => {
+                  if ('text' in p) return <span key={pi}>{p.text}</span>;
+                  const k = `${si}:${p.slot}`;
+                  const t = ticks[indexOf.get(k) ?? -1];
+                  const bad = t && !t.match;
+                  const visible = t ? (indexOf.get(k) ?? 0) < shown : false;
+                  return (
+                    <span key={pi} className="relative whitespace-nowrap">
+                      <span
+                        tabIndex={0}
+                        data-figure={k}
+                        onMouseEnter={() => setHover(k)}
+                        onMouseLeave={() => setHover(null)}
+                        onFocus={() => setHover(k)}
+                        onBlur={() => setHover(null)}
+                        className={cn('num cursor-default rounded-[3px] px-[3px] py-px text-[14px]', bad ? 'bg-differs/10 text-differs' : 'bg-bound', hover === k && 'ring-2 ring-primary')}
+                      >
+                        {p.value}
+                      </span>
+                      <span className="inline-flex size-[20px] items-center justify-center align-middle" data-tick={k} onMouseEnter={() => setHover(k)} onMouseLeave={() => setHover(null)}>
+                        {t && visible ? <TickMark match={t.match} /> : <span className="size-[5px] rounded-full bg-border" aria-hidden="true" />}
+                      </span>
+                      {t && hover === k ? <Callout t={t} /> : null}
+                    </span>
+                  );
+                })}
+                {s.interpretation ? <span className="ml-2 text-[12px] text-muted-foreground">Left for a person</span> : null}
+              </p>
+            ))}
           </div>
         </Panel>
 
@@ -186,12 +258,12 @@ function Body({ data, title }: { data: CompareData; title: string }) {
             </div>
           </div>
           <div className="shadow-page">
-            {page ? <PageView page={page} active={current ?? null} label={`Submitted CSR, page ${page.page}`} /> : <EmptyBlock title="No page image">The parsed pages are not available.</EmptyBlock>}
+            {page ? <PageView page={page} active={hoveredTick ?? null} label={`Submitted CSR, page ${page.page}`} /> : <EmptyBlock title="No page image">The parsed pages are not available.</EmptyBlock>}
           </div>
         </div>
       </div>
 
-      <Panel className="mt-5 max-w-[1100px]">
+      <Panel className="mt-5">
         <header className="flex items-baseline gap-4 border-b border-border px-6 py-3">
           <h2 className="text-[17px] font-semibold">Wording</h2>
           <p className="num text-[15px]">Coverage {data.wording.coverage_score ?? "not scored"}{data.wording.coverage_score === null ? "" : " of 5"}</p>
@@ -220,12 +292,11 @@ export function Compare() {
   const [params] = useSearchParams();
   const section = params.get('section') ?? '11.4.1';
   const sc = useScorecard();
-  const runId = sc.data?.run.run_id;
-  const c = useAsync(() => getCompare(runId, section), [runId, section]);
+  const c = useAsync(() => getCompare(section), [section]);
   const title = sc.data?.rows.find((r) => r.section === section)?.title ?? '';
   return (
-    <div className="mx-auto max-w-[1320px]">
-      {c.loading || sc.loading ? (
+    <div className="w-full max-w-[1760px]">
+      {c.loading ? (
         <LoadingBlock rows={7} />
       ) : c.error || !c.data ? (
         <ErrorBlock title={`Section ${section} could not be compared`} detail={c.error} onRetry={c.retry} />

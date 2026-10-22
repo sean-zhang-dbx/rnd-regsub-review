@@ -111,7 +111,14 @@ export type Scorecard = {
     wall_ms?: number | null;
     superseded?: boolean;
   };
-  headline: { wall_ms: number | null; figures_total: number; figures_matched: number; typed_figures: number };
+  headline: {
+    wall_ms: number | null;
+    figures_total: number;
+    figures_matched: number;
+    typed_figures: number;
+    /* Set when the latest done run is a redraft of some sections (contract additions after review round 1). */
+    redraft?: { run_id: string; sections: string[]; wall_ms: number | null } | null;
+  };
   rows: ScoreRow[];
 };
 
@@ -138,6 +145,13 @@ export type Tick = {
   printed_page: number;
   printed_element_id: number;
   match: boolean;
+  /* Contract additions after review round 1. All optional: an older server does not send them. */
+  row_label?: string | null;
+  column_label?: string | null;
+  printed_row_idx?: number | null;
+  printed_row_count?: number | null;
+  printed_col_idx?: number | null;
+  printed_col_count?: number | null;
 };
 export type Compare = {
   run_id?: string;
@@ -153,6 +167,10 @@ export type Redelivery = {
   old_version: number;
   new_version: number;
   changed_cells: number;
-  affected: { section: string; sentence_idx: number; slot: string; old_value: string; new_value: string }[];
+  old_delta_version?: number;
+  new_delta_version?: number;
+  affected: { section: string; sentence_idx: number; slot: string; label?: string | null; old_value: string; new_value: string }[];
   run_id: string | null;
 };
+/* GET /api/redeliver/latest: the POST shape plus the status of the redraft run. */
+export type RedeliveryLatest = Redelivery & { run_status?: 'running' | 'done' | 'error' | null };
