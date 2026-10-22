@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Application, Request, Response } from 'express';
-import { FQ, sqlRows } from '../lib/dbx';
+import { FQ, releasesOfVersions, sqlRows, teaeReleases } from '../lib/dbx';
 import { DEPARTMENTS, PREREQUISITE_DEPARTMENTS, RELEASE_DEPARTMENT } from '../lib/pod/pod';
 import { runTableVersions } from '../lib/pod/run';
 
@@ -26,6 +26,7 @@ interface Signoff {
 
 async function signoffsFor(runId: string): Promise<{ signoffs: Signoff[]; release_blocked_by: string[] }> {
   const rows = await sqlRows(`SELECT * FROM ${FQ}.csr_signoffs WHERE run_id = :r ORDER BY signed_at`, [{ name: 'r', value: runId }]);
+  const teae = await teaeReleases();
   const signoffs = rows.map((r) => ({
     signoff_id: r.signoff_id as string,
     run_id: r.run_id as string,
@@ -35,7 +36,7 @@ async function signoffsFor(runId: string): Promise<{ signoffs: Signoff[]; releas
     role: r.role as string,
     decision: r.decision as Signoff['decision'],
     note: r.note,
-    table_versions: JSON.parse((r.table_versions_json as string) || '{}') as Record<string, number>,
+    table_versions: releasesOfVersions(JSON.parse((r.table_versions_json as string) || '{}') as Record<string, number>, teae),
     signed_at: r.signed_at as string,
   }));
   const latest = new Map<string, Signoff>();

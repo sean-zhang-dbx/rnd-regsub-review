@@ -1,5 +1,5 @@
 import type { Application, Request, Response } from 'express';
-import { CATALOG, FQ, INDEX_NAME, SCHEMA, sqlRows, tableVersion } from '../lib/dbx';
+import { CATALOG, FQ, INDEX_NAME, SCHEMA, releaseOf, sqlRows, tableVersion, teaeReleases } from '../lib/dbx';
 
 /*
  * GET /api/sources: what the pod draws from. The ADaM tables (rows, columns, checksum recorded at load), the
@@ -49,6 +49,7 @@ export function registerSources(app: Application) {
         `SELECT table_name, tag_value FROM ${CATALOG}.information_schema.table_tags WHERE schema_name = '${SCHEMA}' AND tag_name = 'system.certification_status'`,
       ).catch(() => []);
       const certified = new Set(certTags.filter((t) => t.tag_value === 'certified').map((t) => t.table_name as string));
+      const teae = await teaeReleases();
       const tlfs = await Promise.all(
         tlfRows
           .filter((t) => !(t.table_name as string).includes('check'))
@@ -58,7 +59,7 @@ export function registerSources(app: Application) {
             return {
               table,
               tlf: (((t.comment as string) ?? '').match(/Table (14-\d\.\d+)/) ?? [])[1] ?? '',
-              version: await tableVersion(table),
+              version: releaseOf(table, await tableVersion(table), teae),
               certified: certified.has(table),
               upstreams: fromLineage.length ? fromLineage : (STATIC_UPSTREAMS[table] ?? []),
             };

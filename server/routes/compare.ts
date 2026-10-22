@@ -1,5 +1,5 @@
 import type { Application, Request, Response } from 'express';
-import { VOLUME_PAGES, FQ, dbxFetchRaw, sqlRows } from '../lib/dbx';
+import { VOLUME_PAGES, FQ, dbxFetchRaw, releaseOf, sqlRows, teaeReleases } from '../lib/dbx';
 import { latestDoneRunId, loadDocument } from '../lib/pod/run';
 import { loadScores, submittedText, tickSection } from '../lib/pod/score';
 
@@ -73,6 +73,7 @@ export function registerCompare(app: Application) {
           )
         : [];
       const score = (await loadScores(runId)).find((s) => s.section === section);
+      const teae = await teaeReleases();
       res.json({
         run_id: runId,
         section,
@@ -85,7 +86,7 @@ export function registerCompare(app: Application) {
           tlf: t.tlf,
           row_key: t.row_key,
           column_name: t.column_name,
-          table_version: t.table_version,
+          table_version: releaseOf(t.tlf, t.table_version, teae),
           printed_value: t.printed_value,
           printed_page: t.printed_page,
           printed_element_id: t.printed_element_id,

@@ -1,5 +1,5 @@
 import type { Application, Request, Response } from 'express';
-import { FQ, sqlRows } from '../lib/dbx';
+import { FQ, releasesOfVersions, sqlRows, teaeReleases } from '../lib/dbx';
 import { loadRegistry } from '../lib/pod/data';
 import { latestDoneRunId } from '../lib/pod/run';
 import { loadScores } from '../lib/pod/score';
@@ -60,7 +60,7 @@ export function registerScorecard(app: Application) {
           };
         });
       res.json({
-        run: { ...run, table_versions: JSON.parse((run.table_versions_json as string) || '{}') as Record<string, number>, wall_ms: run.wall_ms === null ? null : Number(run.wall_ms), superseded: run.superseded === 'true' },
+        run: { ...run, table_versions: releasesOfVersions(JSON.parse((run.table_versions_json as string) || '{}') as Record<string, number>, await teaeReleases()), wall_ms: run.wall_ms === null ? null : Number(run.wall_ms), superseded: run.superseded === 'true' },
         headline: {
           wall_ms: run.wall_ms === null ? null : Number(run.wall_ms),
           figures_total: rows.reduce((a, r) => a + r.figures_total, 0),

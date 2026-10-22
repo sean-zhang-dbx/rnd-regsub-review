@@ -99,3 +99,37 @@ export async function tableVersion(table: string): Promise<number> {
   const rows = await sqlRows(`SELECT CAST(MAX(version) AS INT) AS v FROM (DESCRIBE HISTORY ${FQ}.${table})`);
   return Number(rows[0]?.v ?? 0);
 }
+
+/*
+ * Release numbers shown to the audience. Delta versions keep growing (every re-delivery and every reset adds one), but
+ * the story has two releases of Table 14-5.01: version 1 (all adverse events) and version 2 (treatment-emergent only).
+ * demo_state maps each Delta version of tlf_14_5_01_teae to its release ('teae_release@<delta>'); the redeliver route
+ * and scripts/reset_demo.py write it. Every other TLF has a single release.
+ */
+export const TEAE_TABLE = 'tlf_14_5_01_teae';
+
+export async function teaeReleases(): Promise<Map<number, number>> {
+  const rows = await sqlRows(
+    `SELECT state_key, state_value FROM ${FQ}.demo_state WHERE state_key = 'teae_v1_delta_version' OR state_key LIKE 'teae_release@%'`,
+  );
+  const m = new Map<number, number>();
+  for (const r of rows) {
+    const key = r.state_key as string;
+    if (key === 'teae_v1_delta_version') m.set(Number(r.state_value), 1);
+    else m.set(Number(key.slice('teae_release@'.length)), Number(r.state_value));
+  }
+  return m;
+}
+
+export function releaseOf(table: string, delta: number, teae: Map<number, number>): number {
+  return table === TEAE_TABLE ? (teae.get(delta) ?? 1) : 1;
+}
+
+export async function recordTeaeRelease(delta: number, release: 1 | 2): Promise<void> {
+  await sqlRows(`DELETE FROM ${FQ}.demo_state WHERE state_key = 'teae_release@${delta}'`);
+  await sqlRows(`INSERT INTO ${FQ}.demo_state VALUES ('teae_release@${delta}', '${release}')`);
+}
+
+export function releasesOfVersions(v: Record<string, number>, teae: Map<number, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(v).map(([t, d]) => [t, releaseOf(t, d, teae)]));
+}

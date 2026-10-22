@@ -26,6 +26,10 @@ if cur != v1:
     if same or rev:
         q(f"RESTORE TABLE {FQ}.tlf_14_5_01_teae TO VERSION AS OF {v1}")
         print(f"restored tlf_14_5_01_teae to Delta version {v1} (was {cur})")
+        # The restored content is release 1 again; the app labels Delta versions by release (server/lib/dbx.ts).
+        new = int(q(f"SELECT max(version) FROM (DESCRIBE HISTORY {FQ}.tlf_14_5_01_teae)")[0][0])
+        q(f"DELETE FROM {FQ}.demo_state WHERE state_key = 'teae_release@{new}'")
+        q(f"INSERT INTO {FQ}.demo_state VALUES ('teae_release@{new}', '1')")
     else:
         print(f"tlf_14_5_01_teae already has the content of version {v1}")
 pre = q(f"SELECT state_value FROM {FQ}.demo_state WHERE state_key = 'preRun'")
