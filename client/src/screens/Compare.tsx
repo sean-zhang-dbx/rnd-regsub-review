@@ -194,7 +194,7 @@ function Body({ data, title }: { data: CompareData; title: string }) {
       <Panel className="mt-5 max-w-[1100px]">
         <header className="flex items-baseline gap-4 border-b border-border px-6 py-3">
           <h2 className="text-[17px] font-semibold">Wording</h2>
-          <p className="num text-[15px]">Coverage {data.wording.coverage_score} of 5</p>
+          <p className="num text-[15px]">Coverage {data.wording.coverage_score ?? "not scored"}{data.wording.coverage_score === null ? "" : " of 5"}</p>
         </header>
         <div className="grid grid-cols-2 gap-8 px-6 py-4">
           <p className="text-[15px] leading-relaxed">{data.wording.notes}</p>

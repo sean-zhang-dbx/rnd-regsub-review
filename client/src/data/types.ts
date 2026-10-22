@@ -34,7 +34,7 @@ export type Part =
   | { text: string }
   | { slot: string; value: string; source_table: string; tlf: string; row_key: string; column_name: string; table_version: number };
 export type SourceRef =
-  | { kind: 'passage'; doc_title: string; file_path: string; page: number; element_id: number; quote: string }
+  | { kind: 'passage'; doc_title: string; doc_part?: string; file_path: string; page: number; element_id: number; quote: string }
   | { kind: 'tlf'; tlf: string; table: string }
   | { kind: 'writer' };
 export type Sentence = { heading?: string; template: string; parts: Part[]; sources: SourceRef[]; interpretation?: boolean };
@@ -88,27 +88,36 @@ export type CsrSignoff = {
 };
 export type SignoffState = { signoffs: CsrSignoff[]; release_blocked_by: string[] };
 
-/* GET /api/scorecard */
+/* GET /api/scorecard. Matches shared/csr-api.ts of the backend branch. */
 export type ScoreRow = {
   section: string;
   title: string;
   department: string;
   figures_total: number;
   figures_matched: number;
-  coverage_score: number;
+  coverage_score: number | null;
   needs_person: number;
   status: 'quiet' | 'differs';
 };
 export type Scorecard = {
-  /* The contract names `run` without a shape. Assumed to be the csr_runs row; the UI reads run_id only. */
-  run: { run_id: string; started_at?: string; finished_at?: string | null; wall_ms?: number | null; table_versions_json?: string };
-  headline: { wall_ms: number; figures_total: number; figures_matched: number; typed_figures: number };
+  run: {
+    run_id: string;
+    base_run_id?: string | null;
+    status?: 'running' | 'done' | 'error';
+    started_at?: string;
+    finished_at?: string | null;
+    table_versions_json?: string;
+    table_versions?: Record<string, number>;
+    wall_ms?: number | null;
+    superseded?: boolean;
+  };
+  headline: { wall_ms: number | null; figures_total: number; figures_matched: number; typed_figures: number };
   rows: ScoreRow[];
 };
 
 /* GET /api/sources */
 export type Sources = {
-  adam: { table: string; rows: number; columns: number; checksum_ok: boolean }[];
+  adam: { table: string; rows: number; columns: number; checksum?: string | null; xpt_sha256?: string | null; checksum_ok: boolean }[];
   tlfs: { table: string; tlf: string; version: number; certified: boolean; upstreams: string[] }[];
   docs: { file: string; pages: number; parts: { doc_part: string; page_from: number; page_to: number; elements: number; searchable: boolean }[] };
   index: { name: string; chunks: number };
@@ -131,11 +140,12 @@ export type Tick = {
   match: boolean;
 };
 export type Compare = {
+  run_id?: string;
   section: string;
   drafted: Sentence[];
   submitted: { pages: ComparePage[]; text: string };
   ticks: Tick[];
-  wording: { coverage_score: number; notes: string; left_for_person: string[] };
+  wording: { coverage_score: number | null; notes: string; left_for_person: string[] };
 };
 
 /* POST /api/redeliver */
@@ -144,5 +154,5 @@ export type Redelivery = {
   new_version: number;
   changed_cells: number;
   affected: { section: string; sentence_idx: number; slot: string; old_value: string; new_value: string }[];
-  run_id: string;
+  run_id: string | null;
 };

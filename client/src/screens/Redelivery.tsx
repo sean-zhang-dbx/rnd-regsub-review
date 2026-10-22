@@ -79,7 +79,7 @@ export function Redelivery() {
     try {
       const r = await postRedeliver();
       setResult(r);
-      attach(r.run_id);
+      if (r.run_id) attach(r.run_id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The re-delivery could not start.');
     } finally {

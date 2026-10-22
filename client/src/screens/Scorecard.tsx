@@ -50,7 +50,7 @@ export function ScoreLine({ r, to }: { r: ScoreRow; to?: string }) {
           <span className="text-[13px] text-muted-foreground">No figures</span>
         )}
       </span>
-      <span className="num text-[14px]">{r.coverage_score} of 5</span>
+      <span className="num text-[14px]">{r.coverage_score === null ? "not scored" : `${r.coverage_score} of 5`}</span>
       <span className="num text-[14px]">{r.needs_person}</span>
       <span className="truncate text-[14px] text-muted-foreground">{r.department}</span>
     </>

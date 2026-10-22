@@ -32,7 +32,14 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return (await res.json()) as T;
 }
 
-export const getScorecard = (): Promise<Scorecard> => (USE_FIXTURES ? fx.scorecard() : getJson('/api/scorecard'));
+/* The server answers 404 with "there is no finished run yet" before the first run: show it as empty, not as an error. */
+function emptyScorecard(e: unknown): Scorecard {
+  if (e instanceof Error && /no finished run/i.test(e.message)) {
+    return { run: { run_id: '' }, headline: { wall_ms: null, figures_total: 0, figures_matched: 0, typed_figures: 0 }, rows: [] };
+  }
+  throw e;
+}
+export const getScorecard = (): Promise<Scorecard> => (USE_FIXTURES ? fx.scorecard() : getJson<Scorecard>('/api/scorecard').catch(emptyScorecard));
 export const getSources = (): Promise<Sources> => (USE_FIXTURES ? fx.sources() : getJson('/api/sources'));
 export const getPod = (): Promise<PodDef> => (USE_FIXTURES ? fx.pod() : getJson('/api/csr/pod'));
 export const getLatestRun = (): Promise<CsrDocument | null> => (USE_FIXTURES ? fx.latestRun() : getJson('/api/csr-run/latest'));
