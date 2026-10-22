@@ -143,7 +143,7 @@ function Docs({ d, index }: { d: SourcesData['docs']; index: SourcesData['index'
 export function Sources() {
   const s = useAsync(getSources);
   return (
-    <div className="mx-auto max-w-[1180px]">
+    <div className="w-full max-w-[1760px]">
       <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.01em]">The submitted report is the answer key. The pod cannot read it.</h1>
       <div className="mt-6">
         {s.loading ? (

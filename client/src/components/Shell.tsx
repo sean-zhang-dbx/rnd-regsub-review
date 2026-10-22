@@ -54,7 +54,7 @@ export function Shell() {
             ))}
           </ul>
         </nav>
-        <main className="min-h-0 overflow-y-auto px-8 py-7">
+        <main className="min-h-0 overflow-y-auto px-6 py-7">
           <Outlet />
         </main>
       </div>

@@ -42,7 +42,7 @@ export function Pod() {
   const member = pod.data?.members.find((m) => m.id === drawer) ?? null;
 
   return (
-    <div className="mx-auto max-w-[1280px]">
+    <div className="w-full max-w-[1760px]">
       <div className="flex items-end gap-4">
         <h1 className="flex-1 text-[26px] leading-tight font-semibold tracking-[-0.01em]">Open an agent to see its skill, its tool calls and the passages it chose.</h1>
         <Button className="rounded-control" disabled={running || !latest.data} onClick={replay}>
