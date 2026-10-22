@@ -1,82 +1,133 @@
 @import "@databricks/appkit-ui/styles.css";
+@import "@fontsource/instrument-sans/latin-400.css";
+@import "@fontsource/instrument-sans/latin-500.css";
+@import "@fontsource/instrument-sans/latin-600.css";
+@import "@fontsource/instrument-sans/latin-700.css";
+@import "@fontsource/spline-sans-mono/latin-400.css";
+@import "@fontsource/spline-sans-mono/latin-500.css";
 
+/*
+ * Tokens from docs/DEMO_PLAN.md section 5. Components use these through the shadcn variable names
+ * and the extra roles below; they never contain raw colour values.
+ *
+ * Derived, not new: --muted is the background one step darker, --xray-muted and --xray-line are the
+ * drawer text and surface mixed. The page is light only (class="light" on <html> turns off the
+ * appkit-ui dark media query).
+ */
 :root {
-  /* --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.603 0.135 166.892);
-  --success-foreground: oklch(1 0 0);
-  --warning: oklch(0.795 0.157 78.748);
-  --warning-foreground: oklch(0.199 0.027 238.732);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067); */
+  --radius: 6px;
+  --radius-control: 4px;
+  color-scheme: light;
+
+  --background: #edf1ef;
+  --foreground: #17201d;
+  --card: #ffffff;
+  --card-foreground: #17201d;
+  --popover: #ffffff;
+  --popover-foreground: #17201d;
+  --primary: #5a2e7a;
+  --primary-foreground: #ffffff;
+  --secondary: #e4eae7;
+  --secondary-foreground: #17201d;
+  --muted: #e4eae7;
+  --muted-foreground: #5e6b66;
+  --accent: #eee6f4;
+  --accent-foreground: #5a2e7a;
+  --destructive: #b0451c;
+  --destructive-foreground: #ffffff;
+  --success: #1e7a4c;
+  --success-foreground: #ffffff;
+  --warning: #b0451c;
+  --warning-foreground: #ffffff;
+  --border: #d6ddda;
+  --input: #d6ddda;
+  --ring: #5a2e7a;
+
+  --chart-1: #5a2e7a;
+  --chart-2: #1e7a4c;
+  --chart-3: #b0451c;
+  --chart-4: #5e6b66;
+  --chart-5: #9a8aa8;
+
+  --sidebar: #edf1ef;
+  --sidebar-foreground: #17201d;
+  --sidebar-primary: #5a2e7a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eee6f4;
+  --sidebar-accent-foreground: #5a2e7a;
+  --sidebar-border: #d6ddda;
+  --sidebar-ring: #5a2e7a;
+
+  /* Roles that shadcn does not name */
+  --match: #1e7a4c;
+  --differs: #b0451c;
+  --bound: #eee6f4;
+  --xray: #17201d;
+  --xray-foreground: #e8eeeb;
+  --xray-muted: color-mix(in srgb, #e8eeeb 62%, #17201d);
+  --xray-line: color-mix(in srgb, #e8eeeb 16%, #17201d);
+  --shadow-page: 0 4px 18px color-mix(in srgb, #17201d 14%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* --background: oklch(0.141 0.005 285.823);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.21 0.006 285.885);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.21 0.006 285.885);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.92 0.004 286.32);
-    --primary-foreground: oklch(0.21 0.006 285.885);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.274 0.006 286.033);
-    --muted-foreground: oklch(0.705 0.015 286.067);
-    --accent: oklch(0.274 0.006 286.033);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --destructive-foreground: oklch(0.985 0 0);
-    --success: oklch(0.67 0.12 167);
-    --success-foreground: oklch(1 0 0);
-    --warning: oklch(0.83 0.165 85);
-    --warning-foreground: oklch(0.199 0.027 238.732);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.552 0.016 285.938);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.21 0.006 285.885);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.274 0.006 286.033);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.552 0.016 285.938); */
+@theme inline {
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
+  --radius-panel: var(--radius);
+  --radius-control: var(--radius-control);
+  --color-match: var(--match);
+  --color-differs: var(--differs);
+  --color-bound: var(--bound);
+  --color-xray: var(--xray);
+  --color-xray-foreground: var(--xray-foreground);
+  --color-xray-muted: var(--xray-muted);
+  --color-xray-line: var(--xray-line);
+  --shadow-page: var(--shadow-page);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers, identifiers and table cells only. */
+.num {
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* The only motion in the app: a tick drawn on the Compare screen. */
+@keyframes tick-draw {
+  from {
+    stroke-dashoffset: 20;
+    opacity: 0;
   }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+.tick-path {
+  stroke-dasharray: 20;
+  animation: tick-draw 320ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tick-path {
+    animation: none;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }

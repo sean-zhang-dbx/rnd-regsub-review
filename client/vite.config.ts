@@ -10,6 +10,9 @@ export default defineConfig({
   server: {
     middlewareMode: true,
   },
+  preview: {
+    proxy: { '/api': 'http://localhost:8010' },
+  },
   build: {
     outDir: path.resolve(__dirname, './dist'),
     emptyOutDir: true,
