@@ -1,0 +1,21 @@
+.DS_Store
+node_modules/
+client/dist/
+dist/
+build/
+.env
+.databricks/
+.smoke-test/
+test-results/
+playwright-report/
+
+# demo-hygiene
+__pycache__/
+.venv/
+*.pyc
+# Downloaded CDISC source files live in the volume, not the repo
+data_raw/
+
+# Auto-generated types (endpoint-specific, varies per developer)
+shared/appkit-types/serving.d.ts
+

@@ -1,0 +1,602 @@
+<!doctype html><meta charset=utf-8><title>rnd_csr_pod demo plan</title><style>body{font:16px/1.55 -apple-system,Segoe UI,sans-serif;max-width:1100px;margin:32px auto;padding:0 24px;color:#17201d}table{border-collapse:collapse;margin:12px 0;font-size:14px}td,th{border:1px solid #ccd5d1;padding:5px 8px;vertical-align:top;text-align:left}th{background:#eef1ef}pre{background:#f4f6f5;padding:12px;overflow-x:auto;font-size:12.5px}code{font-size:13px}h2{border-top:1px solid #ddd;padding-top:16px;margin-top:32px}</style><h1>Demo plan: field (GSK R&amp;D, Elanco, HLS), the CSR Pod on CDISC Pilot 01</h1>
+<p>Status: APPROVED (22 Oct 2026)
+This file is the only input <code>demo-build</code> reads. It must make sense without the planning conversation.</p>
+<h2>0. Identity (per demo-hygiene)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Name</td>
+<td><code>rnd_csr_pod</code></td>
+</tr>
+<tr>
+<td>Workspace</td>
+<td><code>fe-vm-sean-zhang</code> (default), warehouse <code>16ad82bead3f55b5</code></td>
+</tr>
+<tr>
+<td>Schema</td>
+<td><code>sean_zhang_catalog.rnd_csr_pod</code> (checked free on 22 Oct 2026)</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td><code>sz_domain=rnd</code>, <code>sz_project=csr_pod</code>, <code>asset_class=app</code></td>
+</tr>
+<tr>
+<td>Local folder</td>
+<td><code>~/Projects/gsk/rnd_csr_pod</code></td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td><code>sean-zhang-dbx/rnd-csr-pod</code>, private, topics: <code>domain-rnd</code>, <code>account-gsk</code>, <code>app</code>, <code>demo</code></td>
+</tr>
+<tr>
+<td>App</td>
+<td><code>rnd-csr-pod</code></td>
+</tr>
+<tr>
+<td>Stack</td>
+<td>AppKit (TypeScript/React), Python for data and TLF scripts</td>
+</tr>
+<tr>
+<td>Engine</td>
+<td>The CSR Pod engine from <code>~/Projects/gsk/rnd_regsub_review/server/lib/pod/</code> (5 tool-calling agents in the app, Unity Gateway, MLflow tracing), ported and generalised. Sean chose this over the Agent Bricks CLI on 22 Oct 2026: GA components only on the demo path; the README names the Agent Bricks CLI (Beta) as the production route.</td>
+</tr>
+</tbody>
+</table>
+<h2>1. Problem</h2>
+<ul>
+<li><strong>Customer / audience in the room:</strong> field-ready for Mike Sanky (HLS GTM) to show many customers; first audiences GSK R&amp;D (Jiajie Zhang, VP AI and Data Science) and the Elanco regulatory team.</li>
+<li><strong>Persona using the screen:</strong> a medical writing lead preparing a CSR draft for internal review, with Biostatistics and Clinical Safety as co-owners.</li>
+<li><strong>One sentence:</strong> A medical writing team takes weeks to get from final TLFs to a complete, checked CSR draft; this demo drafts the whole CSR of a real public study (CDISC Pilot 01) from an empty template, ties every figure to a certified cell, and scores each section against the CSR that was actually written.</li>
+<li><strong>Source of the pain:</strong> Jiajie, 20 Oct 2026: "Nobody would be interested in the small subsection of a CSR. Everybody's interested in how to write a whole CSR... end-to-end from an empty template." Also "a lot of the stuff you showed me today GSK is already doing." Time to first draft (about 3 to 4 weeks after final TLFs) is from the EMWA survey cited in <code>~/Projects/gsk/rnd_regsub_review/docs/PRD_document_drafting.md</code>; treat it as a planning reference (assumption for this demo).</li>
+<li><strong>Success metric:</strong> first complete draft of all ICH E3 sections from weeks to about 3 minutes of run time; figures typed by a model: 0; figures matching the submitted CSR's tables: 100% after the re-delivery.</li>
+<li><strong>Demo length:</strong> 8 minutes.</li>
+<li><strong>What the customer already does here:</strong> GSK already drafts with LLMs (Jiajie). So the demo does not lead with "a model writes text". It leads with the whole document, figures that cannot disagree with the tables, a score against a real submitted CSR, and departmental accountability.</li>
+<li><strong>Unit of scope:</strong> the whole CSR (ICH E3 sections 1 to 16). Laboratory and vital signs sections (12.4, 12.5) and their tables (14-6.x, 14-7.x) are marked "not part of this demo" in the template and excluded from the score; the README says how they would extend.</li>
+<li><strong>Feedback carried from earlier versions:</strong> from the <code>rnd_regsub_review</code> CSR Pod (21 to 22 Oct): (a) the data was synthetic and the protocol and SAP were 11 pages, so AI Search had nothing to do (50 of 55 cited passages were pinned in the registry): fixed by real 100-page sources and no pinned passages; (b) the look and shell repeated the 20 Oct app: fixed by a new shell (section 5); (c) the rejected-save moment is not guaranteed: do not script it.</li>
+</ul>
+<p><strong>Data source and terms (must be respected).</strong> CDISC SDTM/ADaM Pilot Project, study CDISCPILOT01 ("Safety and Efficacy of the Xanomeline Transdermal Therapeutic System (TTS) in Patients with Mild to Moderate Alzheimer's Disease"), from https://github.com/cdisc-org/sdtm-adam-pilot-project (path <code>updated-pilot-submission-package/900172/m5/</code>). Terms of use (file <code>CDISC.Pilot Project Data.Website Disclaimer.v1.pdf</code> in that repo): do not mislead about the origin of the data; do not disassemble, modify or alter any part of the data; do not distribute without attribution to CDISC; do not distribute for a fee. Consequences for the build:
+- Load the ADaM <code>.xpt</code> files into Delta with the same rows and values. Do not change any value. Derived tables (TLFs) are new tables, never edits of the source.
+- Store the CSR package PDF (<code>cdiscpilot01.pdf</code>, 492 pages) in the volume as downloaded, unsplit. Parse it whole and tag pages by part (section 4); restrict retrieval by part, never by cutting the file.
+- Every screen carries the attribution line in section 5, and the README has a Data section with the source, the terms and a link.
+- The re-delivery (beat 4) changes a derivation rule in our TLF code, never the data, and is labelled on screen as a demo scenario.</p>
+<h2>2. Experience</h2>
+<ul>
+<li><strong>Opening screen (last thing first):</strong> the Scorecard. One headline line, then a reconciliation strip with one row per ICH E3 section: figures that match the submitted CSR (n of m), content coverage against the submitted section (judge score 1 to 5), sentences that need a person, and who owns it. All rows quiet except section 12.2, which shows figures that differ from the submitted Table 14-5.01. Presenter: "This CSR was drafted in about 3 minutes from an empty template. The model typed no figure, and almost every figure matches the report that was actually written for this study. One section doesn't. Let me show you how it was made, and why that section is different."</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Audience sees</th>
+<th>Problem it answers</th>
+<th>What Databricks does</th>
+<th>Databricks object</th>
+<th>Presenter line</th>
+<th>Link key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Sources (1.5 min): the study's ADaM datasets in Unity Catalog, the TLF tables derived from them with lineage, and the protocol and SAP (about 100 pages) parsed into elements and searchable. The answer key (submitted CSR body and section 14) is shown as locked: the pod cannot read it</td>
+<td>"Can I trust what it drafted from?"</td>
+<td>Unity Catalog holds the analysis data and the certified tables with lineage; <code>ai_parse_document</code> turns the PDF into typed elements; AI Search indexes the protocol and SAP</td>
+<td><code>adam_*</code> tables, <code>tlf_*</code> tables (certified tag, lineage), volume <code>source_docs</code>, <code>doc_elements</code>, AI Search index <code>doc_elements_index</code></td>
+<td>"This is a real public study: the analysis data and the certified tables live in Unity Catalog, and the protocol and SAP are parsed and searchable. The submitted report is locked away from the pod; we only use it to score."</td>
+<td><code>beat1</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>The pod (2 min): the 5-column pod from the pre-run, replayed (Context, Plan, Draft &amp; check in parallel, Assemble, Sign-off). Open the CSR Author Agent: its skill, its tool calls, the AI Search queries it ran and the passages it chose</td>
+<td>"Who did what, and how?"</td>
+<td>5 agents call Claude Sonnet 5.5 through a Unity Gateway model service, each with its own tools; every model and tool call is one MLflow trace</td>
+<td>Unity Gateway model service <code>rnd_csr_pod.csr_author</code>, MLflow experiment, <code>csr_runs</code>, <code>csr_sections</code></td>
+<td>"A pod is a team running a process. The planner and the author search the protocol and SAP themselves; nobody told them which paragraph to use."</td>
+<td><code>beat2</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Hero: Compare (2 min).</strong> Section 11.4.1 (ADAS-Cog primary endpoint) from the pod on the left, the submitted CSR page on the right. A tick column between them lights up figure by figure: each drafted figure, its certified cell, and the printed number in the submitted Table 14-3.01. Then the wording: what the submitted writer said that the pod left to a person</td>
+<td>"Would this survive tick and tie?"</td>
+<td>SQL filled every figure from the certified cell; the parsed submitted page gives the printed value; a judge on a second model family (GPT 5.5) scores coverage</td>
+<td><code>tlf_14_3_01_adascog_w24</code>, <code>submitted_tlf_cells</code>, <code>csr_scores</code>, judge traces</td>
+<td>"The model never saw a number. SQL filled each one from the certified table, and every one matches what was printed in the submitted report. The wording is the model's, and the interpretation is still the writer's."</td>
+<td><code>beat3</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Re-delivery and sign-off (2 min): back to section 12.2 from the scorecard. Biostatistics re-delivers Table 14-5.01 with a corrected derivation (version 1 counted all adverse events; version 2 counts only treatment-emergent ones, as the SAP says). The pod lists the sentences that quote changed cells, recomputes their figures, redrafts 12.2 live, re-scores: the row turns quiet. Then Medical Writing, Biostatistics and Clinical Safety sign, and Regulatory Affairs can release</td>
+<td>"What happens when a table changes, and who signs?"</td>
+<td>Delta keeps both table versions; citation records find every affected sentence; the pod redrafts one section; sign-offs are stored with table versions</td>
+<td><code>tlf_14_5_01_teae</code> history (v1, v2), <code>csr_figure_citations</code>, <code>csr_signoffs</code></td>
+<td>"The table changed, the data didn't. The pod knows exactly which sentences quoted it. And nothing is released until the responsible people sign, against the table versions they checked."</td>
+<td><code>beat4</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Hero moment:</strong> beat 3. Second by second: (0 s) Compare opens on 11.4.1, both pages visible; (2 s) the tick column animates top to bottom, one tick per figure (the only motion in the app), each tick reading "Table 14-3.01, Xanomeline High Dose, LS mean change: drafted -1.2, printed -1.2"; (10 s) the header reads "13 of 13 figures match the submitted CSR" (the number is whatever the data gives); (15 s) hover a figure on the left: it highlights the matching element box on the submitted page image on the right; (30 s) scroll to the "Wording" panel: the judge's coverage score and the 2 to 3 points the submitted writer made that the pod left for a person. Why it matters to this persona: tick and tie of every figure against the TLFs is the slowest QC step; here it is done, against a real submitted report, before anyone opens the draft. It is hard to fake because the reference is a public document anyone can download.</li>
+<li><strong>Must be true in the data:</strong></li>
+<li><code>adam_*</code> tables reproduce the <code>.xpt</code> files exactly (row counts: ADSL 254, ADAE 1191, ADQSADAS 12463, ADQSCIBC 730, ADTTE 254; arms Placebo 86, Xanomeline Low Dose 84, Xanomeline High Dose 84; a checksum per table matches the <code>.xpt</code>).</li>
+<li>Every cell of <code>tlf_14_1_01</code>, <code>tlf_14_1_02</code>, <code>tlf_14_2_01</code>, <code>tlf_14_3_01</code>, <code>tlf_14_3_02</code>, <code>tlf_14_4_01</code>, <code>tlf_14_5_02</code> and <code>tlf_14_5_01</code> at version 2 equals the printed value in the submitted section 14 table at the printed precision (checked against <code>submitted_tlf_cells</code>). If a printed value cannot be reproduced (for example a SAS-specific rounding), document the cell and exclude it from the score; do not adjust our number to fit.</li>
+<li><code>tlf_14_5_01_teae</code> version 1 (all AEs, ignoring <code>TRTEMFL</code>) differs from the printed Table 14-5.01 in at least 3 cells that the pre-run draft of 12.2 quotes (ADAE has 65 records with <code>TRTEMFL = 'N'</code>). Version 2 (<code>TRTEMFL = 'Y'</code>) matches.</li>
+<li>The pre-run draft (latest done run) is bound to <code>tlf_14_5_01_teae</code> version 1, and its scorecard shows 12.2 as the only section with differing figures.</li>
+<li>No passage cited by any drafted sentence has <code>doc_part</code> in (<code>csr_body</code>, <code>csr_tlf</code>) (the pod never read the answer key). Checked by a query.</li>
+<li>The submitted CSR section text for 11.4.1 contains the drafted figures (independent check on the body text, not just section 14).</li>
+<li><strong>Fallback if it fails live:</strong> everything except the beat 4 redraft is pre-run and read from tables. If the live redraft fails or runs long, the figures still recompute by SQL instantly (no model) and the scorecard row turns quiet; the presenter says the wording check runs in the background. A recording of the full flow is in <code>recordings/</code>.</li>
+<li><strong>X-ray layer:</strong> markers hidden by default, toggled by <code>X</code> (and a small switch). One drawer layout (dark surface): object, status, SQL or code, "See it in Databricks".</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Screen area</th>
+<th>Databricks object</th>
+<th>Status</th>
+<th>Link key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scorecard strip</td>
+<td><code>csr_scores</code>, judge traces</td>
+<td>GA</td>
+<td><code>beat3_scores</code></td>
+</tr>
+<tr>
+<td>Sources: ADaM tables</td>
+<td><code>adam_adsl</code> and others, Catalog Explorer</td>
+<td>GA</td>
+<td><code>beat1_adam</code></td>
+</tr>
+<tr>
+<td>Sources: TLF tables</td>
+<td><code>tlf_*</code> lineage tab</td>
+<td>GA</td>
+<td><code>beat1_tlf</code></td>
+</tr>
+<tr>
+<td>Sources: documents</td>
+<td>volume <code>source_docs</code>, <code>doc_elements</code></td>
+<td>GA</td>
+<td><code>beat1_docs</code></td>
+</tr>
+<tr>
+<td>Sources: search</td>
+<td>AI Search index <code>doc_elements_index</code></td>
+<td>GA</td>
+<td><code>beat1_search</code></td>
+</tr>
+<tr>
+<td>Pod</td>
+<td>MLflow trace of the run</td>
+<td>GA</td>
+<td><code>beat2</code></td>
+</tr>
+<tr>
+<td>Pod: agents</td>
+<td>Unity Gateway model service</td>
+<td>GA</td>
+<td><code>beat2_gateway</code></td>
+</tr>
+<tr>
+<td>Compare</td>
+<td><code>tlf_14_3_01_adascog_w24</code>, <code>submitted_tlf_cells</code></td>
+<td>GA</td>
+<td><code>beat3</code></td>
+</tr>
+<tr>
+<td>Re-delivery</td>
+<td><code>tlf_14_5_01_teae</code> history tab</td>
+<td>GA</td>
+<td><code>beat4</code></td>
+</tr>
+<tr>
+<td>Sign-off</td>
+<td><code>csr_signoffs</code></td>
+<td>GA</td>
+<td><code>beat4_signoffs</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Sample copy (shown to Sean at the gate):</strong></li>
+<li>Opening headline: "Drafted in 3 min 04 s from an empty ICH E3 template. 0 figures typed by a model. 212 of 219 figures match the submitted CSR." (numbers from the data)</li>
+<li>Panel line (Sources): "The submitted report is the answer key. The pod cannot read it."</li>
+<li>Hero line (Compare): "13 of 13 figures in 11.4.1 match the submitted Table 14-3.01."</li>
+<li>Re-delivery banner: "Biostatistics re-delivered Table 14-5.01 (version 2: treatment-emergent events only). 6 sentences quote changed cells. Demo scenario: the data is unchanged; version 1 used an incorrect derivation."</li>
+<li><strong>Cut list:</strong></li>
+<li>The LMN-301 synthetic study and the 20 Oct 4-step flow: replaced by real data; stays in <code>rnd_regsub_review</code>.</li>
+<li>Genie Agent tick and tie: the submitted CSR is a stronger, independent reference, and it avoids a second space to curate.</li>
+<li>Reviewer assistant (chat): not on the storyline.</li>
+<li>Laboratory and vital signs sections and tables (14-6.x, 14-7.x): large, and not needed for the story; marked "not part of this demo".</li>
+<li>Module 2 and the label: scope creep.</li>
+<li>Elanco animal-health variant: separate follow-up.</li>
+<li>Live full-CSR run on stage: about 3 minutes; pre-run instead, live redraft of one section only.</li>
+<li>Word export: keep the button (cheap), not a beat.</li>
+<li>Agent Bricks CLI: production route in the README, not on the demo path.</li>
+</ul>
+<h2>3. Databricks mapping</h2>
+<table>
+<thead>
+<tr>
+<th>Beat</th>
+<th>Capability (current name)</th>
+<th>Status</th>
+<th>Source link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Unity Catalog tables, certification tag (<code>system.certification_status</code>), table lineage</td>
+<td>GA</td>
+<td>memory <code>reference_databricks_feature_status_2026_10</code> (Azure release notes, verified 13 Oct 2026); https://docs.databricks.com/aws/en/data-governance/unity-catalog/</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Unity Catalog volumes</td>
+<td>GA</td>
+<td>https://docs.databricks.com/aws/en/volumes/</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>ai_parse_document</code> (typed elements, page images)</td>
+<td>GA (no preview label on the function page, checked 22 Oct 2026)</td>
+<td>https://docs.databricks.com/aws/en/sql/language-manual/functions/ai_parse_document</td>
+</tr>
+<tr>
+<td>1, 2</td>
+<td>AI Search (formerly Vector Search), hybrid queries with filters</td>
+<td>GA (renamed June 2026)</td>
+<td>memory <code>reference_databricks_feature_status_2026_10</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Unity Gateway model service (OpenAI-compatible chat completions with tool calling), Claude Sonnet 5.5</td>
+<td>GA since 4 Aug 2026</td>
+<td>same memory; tool calling tested on 21 Oct 2026 through <code>/ai-gateway/mlflow/v1/chat/completions</code></td>
+</tr>
+<tr>
+<td>2, 3</td>
+<td>MLflow 3 tracing (Node SDK <code>mlflow-tracing</code> in the app)</td>
+<td>GA (MLflow tracing); Node SDK status unverified</td>
+<td>https://docs.databricks.com/aws/en/mlflow3/genai/tracing/</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Foundation Model API <code>databricks-gpt-5-5</code> (judge, second model family)</td>
+<td>GA</td>
+<td>same memory</td>
+</tr>
+<tr>
+<td>1, 3</td>
+<td>SQL warehouse (serverless) for TLF SQL and the app's queries</td>
+<td>GA</td>
+<td></td>
+</tr>
+<tr>
+<td>1</td>
+<td>Lakeflow Jobs (serverless) running the TLF build script</td>
+<td>GA</td>
+<td>same memory</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Delta table history, <code>VERSION AS OF</code>, <code>RESTORE</code></td>
+<td>GA</td>
+<td></td>
+</tr>
+<tr>
+<td>all</td>
+<td>Databricks Apps (AppKit)</td>
+<td>GA</td>
+<td>same memory</td>
+</tr>
+<tr>
+<td>README only</td>
+<td>Agent Bricks CLI (production route for the agents)</td>
+<td>Beta (29 Sep 2026)</td>
+<td>same memory</td>
+</tr>
+</tbody>
+</table>
+<p>Diagram:</p>
+<pre><code class="language-mermaid">flowchart LR
+  subgraph Sources
+    X[CDISC .xpt ADaM] --&gt; A[adam_* tables]
+    P[cdiscpilot01.pdf in volume] --&gt; E[doc_elements via ai_parse_document]
+    E --&gt; I[AI Search index, protocol + SAP parts only]
+    E --&gt; K[submitted_csr_sections + submitted_tlf_cells: answer key]
+  end
+  A --&gt; T[tlf_* certified tables, Lakeflow Job]
+  subgraph App[Databricks App rnd-csr-pod]
+    PL[Document Planner] --&gt; AU[CSR Author] &amp; NA[Safety Narrative] &amp; QC[QC and Consistency]
+    AU --&gt; AS[CSR Assembler] --&gt; SO[Departmental sign-off]
+  end
+  I --&gt; PL &amp; AU
+  T --&gt; AU &amp; NA
+  QC --&gt; SC[csr_scores vs answer key]
+  K --&gt; SC
+  App --&gt; G[Unity Gateway: Claude Sonnet 5.5] &amp; J[databricks-gpt-5-5 judge] &amp; M[MLflow traces]
+</code></pre>
+<h2>4. Contract</h2>
+<p><strong>Data model</strong> (all in <code>sean_zhang_catalog.rnd_csr_pod</code>, tags from section 0 plus <code>source=cdisc_pilot01</code> on source-derived tables; every table comment ends with "Source: CDISC SDTM/ADaM Pilot Project (CDISCPILOT01), used under the CDISC terms of use.")</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Columns (name type)</th>
+<th>Rows</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adam_adsl</code>, <code>adam_adae</code>, <code>adam_adqsadas</code>, <code>adam_adqscibc</code>, <code>adam_adtte</code></td>
+<td>the <code>.xpt</code> columns as they are (names as in the file), SAS dates converted to DATE</td>
+<td>254, 1191, 12463, 730, 254</td>
+<td>Values unchanged. Loaded with pandas <code>read_sas(format='xport')</code> then Spark. Checksum per table recorded in <code>RESOURCES.md</code>.</td>
+</tr>
+<tr>
+<td><code>tlf_14_1_01_populations</code></td>
+<td>row_key STRING, row_label STRING, row_order INT, pbo_n INT, low_n INT, high_n INT, total_n INT</td>
+<td>about 4</td>
+<td>ITT, Safety, Efficacy, Completers Week 24</td>
+</tr>
+<tr>
+<td><code>tlf_14_1_02_disposition</code></td>
+<td>row_key, row_label, row_order, pbo_n INT, pbo_pct DOUBLE, low_n, low_pct, high_n, high_pct, total_n, total_pct</td>
+<td>about 12</td>
+<td>completed, discontinued by reason (from <code>DCDECOD</code>)</td>
+</tr>
+<tr>
+<td><code>tlf_14_2_01_demographics</code></td>
+<td>row_key, row_label, row_order, pbo DOUBLE, pbo_pct DOUBLE, low, low_pct, high, high_pct, total, total_pct, p_value DOUBLE</td>
+<td>about 25</td>
+<td>age, age group, sex, race, MMSE, duration of disease, education, BMI, as printed</td>
+</tr>
+<tr>
+<td><code>tlf_14_3_01_adascog_w24</code></td>
+<td>row_key, row_label, row_order, pbo DOUBLE, low DOUBLE, high DOUBLE, p_value DOUBLE</td>
+<td>about 15</td>
+<td>ADAS-Cog (11) change from baseline to Week 24, LOCF, efficacy population: n, baseline mean and SD, Week 24 mean and SD, change mean and SD, ANCOVA dose-response p, LS means, differences vs placebo with SE, 95% CI and p, as in the submitted table (ANCOVA with site group and baseline; method from the SAP; Python statsmodels in the TLF job)</td>
+</tr>
+<tr>
+<td><code>tlf_14_3_02_cibic_w24</code></td>
+<td>same shape as 14-3.01</td>
+<td>about 10</td>
+<td>CIBIC+ at Week 24, LOCF</td>
+</tr>
+<tr>
+<td><code>tlf_14_4_01_exposure</code></td>
+<td>row_key, row_label, row_order, pbo, low, high, total DOUBLE</td>
+<td>about 8</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tlf_14_5_01_teae</code></td>
+<td>row_key, row_label, row_order, pbo_n INT, pbo_pct DOUBLE, low_n, low_pct, high_n, high_pct, total_n, total_pct</td>
+<td>about 250</td>
+<td>ANY row first, then SOC and PT rows. <strong>Version 1:</strong> all ADAE records (demo error). <strong>Version 2:</strong> <code>TRTEMFL = 'Y'</code> only (matches the submitted table). Built by <code>scripts/tlf_build.py --teae-rule v1|v2</code></td>
+</tr>
+<tr>
+<td><code>tlf_14_5_02_sae</code></td>
+<td>same as 14-5.01</td>
+<td>about 5</td>
+<td>serious TEAEs</td>
+</tr>
+<tr>
+<td><code>study_metadata</code></td>
+<td>meta_key STRING, meta_value STRING, value_type STRING</td>
+<td>about 20</td>
+<td>title, phase, product, indication, sites, countries, dates, all from the CSR title page and ADSL; number-valued keys become placeholders</td>
+</tr>
+<tr>
+<td><code>narrative_patients</code></td>
+<td>row_key STRING (USUBJID), arm, age INT, sex, aedecod, aesoc, astdy INT, aendy INT, aeout, aeacn, aerel, trtdur INT, narrative_reason</td>
+<td>3 to 8</td>
+<td>deaths (<code>ADSL.DTHFL</code>) and serious AEs (<code>ADAE.AESER = 'Y'</code>)</td>
+</tr>
+<tr>
+<td><code>doc_elements</code></td>
+<td>file_path STRING, doc_title STRING, doc_part STRING, page INT, element_id INT, element_type STRING, content STRING, x0 DOUBLE, y0 DOUBLE, x1 DOUBLE, y1 DOUBLE, confidence DOUBLE</td>
+<td>about 8,000</td>
+<td>from <code>ai_parse_document</code> on the whole PDF. <code>doc_part</code> by page range: <code>csr_body</code> (1 to 41), <code>csr_tlf</code> (42 to 151), <code>references</code> (152), <code>appendix_index</code> (153 to 156), <code>protocol</code> (about 157 to 215), <code>protocol_appendix</code> (about 216 to 415), <code>sap</code> (about 416 to 464), <code>other</code> (rest). The backend confirms the exact ranges from the headings (protocol "1 Introduction" at p158, SAP "1 BACKGROUND" at p421, "Statistical Analysis Plan" title at p416 to 417) and records them in <code>RESOURCES.md</code></td>
+</tr>
+<tr>
+<td><code>doc_pages</code></td>
+<td>file_path, page INT, image_path STRING, width DOUBLE, height DOUBLE</td>
+<td>492</td>
+<td>page images in volume <code>parsed_pages</code></td>
+</tr>
+<tr>
+<td><code>doc_chunks</code> + AI Search index <code>doc_elements_index</code></td>
+<td>chunk_id STRING, doc_part STRING, page INT, element_ids STRING, chunk_text STRING</td>
+<td>about 2,000</td>
+<td>element-level chunks (merge short elements to about 600 characters); Delta Sync, hybrid; endpoint <code>sz-shared-vs</code></td>
+</tr>
+<tr>
+<td><code>submitted_csr_sections</code></td>
+<td>section STRING, title STRING, page_from INT, page_to INT, text STRING</td>
+<td>about 40</td>
+<td>answer key, from <code>doc_part = 'csr_body'</code></td>
+</tr>
+<tr>
+<td><code>submitted_tlf_cells</code></td>
+<td>tlf STRING, row_key STRING, column_name STRING, printed_value STRING, page INT, element_id INT</td>
+<td>about 800</td>
+<td>answer key: printed numbers of the section 14 tables in scope, mapped to our <code>row_key</code> and column. Built by a mapping script over the parsed table HTML; unmatched cells listed in the report</td>
+</tr>
+<tr>
+<td><code>section_registry</code></td>
+<td>section, title, ord INT, kind (<code>assembled</code>, <code>boilerplate</code>, <code>drafted</code>, <code>narrative</code>, <code>not_in_demo</code>), agent, department, wave INT, instructions STRING, search_hints STRING (JSON array of plain-language topics, <strong>not</strong> passages), tlf_tables STRING (JSON), depends_on STRING (JSON), required_content STRING (JSON)</td>
+<td>about 30</td>
+<td>the empty ICH E3 template. No pinned passages: the planner finds them with AI Search</td>
+</tr>
+<tr>
+<td><code>csr_runs</code>, <code>csr_sections</code>, <code>csr_figure_citations</code>, <code>csr_signoffs</code></td>
+<td>as in <code>rnd_regsub_review/docs/CSR_POD_BUILD.md</code> section 3, with <code>csr_runs.efficacy_version</code> replaced by <code>table_versions_json STRING</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>csr_scores</code></td>
+<td>run_id STRING, section STRING, figures_total INT, figures_matched INT, mismatches_json STRING, coverage_score INT, coverage_notes STRING, left_for_person_json STRING, judge_model STRING, trace_id STRING, scored_at TIMESTAMP</td>
+<td>1 per drafted section per run</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Routes</strong> (Express, JSON; the engine routes keep the shapes of <code>rnd_regsub_review</code> <code>CSR_POD_BUILD.md</code> section 3.1 unless listed)</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Used by beat</th>
+<th>Request, response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/scorecard?run_id=</code> (default latest done)</td>
+<td>opening</td>
+<td><code>{ run, headline: { wall_ms, figures_total, figures_matched, typed_figures: 0 }, rows: [{ section, title, department, figures_total, figures_matched, coverage_score, needs_person, status: 'quiet' or 'differs' }] }</code></td>
+</tr>
+<tr>
+<td><code>GET /api/sources</code></td>
+<td>1</td>
+<td><code>{ adam: [{ table, rows, columns, checksum_ok }], tlfs: [{ table, tlf, version, certified, upstreams: [] }], docs: { file, pages, parts: [{ doc_part, page_from, page_to, elements, searchable: bool }] }, index: { name, chunks } }</code></td>
+</tr>
+<tr>
+<td><code>GET /api/csr/pod</code>, <code>GET /api/csr/registry</code>, <code>POST /api/csr-run</code>, <code>GET /api/csr-run/:id/events</code>, <code>GET /api/csr-run/latest</code>, <code>GET /api/csr-run/active</code>, <code>GET /api/csr-run/:id</code>, <code>GET /api/csr-run/:id/export.doc</code></td>
+<td>2</td>
+<td>as in <code>rnd_regsub_review</code></td>
+</tr>
+<tr>
+<td><code>GET /api/compare?run_id=&amp;section=</code></td>
+<td>3</td>
+<td><code>{ section, drafted: Sentence[], submitted: { pages: [{ page, image_path, width, height, elements: [{ element_id, element_type, x0, y0, x1, y1, content }] }], text }, ticks: [{ sentence_idx, slot, drafted_value, tlf, row_key, column_name, table_version, printed_value, printed_page, printed_element_id, match: bool }], wording: { coverage_score, notes, left_for_person: string[] } }</code></td>
+</tr>
+<tr>
+<td><code>GET /api/page-image?path=</code></td>
+<td>3</td>
+<td>page image from volume <code>parsed_pages</code></td>
+</tr>
+<tr>
+<td><code>POST /api/redeliver</code> body <code>{ table: 'tlf_14_5_01_teae' }</code></td>
+<td>4</td>
+<td>runs the version 2 build SQL on the warehouse, then starts a redraft run for the sections that quote changed cells. <code>{ old_version, new_version, changed_cells, affected: [{ section, sentence_idx, slot, old_value, new_value }], run_id }</code></td>
+</tr>
+<tr>
+<td><code>GET /api/csr/signoffs</code>, <code>POST /api/csr/signoff</code></td>
+<td>4</td>
+<td>as in <code>rnd_regsub_review</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Engine changes from <code>rnd_regsub_review</code> (backend):</strong>
+- Study context, people and skills read the study from <code>study_metadata</code>, not the hard-coded LMN-301 text.
+- <code>find_passages</code> (planner) and <code>search_documents</code> (author) query AI Search with filter <code>doc_part IN ('protocol', 'sap')</code>; the registry has <code>search_hints</code>, never passages. The code refuses any cited element whose <code>doc_part</code> starts with <code>csr_</code>.
+- <code>tick_and_tie</code> compares bound cells with <code>submitted_tlf_cells</code> instead of a Genie Agent, and writes <code>csr_scores</code>; <code>judge_section</code> also scores coverage against <code>submitted_csr_sections</code> (GPT 5.5), but the judge's view of the answer key is only used for scoring, never fed back to the author.
+- Table versions are recorded per table per run (<code>table_versions_json</code>), not a fixed efficacy version.
+- Model service: create <code>sean_zhang_catalog.rnd_csr_pod.csr_author</code> (Unity Gateway, routes to <code>databricks-claude-sonnet-5-5</code>, inference table on). The app SP needs EXECUTE on it.</p>
+<p><strong>Links:</strong> <code>config/demo-links.json</code> keys: <code>beat1</code>, <code>beat1_adam</code>, <code>beat1_tlf</code>, <code>beat1_docs</code>, <code>beat1_search</code>, <code>beat2</code>, <code>beat2_gateway</code>, <code>beat3</code>, <code>beat3_scores</code>, <code>beat4</code>, <code>beat4_signoffs</code>, <code>app</code> (backend writes URLs per <code>demo-ux/references/databricks-links.md</code>, frontend reads them).</p>
+<h2>5. UI direction</h2>
+<p><strong>Setting.</strong> A medical writing lead at a desk with a large monitor, reconciling a draft against the tables before internal review; on stage, the same screen projected for a room of R&amp;D and regulatory leaders. Pressure: every number must be defensible, and the room should see the answer in 5 seconds.</p>
+<p><strong>Tokens</strong> (must differ from <code>rnd_regsub_review</code>: no navy bar, no Public Sans or Source Serif, no Vault three-pane as the shell).
+| Role | Value |
+|---|---|
+| Background | <code>#EDF1EF</code> (cool grey-green) |
+| Surface (pages, panels) | <code>#FFFFFF</code> |
+| Text | <code>#17201D</code> |
+| Muted text | <code>#5E6B66</code> |
+| Accent (pod, interactive controls, bound-figure tint <code>#EEE6F4</code>) | <code>#5A2E7A</code> (aubergine) |
+| Status: matches the submitted CSR | <code>#1E7A4C</code> |
+| Status: differs | <code>#B0451C</code> |
+| X-ray drawer surface | <code>#17201D</code>, text <code>#E8EEEB</code> |</p>
+<ul>
+<li>Type: <strong>Instrument Sans</strong> (UI and the drafted document), <strong>Spline Sans Mono</strong> with tabular figures for numbers, IDs and table cells only (never as decoration). Both from Google Fonts via <code>@fontsource</code>.</li>
+<li>Radius: 6px panels, 4px controls. Shadow: none on panels (1px <code>#D6DDDA</code> border), one soft shadow only on the two compared pages.</li>
+</ul>
+<p><strong>Shell.</strong> A thin top line (study identity: "CDISCPILOT01, Xanomeline TTS in mild to moderate Alzheimer's disease" and the run time) and a narrow left rail with 5 text stops, no icons: Scorecard, Sources, Pod, Compare, Re-delivery and sign-off. The active stop has an aubergine bar. A footer line on every screen: "Data: CDISC SDTM/ADaM Pilot Project (CDISCPILOT01), used under the CDISC terms of use. The drafted report is produced by this demo; the submitted report is shown for comparison."</p>
+<p><strong>Wireframes.</strong></p>
+<pre><code>Opening: Scorecard
++--------------------------------------------------------------------------------+
+| CDISCPILOT01  Xanomeline TTS in mild to moderate Alzheimer's      run 3 min 04 s |
++-----------+--------------------------------------------------------------------+
+| Scorecard | Drafted in 3 min 04 s from an empty ICH E3 template.               |
+| Sources   | 0 figures typed by a model.  212 of 219 figures match the          |
+| Pod       | submitted CSR.                                                     |
+| Compare   |                                                                    |
+| Re-deliv. | Section                    Figures match   Coverage  Person  Owner |
+|           | 10   Study patients        ||||||||| 18/18   4 of 5    1       BS   |
+|           | 11.4.1 ADAS-Cog primary    ||||||||| 13/13   4 of 5    2       BS   |
+|           | 12.2 Adverse events        ||||||-   14/20   4 of 5    0       CS   |  &lt;- rust, the only loud row
+|           | ...                                                                |
++-----------+--------------------------------------------------------------------+
+| Data: CDISC SDTM/ADaM Pilot Project (CDISCPILOT01) ...                          |
+
+Hero: Compare
++-----------+--------------------------+----+-----------------------------------+
+| rail      | Drafted by the CSR Pod   | ticks| Submitted CSR, p 27 (parsed page) |
+|           | 11.4.1 Primary endpoint  |  v | [page image with element boxes]   |
+|           | ...figures tinted...     |  v |                                   |
+|           |                          |  v |                                   |
+|           | Wording: coverage 4 of 5. Left for a person: ...                 |
++-----------+--------------------------+----+-----------------------------------+
+</code></pre>
+<p>The Pod screen reuses the pod layout from <code>rnd_regsub_review/client/src/components/csr/PodFlow.tsx</code> restyled in these tokens (sentence-case column labels, no uppercase eyebrows).</p>
+<p><strong>Three principles.</strong>
+1. The submitted CSR is the reference: every drafted figure sits next to its printed counterpart; agreement is quiet ink with a small tick, and disagreement is the only loud colour on the page.
+2. Provenance over decoration: a figure's table, row, column and version are one hover away; no badges, no sparkles.
+3. One accent, aubergine, for the pod and the controls; green and rust only mean "matches" and "differs".</p>
+<p><strong>Blacklist check</strong> (<code>demo-ui/references/slop-blacklist.md</code>): 1 cream/serif/terracotta: no (cool grey, sans, rust only as a status). 2 dark with acid accent: no. 3 broadsheet: no (panels with radius, no hairline columns). 4 card grid: no (one strip and two pages). 5 template chrome: removed uppercase pod column labels from the old build; mono only for figures. 6 shadcn default: custom tokens and fonts. 7 KPI card row: replaced by one headline sentence and the strip. 8 icon sidebar: text-only rail with 5 stops, which are real screens. 9 to 11: none. 12 motion only on the hero tick column. 13 the rail is a sequence (the demo order), so numbering is not used. 14 numbers come from the data. 15 no marketing lines. 16 the scorecard has one loud row.</p>
+<h2>6. Tasks</h2>
+<h3>demo-backend (owns <code>config/</code>, <code>server/</code>, <code>scripts/</code>, <code>databricks.yml</code>, <code>app.yaml</code>, workspace objects)</h3>
+<ol>
+<li>Scaffold the AppKit app (<code>databricks apps init</code> per <code>databricks:databricks-apps</code>), bundle <code>rnd-csr-pod</code>, schema variable <code>rnd_csr_pod</code>. Create the schema with tags, volumes <code>source_docs</code> and <code>parsed_pages</code>.</li>
+<li><code>scripts/load_adam.py</code>: download the 5 ADaM <code>.xpt</code> files and <code>cdiscpilot01.pdf</code> from the CDISC repo into a new, empty folder (untrusted data; run Python with <code>-I</code>), upload the PDF unchanged to <code>source_docs</code>, load the ADaM tables unchanged, record checksums. Must-be-true 1.</li>
+<li><code>scripts/parse_docs.py</code>: <code>ai_parse_document</code> on the whole PDF (version 2.0, page images to <code>parsed_pages</code>), write <code>doc_elements</code> and <code>doc_pages</code>, set <code>doc_part</code> by page range (confirm ranges from headings), build <code>doc_chunks</code> and the AI Search index with <code>doc_part</code> as a filterable column.</li>
+<li><code>scripts/tlf_build.py</code> (also registered as a Lakeflow Job "CSR Pod: TLF build"): build the 8 TLF tables from <code>adam_*</code> (SQL CTAS where possible so lineage exists; statsmodels ANCOVA for 14-3.01 and 14-3.02, method from the SAP), certification tag, column comments. 14-5.01 at version 1 first, then keep the version 2 SQL in <code>config/redeliver_14_5_01.sql</code>.</li>
+<li><code>scripts/build_answer_key.py</code>: <code>submitted_csr_sections</code> and <code>submitted_tlf_cells</code> from the parsed <code>csr_body</code> and <code>csr_tlf</code> parts; then <code>scripts/check_tlfs.py</code> compares every in-scope TLF cell with the printed value (must-be-true 2 and 3) and prints a report. Fix our derivations until they match; never edit printed values; document unreproducible cells.</li>
+<li><code>study_metadata</code>, <code>narrative_patients</code>, <code>section_registry</code> (empty ICH E3 template, search hints, no passages), engine tables, <code>csr_scores</code>.</li>
+<li>Port the engine from <code>~/Projects/gsk/rnd_regsub_review/server/lib/pod/</code> and its routes with the changes in section 4; add <code>/api/scorecard</code>, <code>/api/sources</code>, <code>/api/compare</code>, <code>/api/redeliver</code>. Create the Unity Gateway model service; grants script for the app SP.</li>
+<li>Run a full CSR, pre-run with 14-5.01 at version 1, check must-be-true 4 to 6 with <code>scripts/check_must_be_true.py</code>. <code>scripts/reset_demo.py</code>: delete <code>csr_signoffs</code>, <code>RESTORE TABLE tlf_14_5_01_teae</code> to the version 1 version, mark any run after the pre-run as superseded so the pre-run is the latest.</li>
+<li>Write <code>config/demo-links.json</code>.
+Reports: files, row counts and checksums, the TLF match report (cells matched, unmatched with reasons), must-be-true results, page ranges per <code>doc_part</code>, link URLs, the pre-run id and its scorecard.</li>
+</ol>
+<h3>demo-frontend (owns <code>client/</code>)</h3>
+<ol>
+<li>Theme from section 5 (tokens into the shadcn variables, fonts via <code>@fontsource</code>), shell (top line, rail, footer attribution).</li>
+<li>Screens in beat order against typed fixtures until the routes exist: Scorecard, Sources, Pod (port and restyle <code>PodFlow</code>, <code>AgentDrawer</code> from <code>rnd_regsub_review</code>), Compare (hero, with the only animation), Re-delivery and sign-off (port <code>Accountability</code>).</li>
+<li>X-ray layer: markers, one dark drawer layout, "See it in Databricks" links from <code>config/demo-links.json</code>, toggled by <code>X</code>.</li>
+<li>Loading, empty and error states; the re-delivery button disables while a run is active.
+Reports: screens built, anything still on fixtures, anything in section 5 not applied, screenshots at 1440x900 and 1920x1080.</li>
+</ol>
+<h2>7. Definition of done</h2>
+<ul>
+<li>[ ] Every beat works in order, live, against the workspace.</li>
+<li>[ ] Hero moment lands with the real data (must-be-true 1 to 6 pass).</li>
+<li>[ ] Every link opens the right object.</li>
+<li>[ ] Reviewer: UX scores all 4 or higher, then UI scores all 4 or higher (or gaps reported).</li>
+<li>[ ] The click-through script clicks every screen, drawer, chip and button with no failures, and the demo is reset afterwards.</li>
+<li>[ ] After deploy: live smoke test passes against the deployed URL.</li>
+<li>[ ] README lists every Databricks feature used with its status, and has the CDISC data section (source, terms, attribution).</li>
+<li>[ ] <code>docs/FEEDBACK.md</code> created, with items (a) to (c) from section 1 marked <code>built</code>.</li>
+</ul>
+<h2>8. Verification</h2>
+<ul>
+<li>Data: <code>uv run --python 3.12 --with databricks-sql-connector python scripts/check_tlfs.py</code> (TLF match report) and <code>scripts/check_must_be_true.py</code> (prints PASS or FAIL per statement in section 2).</li>
+<li>Types: <code>npm run typegen</code> (or <code>pnpm typegen</code>), <code>pnpm typecheck</code>, <code>npx eslint &lt;changed files&gt;</code>, <code>pnpm build</code>.</li>
+<li>Local: <code>pnpm dev</code> on http://localhost:8000.</li>
+<li>Click-through: <code>tools/ui_runthrough.py</code> (Playwright, chromium): every rail stop, the pod drawers, the Compare hover, the re-delivery (then reset), each Sign button (then reset).</li>
+<li>Reset: <code>uv run --python 3.12 --with databricks-sql-connector python scripts/reset_demo.py</code>.</li>
+<li>Reviewer: dispatch <code>demo-ui-reviewer</code> with http://localhost:8000 and this file.</li>
+<li>Deploy: <code>databricks bundle deploy -p fe-vm-sean-zhang &amp;&amp; databricks bundle run app -p fe-vm-sean-zhang</code>, then curl each route with <code>Authorization: Bearer $(databricks auth token -p fe-vm-sean-zhang ...)</code> against the app URL.</li>
+</ul>
