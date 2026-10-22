@@ -5,7 +5,7 @@ import { Accountability } from '../components/signoff/Accountability';
 import { EMPTY_LIVE, reduceEvent } from '../components/pod/model';
 import type { RunLive } from '../components/pod/model';
 import { EmptyBlock, ErrorBlock, LoadingBlock, Panel } from '../components/States';
-import { exportUrl, getActiveRun, getPod, getSignoffs, postRedeliver, postSignoff, subscribeRun } from '../data/api';
+import { exportUrl, getActiveRun, getPod, getRedeliverLatest, getSignoffs, postRedeliver, postSignoff, subscribeRun } from '../data/api';
 import type { Redelivery as RedeliveryData } from '../data/types';
 import { useScorecard } from '../hooks/scorecard';
 import { useAsync } from '../hooks/useAsync';
@@ -31,6 +31,7 @@ export function Redelivery() {
   const signoffs = useAsync(() => (runId ? getSignoffs(runId) : Promise.resolve(null)), [runId]);
 
   const [result, setResult] = useState<RedeliveryData | null>(null);
+  const attachedAt = useRef(0);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<RunLive>(EMPTY_LIVE);
@@ -43,7 +44,18 @@ export function Redelivery() {
   /* The button is off while any run is active, including one started elsewhere. */
   useEffect(() => {
     let alive = true;
-    const poll = () => void getActiveRun().then((id) => alive && setActiveId(id), () => undefined);
+    const poll = () =>
+      void getActiveRun().then(
+        (id) => {
+          if (!alive) return;
+          setActiveId(id);
+          /* A run that is no longer active has ended, even if its last event never reached this page. */
+          if (!id && Date.now() - attachedAt.current > 5000) {
+            setLive((s) => (s.status === 'running' ? { ...s, status: 'done' } : s));
+          }
+        },
+        () => undefined,
+      );
     poll();
     const t = setInterval(poll, 3000);
     return () => {
@@ -52,8 +64,26 @@ export function Redelivery() {
     };
   }, []);
 
+  /* Restore the last result so a reload keeps the payoff. A run that is still going is followed again. */
+  const restored = useRef(false);
+  const attachRef = useRef<(id: string) => void>(() => undefined);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    getRedeliverLatest().then(
+      (r) => {
+        if (!r) return;
+        setResult(r);
+        if (r.run_id && r.run_status === 'running') attachRef.current(r.run_id);
+        else if (r.run_id) setLive({ ...EMPTY_LIVE, runId: r.run_id, status: 'done', agents: { author: { status: 'done' }, qc: { status: 'done' } } });
+      },
+      () => undefined,
+    );
+  }, []);
+
   const attach = useCallback(
     (id: string) => {
+      attachedAt.current = Date.now();
       setLive({ ...EMPTY_LIVE, runId: id, status: 'running' });
       unsub.current?.();
       unsub.current = subscribeRun(
@@ -73,6 +103,10 @@ export function Redelivery() {
     [reloadScore],
   );
 
+  useEffect(() => {
+    attachRef.current = attach;
+  }, [attach]);
+
   async function redeliver() {
     setError(null);
     setStarting(true);
@@ -87,7 +121,7 @@ export function Redelivery() {
     }
   }
 
-  const busy = starting || live.status === 'running' || !!activeId;
+  const busy = starting || !!activeId || live.status === 'running';
   const differing = sc.data?.rows.filter((r) => r.status === 'differs') ?? [];
   const affectedSections = new Set(result?.affected.map((a) => a.section));
   const shown = sc.data?.rows.filter((r) => r.status === 'differs' || affectedSections.has(r.section)) ?? [];
@@ -97,7 +131,7 @@ export function Redelivery() {
   const step = (s?: string): 'waiting' | 'running' | 'done' => (s === 'done' ? 'done' : s === 'running' ? 'running' : 'waiting');
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-6">
+    <div className="w-full max-w-[1760px] space-y-6">
       <Panel>
         <XRayMarker id="redelivery" />
         <div className="p-6 pr-12">
@@ -112,7 +146,7 @@ export function Redelivery() {
             </h1>
           )}
           <div className="mt-4 flex items-center gap-4">
-            <Button className="rounded-control" disabled={busy || (!result && differing.length === 0)} onClick={() => void redeliver()}>
+            <Button className="rounded-control" disabled={busy || !!result || differing.length === 0} onClick={() => void redeliver()}>
               {starting ? 'Starting' : busy ? 'A run is active' : result ? `${TABLE} re-delivered` : `Biostatistics re-delivers ${TABLE}`}
             </Button>
             {busy && !starting ? <p className="text-[13px] text-muted-foreground">The button is off until the run ends.</p> : null}
@@ -124,14 +158,15 @@ export function Redelivery() {
           <div className="grid grid-cols-[minmax(0,1fr)_280px] gap-8 border-t border-border p-6">
             <div>
               <h2 className="mb-2 text-[13px] font-medium text-muted-foreground">Sentences that quote changed cells</h2>
+              <div className="max-h-[220px] overflow-y-auto" data-testid="changed-cells">
               <table className="w-full text-[14px]">
                 <thead>
                   <tr className="text-left text-[13px] text-muted-foreground">
-                    <th className="py-1 font-normal">Section</th>
-                    <th className="py-1 font-normal">Sentence</th>
-                    <th className="py-1 font-normal">Figure</th>
-                    <th className="py-1 text-right font-normal">Was</th>
-                    <th className="py-1 text-right font-normal">Now</th>
+                    <th className="sticky top-0 bg-card py-1 font-normal">Section</th>
+                    <th className="sticky top-0 bg-card py-1 font-normal">Sentence</th>
+                    <th className="sticky top-0 bg-card py-1 font-normal">Figure</th>
+                    <th className="sticky top-0 bg-card py-1 text-right font-normal">Was</th>
+                    <th className="sticky top-0 bg-card py-1 text-right font-normal">Now</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -139,13 +174,14 @@ export function Redelivery() {
                     <tr key={`${a.section}-${a.sentence_idx}-${a.slot}`} className="border-t border-border/70">
                       <td className="num py-1.5">{a.section}</td>
                       <td className="num py-1.5">{a.sentence_idx + 1}</td>
-                      <td className="num py-1.5 text-[13px]">{a.slot}</td>
+                      <td className="py-1.5 pr-3 text-[13px]">{a.label || a.slot.replace(/_/g, ' ')}</td>
                       <td className="num py-1.5 text-right text-differs line-through">{a.old_value}</td>
                       <td className="num py-1.5 text-right">{a.new_value}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <div>
               <h2 className="mb-2 text-[13px] font-medium text-muted-foreground">Redraft of {[...affectedSections].join(', ')}</h2>
