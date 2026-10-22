@@ -19,6 +19,11 @@ export interface PrintedCell {
   printed_value: string;
   page: number;
   element_id: number;
+  /** Position of the cell inside its printed table element (0-based, from the parsed HTML); null when unknown. */
+  row_idx: number | null;
+  row_count: number | null;
+  col_idx: number | null;
+  col_count: number | null;
 }
 
 let printedCache: Promise<Map<string, PrintedCell>> | undefined;
@@ -30,12 +35,20 @@ export function clearPrintedCache() {
 export const cellKey = (table: string, rowKey: string, column: string) => `${table}|${rowKey}|${column}`;
 
 export function printedCells(): Promise<Map<string, PrintedCell>> {
-  printedCache ??= sqlRows(`SELECT tlf, row_key, column_name, printed_value, page, element_id FROM ${FQ}.submitted_tlf_cells`).then(
+  printedCache ??= sqlRows(`SELECT tlf, row_key, column_name, printed_value, page, element_id, row_idx, row_count, col_idx, col_count FROM ${FQ}.submitted_tlf_cells`).then(
     (rows) =>
       new Map(
         rows.map((r) => [
           cellKey(r.tlf as string, r.row_key as string, r.column_name as string),
-          { printed_value: r.printed_value as string, page: Number(r.page), element_id: Number(r.element_id) },
+          {
+            printed_value: r.printed_value as string,
+            page: Number(r.page),
+            element_id: Number(r.element_id),
+            row_idx: r.row_idx === null ? null : Number(r.row_idx),
+            row_count: r.row_count === null ? null : Number(r.row_count),
+            col_idx: r.col_idx === null ? null : Number(r.col_idx),
+            col_count: r.col_count === null ? null : Number(r.col_count),
+          },
         ]),
       ),
   );
@@ -65,6 +78,10 @@ export interface Tick {
   printed_value: string;
   printed_page: number;
   printed_element_id: number;
+  printed_row_idx: number | null;
+  printed_row_count: number | null;
+  printed_col_idx: number | null;
+  printed_col_count: number | null;
   match: boolean;
 }
 
@@ -93,6 +110,10 @@ export async function tickSection(sec: CsrSection): Promise<{ ticks: Tick[]; unv
         printed_value: pc.printed_value,
         printed_page: pc.page,
         printed_element_id: pc.element_id,
+        printed_row_idx: pc.row_idx,
+        printed_row_count: pc.row_count,
+        printed_col_idx: pc.col_idx,
+        printed_col_count: pc.col_count,
         match: matchesPrinted(p.value, pc.printed_value),
       });
     }
