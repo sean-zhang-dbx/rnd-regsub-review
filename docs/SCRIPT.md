@@ -16,7 +16,7 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com
 Earlier in the day:
 
 1. Rehearse once in the app, including "Draft this section", "Recompute" and the assistant.
-   On `/csr`, check that the pre-run draft loads (9 of 9 document checks). A rehearsal "Draft the whole CSR" is fine; the newest finished run is the one shown.
+   On `/csr`, check that the pre-run draft loads and note how many document checks passed. The draft from 22 Oct has 8 of 9: the judge found that section 11.4.3 adds an unsupported criterion for "consistent across subgroups". A rehearsal "Draft the whole CSR" is fine; the newest finished run is the one shown, and its checks can differ.
 2. Score the rehearsal traces, so judged traces are ready for the end of the demo:
    ```bash
    cd ~/Projects/gsk/rnd_regsub_review && uv run --python 3.12 --with "mlflow[databricks]>=3.5" --with databricks-sql-connector python scripts/judge_traces.py
@@ -103,7 +103,7 @@ Each step follows tell, show, tell. **Tell first** says what you're about to sho
 
 **Tell first:** "On the last call you asked how we would write a whole CSR from an empty template. This is the whole CSR, drafted by a pod: a small team of agents that runs the process the way your departments do, where each agent acts for a responsible department."
 
-**Do:** click "Next: Draft". The CSR page opens with the draft that was run before the call; the header shows the run time, the figures bound and "9 of 9 document checks passed". Move left to right along the pod.
+**Do:** click "Next: Draft". The CSR page opens with the draft that was run before the call; the header shows the run time, the figures bound and how many document checks passed. Move left to right along the pod.
 
 **Say:** "The context is what Biostatistics already certifies in Unity Catalog, plus the protocol and SAP parsed by ai_parse_document. The Document Planner turns the company template, which is a table, into a plan. Then 3 agents work in parallel: the CSR Author drafts each section, the Safety Narrative Agent writes one narrative per death or serious event, and the QC agent checks every section as it lands. The Assembler puts together the parts that are never written, such as the title page, the contents and the section 14 tables."
 
@@ -122,6 +122,10 @@ If the tool log shows a rejected save (amber), point to it and to the corrected 
 
 ![Section 11.4.1 in the whole draft, with figures bound to cells and the review panel.](screenshots/csr/3_document.png)
 *Section 11.4.1 in the whole draft, with figures bound to cells and the review panel.*
+
+**If a document check failed** (on the 22 Oct draft: required content in 11.4.3), click that section in the tree and point to the judge and "Needs a person" on the right.
+
+**Say:** "This is the system doing its job: the author wrote its own rule for when subgroup results count as consistent, the judge found nothing in the SAP to support it, and the sentence goes to a person instead of into the submission."
 
 **Do:** scroll down to "Accountability & sign-off".
 

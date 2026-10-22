@@ -47,7 +47,7 @@ export function registerSearchUntracked(app: Application) {
       res.status(400).json({ error: 'old_values must be a non-empty array of strings' });
       return;
     }
-    const values = oldValues as string[];
+    const values = oldValues;
     const key = JSON.stringify([...values].sort());
     const hit = cache.get(key);
     if (hit) {

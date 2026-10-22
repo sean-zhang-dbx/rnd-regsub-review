@@ -13,7 +13,7 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p>Earlier in the day:</p>
 <ol>
 <li>Rehearse once in the app, including "Draft this section", "Recompute" and the assistant.
-   On <code>/csr</code>, check that the pre-run draft loads (9 of 9 document checks). A rehearsal "Draft the whole CSR" is fine; the newest finished run is the one shown.</li>
+   On <code>/csr</code>, check that the pre-run draft loads and note how many document checks passed. The draft from 22 Oct has 8 of 9: the judge found that section 11.4.3 adds an unsupported criterion for "consistent across subgroups". A rehearsal "Draft the whole CSR" is fine; the newest finished run is the one shown, and its checks can differ.</li>
 <li>Score the rehearsal traces, so judged traces are ready for the end of the demo:
    <code>bash
    cd ~/Projects/gsk/rnd_regsub_review &amp;&amp; uv run --python 3.12 --with "mlflow[databricks]&gt;=3.5" --with databricks-sql-connector python scripts/judge_traces.py</code></li>
@@ -64,7 +64,7 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><img alt="Step 2: the CSR Pod on /csr, with the draft prepared before the call." src="screenshots/csr/1_pod.png" />
 <em>Step 2: the CSR Pod on /csr, with the draft prepared before the call.</em></p>
 <p><strong>Tell first:</strong> "On the last call you asked how we would write a whole CSR from an empty template. This is the whole CSR, drafted by a pod: a small team of agents that runs the process the way your departments do, where each agent acts for a responsible department."</p>
-<p><strong>Do:</strong> click "Next: Draft". The CSR page opens with the draft that was run before the call; the header shows the run time, the figures bound and "9 of 9 document checks passed". Move left to right along the pod.</p>
+<p><strong>Do:</strong> click "Next: Draft". The CSR page opens with the draft that was run before the call; the header shows the run time, the figures bound and how many document checks passed. Move left to right along the pod.</p>
 <p><strong>Say:</strong> "The context is what Biostatistics already certifies in Unity Catalog, plus the protocol and SAP parsed by ai_parse_document. The Document Planner turns the company template, which is a table, into a plan. Then 3 agents work in parallel: the CSR Author drafts each section, the Safety Narrative Agent writes one narrative per death or serious event, and the QC agent checks every section as it lands. The Assembler puts together the parts that are never written, such as the title page, the contents and the section 14 tables."</p>
 <p><strong>Do:</strong> click the CSR Author Agent card. The drawer shows its skill under HOW and its tool calls below.</p>
 <p><strong>Say:</strong> "Each agent is a skill, its tools and what it calls. The rule in this skill is the one we showed last time: the model never sees a figure and never types one. Its save tool is a code check, so if it types a number, the save is refused and it has to rewrite the sentence with a placeholder."</p>
@@ -75,6 +75,8 @@ App: https://rnd-regsub-review-7474654216647582.aws.databricksapps.com</p>
 <p><strong>Say:</strong> "Every one of these figures was filled by SQL from a certified cell, and the QC agent lists the sentences that need a person, mostly where a sentence interprets a result. The synopsis can only use figures the body already uses, so it can't disagree with the body."</p>
 <p><img alt="Section 11.4.1 in the whole draft, with figures bound to cells and the review panel." src="screenshots/csr/3_document.png" />
 <em>Section 11.4.1 in the whole draft, with figures bound to cells and the review panel.</em></p>
+<p><strong>If a document check failed</strong> (on the 22 Oct draft: required content in 11.4.3), click that section in the tree and point to the judge and "Needs a person" on the right.</p>
+<p><strong>Say:</strong> "This is the system doing its job: the author wrote its own rule for when subgroup results count as consistent, the judge found nothing in the SAP to support it, and the sentence goes to a person instead of into the submission."</p>
 <p><strong>Do:</strong> scroll down to "Accountability &amp; sign-off".</p>
 <p><strong>Say:</strong> "Delegating the work doesn't remove a department's oversight. Medical Writing, Biostatistics and Clinical Safety each sign their part against the table versions the figures came from, and Regulatory Affairs can't release the CSR until all 3 have signed."</p>
 <p><strong>Tell after:</strong> "About half of a CSR is assembled rather than written, and the rest is drafted from passages and certified cells, so the writer starts from a complete draft with a short list of sentences that need judgement. The banner at the top already shows what happens next: Table 14.2.1 was re-delivered, and the draft knows which sentences quote the changed cells."</p>

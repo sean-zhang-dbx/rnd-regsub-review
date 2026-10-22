@@ -158,7 +158,7 @@ async function cachedResult(sentenceId: string, version: number): Promise<Result
   }
   return {
     sentence_id: sentenceId,
-    verdict: (row.verdict === 'ok' ? 'ok' : 'needs_writer') as 'ok' | 'needs_writer',
+    verdict: row.verdict === 'ok' ? 'ok' : 'needs_writer',
     reason: row.reason ?? '',
     model: row.model ?? MODEL_LABEL,
     trace_id: row.trace_id,
@@ -237,7 +237,7 @@ export function registerWordingCheck(app: Application) {
     const ids = (req.body as { sentence_ids?: unknown })?.sentence_ids;
     /* After a reload the review is already recorded: read the saved verdicts instead of calling the model again. */
     const preferCached = (req.body as { prefer_cached?: unknown })?.prefer_cached === true;
-    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 25 || !ids.every((i) => typeof i === 'string' && /^[\w.\-]+$/.test(i))) {
+    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 25 || !ids.every((i) => typeof i === 'string' && /^[\w.-]+$/.test(i))) {
       res.status(400).json({ error: 'sentence_ids must be a non-empty array of sentence ids' });
       return;
     }
@@ -253,7 +253,7 @@ export function registerWordingCheck(app: Application) {
       );
       res.json(results);
       void mlflow.flushTraces().catch(() => undefined);
-      void persistBatch(results.filter((r) => !r.cached), version).catch((e) => console.warn('[wording-check] persist failed:', e.message));
+      void persistBatch(results.filter((r) => !r.cached), version).catch((e: Error) => console.warn('[wording-check] persist failed:', e.message));
     } catch (e) {
       console.error('[wording-check]', e);
       res.status(500).json({ error: (e as Error).message });

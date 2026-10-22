@@ -36,6 +36,8 @@ The CSR for LMN-301 is drafted from an empty template by a pod: a team of agents
 - Sign-off: each department signs its part with the table versions it was bound to; Regulatory Affairs release returns 409 until the other 3 have approved. These are named approvers in a governed table, not a validated e-signature.
 - Runs: the full CSR takes about 3 minutes (21 Oct 2026: 3 min 01 s on the deployed app, 438 figures, 9 of 9 document checks). "Redraft this section" reruns chosen sections and copies the rest from the latest run. Every run is one MLflow trace (`csr_pod_run`) with a span per agent, model call and tool call.
 - Stored in `csr_runs`, `csr_sections`, `csr_figure_citations` and `csr_signoffs`. Data: `scripts/generate_csr_data.py` (analysis datasets, 7 certified TLF tables built with CREATE TABLE AS SELECT for lineage, `study_metadata`, `narrative_patients`, `section_registry`). Build contract: `docs/CSR_POD_BUILD.md`.
+- Results vary by run, because the agents choose their own wording and tools. The 22 Oct run had 8 of 9 document checks: the judge found an unsupported criterion for subgroup consistency in 11.4.3 and sent it to a person.
+- A silent, captioned walkthrough of about 5 minutes is recorded with Playwright into `recordings/` (not in git, file `LMN-301_CSR_Pod_walkthrough.mp4`).
 - The pod runs inside the app for the demo. For production, the PRD recommends Lakeflow Jobs for the full-document run and keeping Beta components off the validated path.
 
 ## Databricks features used
