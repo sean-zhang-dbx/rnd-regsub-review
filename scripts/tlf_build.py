@@ -191,7 +191,7 @@ DEMO_CAT = {
 CAT_N_COL = {"sex": "SEX", "race": "RACE"}
 
 
-def build_1403(q):
+def build_1403(q, pvals):
     create_table(q, D.T1403, D.COLS_1403, "Summary of demographic and baseline characteristics", "14-2.01", " Intent-to-treat population.")
     contcol = {c[0]: c[3] for c in D.CONT_VARS}
     sels = []
@@ -211,7 +211,7 @@ def build_1403(q):
             for a in ARMS3:
                 vals += [cont_stats(col, f"TRT01P = '{ARM_NAME[a]}'")[stat], "NULL"]
             vals += [cont_stats(col, "1=1")[stat], "NULL"]
-        vals.append("CAST(NULL AS DOUBLE)")  # p_value
+        vals.append(lit(half_up(pvals[k], 4)) if k in pvals else "CAST(NULL AS DOUBLE)")  # p_value
         # column order of COLS_1403: pbo, pbo_pct, low, low_pct, high, high_pct, total, total_pct, p_value
         sels.append(sel(k, r["label"], i + 1, vals) + f" FROM {FQ}.adam_adsl")
     # INT n columns are DOUBLE in this table (mixed counts and means), the cast above keeps them as printed
@@ -259,8 +259,6 @@ def demo_p_values(q):
     p["bmi_lt25"] = chi2(df["BMIBLGR1"])
     print("demographic p values:", {k: round(v, 4) for k, v in p.items()})
     p.pop("mmse_n_site_adjusted")
-    for k, v in p.items():
-        q(f"UPDATE {FQ}.{D.T1403} SET p_value = {half_up(v, 4)} WHERE row_key = '{k}'")
     return p
 
 
@@ -485,8 +483,7 @@ def main(rule):
     q = get_runner()
     build_1401(q)
     build_1402(q)
-    build_1403(q)
-    demo_p_values(q)
+    build_1403(q, demo_p_values(q))
     build_eff(q, D.T1404, D.ROWS_1404, "14-3.01", "Primary endpoint analysis: ADAS-Cog (11) change from baseline to Week 24, LOCF", "ACTOT", "adam_adqsadas", True,
               [("baseline", "base"), ("week24", "wk24"), ("change", "chg")])
     build_eff(q, D.T1405, D.ROWS_1405, "14-3.02", "Primary endpoint analysis: CIBIC+ summary at Week 24, LOCF", "CIBICVAL", "adam_adqscibc", False, [("week24", "wk24")])
