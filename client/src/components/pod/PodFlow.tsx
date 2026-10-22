@@ -48,7 +48,7 @@ function Status({ live }: { live?: AgentLive }) {
 
 function Card({ m, phase, live, doc, selected, onPick }: { m: PodMember; phase: number; live: RunLive; doc: CsrDocument | null; selected: boolean; onPick: (id: AgentId) => void }) {
   const state = stateFor(m.id, live, doc);
-  const rej = rejectedSaves(toolsFor(m.id, live, doc));
+  const rej = rejectedSaves(toolsFor(m.id, live, doc, m.acts));
   const agent = m.kind === 'agent';
   return (
     <button
@@ -70,7 +70,6 @@ function Card({ m, phase, live, doc, selected, onPick }: { m: PodMember; phase: 
           {m.how ? <Chip label={m.how.name} tone="how" /> : null}
           <p className="text-[12px] leading-snug text-muted-foreground">
             {m.acts?.length ? plural(m.acts.length, 'tool', 'tools') : 'No tools'}
-            {m.calls?.length ? `, calls ${m.calls.join(' and ')}` : ''}
           </p>
         </div>
       ) : m.note ? (
