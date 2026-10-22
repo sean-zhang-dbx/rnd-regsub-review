@@ -26,7 +26,7 @@ export function reduceEvent(s: RunLive, e: PodEvent): RunLive {
     case 'section':
       return { ...s, sections: { ...s.sections, [e.section]: e.status } };
     case 'tool':
-      return { ...s, tools: [...s.tools, { agent: e.agent, section: e.section, tool: e.tool, args: e.args, ok: e.ok, result_summary: e.result_summary, ms: e.ms }] };
+      return { ...s, tools: [...s.tools, { agent: e.agent, section: e.section, tool: e.tool, args: e.args, ok: e.ok, result_summary: e.result_summary, ms: e.ms, detail: e.detail }] };
     case 'log':
       return s;
   }
@@ -40,6 +40,8 @@ export function agentOfSection(a: string): AgentId {
 export function toolsFor(agent: AgentId, live: RunLive, doc: CsrDocument | null, acts?: string[]): ToolEntry[] {
   if (live.runId) return live.tools.filter((t) => t.agent === agent);
   if (!doc) return [];
+  /* The run document carries every agent's tool events; older documents only have the per-section logs. */
+  if (doc.tool_calls?.length) return doc.tool_calls.filter((t) => agentOfSection(t.agent) === agent).map((t) => ({ ...t, agent }));
   /* A stored section log mixes the calls of every agent that touched the section: keep the ones this agent owns. */
   if (acts?.length) return doc.sections.flatMap((s) => s.tool_log.filter((t) => acts.includes(t.tool)).map((t) => ({ ...t, agent, section: s.section })));
   return doc.sections.filter((s) => agentOfSection(s.agent) === agent).flatMap((s) => s.tool_log.map((t) => ({ ...t, agent, section: s.section })));

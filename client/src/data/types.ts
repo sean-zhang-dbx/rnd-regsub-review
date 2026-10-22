@@ -27,7 +27,7 @@ export type PodEvent =
   | { type: 'run'; status: 'running' | 'done' | 'error'; run_id: string; at: string; error?: string; wall_ms?: number }
   | { type: 'agent'; agent: AgentId; status: 'idle' | 'running' | 'done' | 'error'; at: string; summary?: string; progress?: { done: number; total: number } }
   | { type: 'section'; section: string; status: SectionLiveStatus; agent: AgentId; at: string }
-  | { type: 'tool'; agent: AgentId; section?: string; tool: string; args: unknown; ok: boolean; result_summary: string; ms: number; at: string }
+  | { type: 'tool'; agent: AgentId; section?: string; tool: string; args: unknown; ok: boolean; result_summary: string; ms: number; at: string; detail?: ToolDetail }
   | { type: 'log'; agent: AgentId; section?: string; text: string; at: string };
 
 export type Part =
@@ -40,7 +40,10 @@ export type SourceRef =
 export type Sentence = { heading?: string; template: string; parts: Part[]; sources: SourceRef[]; interpretation?: boolean };
 export type Check = { id: string; label: string; ok: boolean; detail?: string };
 export type NeedsPerson = { sentence_idx?: number; reason: string; kind: 'interpretation' | 'check_failed' | 'judge' | 'qc_flag' };
-export type ToolCall = { tool: string; args: unknown; ok: boolean; result_summary: string; ms: number };
+export type SearchCall = { query: string; passages: { id: string | null; doc: string; doc_part: string; page: number; element_id: number; text: string }[] };
+/** `detail.searches` is set for find_passages and search_documents; `reconstructed` marks runs recorded before queries were stored. */
+export type ToolDetail = { searches: SearchCall[]; reconstructed?: boolean };
+export type ToolCall = { tool: string; args: unknown; ok: boolean; result_summary: string; ms: number; detail?: ToolDetail };
 export type CsrSectionStatus = 'assembled' | 'drafted' | 'checked' | 'needs_person' | 'failed';
 export type CsrSection = {
   section: string;
@@ -71,6 +74,8 @@ export type CsrDocument = {
   plan: { section: string; passages: SourceRef[]; tlfs: string[]; depends_on: string[]; wave: number | null }[];
   sections: CsrSection[];
   document_checks: Check[];
+  /** Every tool event of the run, for all agents (from /api/csr-run/latest and /api/csr-run/:id). */
+  tool_calls?: { agent: string; section?: string; tool: string; args: unknown; ok: boolean; result_summary: string; ms: number; detail?: ToolDetail }[];
 };
 
 export type CsrSignoff = {

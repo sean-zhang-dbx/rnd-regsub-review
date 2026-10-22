@@ -29,7 +29,8 @@ function queryOf(args: unknown): string | null {
 }
 
 function ToolRow({ t }: { t: ToolEntry }) {
-  const q = queryOf(t.args);
+  const searches = t.detail?.searches ?? [];
+  const q = searches.length ? searches.map((s) => s.query).join(' / ') : queryOf(t.args);
   return (
     <li className={cn('rounded-control border px-3 py-2', t.ok ? 'border-border bg-card' : 'border-differs/50 bg-differs/[0.06]')}>
       <div className="flex items-baseline gap-2">

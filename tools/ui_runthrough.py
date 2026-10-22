@@ -169,7 +169,7 @@ def run() -> None:
             assert figs.count() >= m, f"{figs.count()} tinted figures, {m} ticks"
             for i in range(min(figs.count(), 4)):
                 figs.nth(i).hover()
-                expect(page.get_by_test_id("reading")).to_contain_text(re.compile(r"drafted .+, printed .+"))
+                expect(page.get_by_test_id("callout")).to_contain_text(re.compile(r"drafted .+, printed .+"))
                 expect(page.get_by_test_id("element-box").first).to_be_visible()
             shot(page, "4b-compare-hover")
             tabs = page.get_by_role("tablist", name="Pages of the submitted CSR").get_by_role("tab")
