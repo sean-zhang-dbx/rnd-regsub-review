@@ -47,16 +47,20 @@ export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 
 export const ABBREVIATIONS: Record<string, string> = {
   ADAS: "Alzheimer's Disease Assessment Scale",
+  AD: "Alzheimer's disease",
   ADAM: 'Analysis Data Model',
+  ADRDA: "Alzheimer's Disease and Related Disorders Association",
   AE: 'adverse event',
   ANCOVA: 'analysis of covariance',
   ANOVA: 'analysis of variance',
   BMI: 'body mass index',
   CDISC: 'Clinical Data Interchange Standards Consortium',
   CI: 'confidence interval',
+  CNS: 'central nervous system',
   CIBIC: "Clinician's Interview-Based Impression of Change",
   CRF: 'case report form',
   CSR: 'clinical study report',
+  DAD: 'Disability Assessment for Dementia',
   GCP: 'Good Clinical Practice',
   ICH: 'International Council for Harmonisation of Technical Requirements for Pharmaceuticals for Human Use',
   ITT: 'intent-to-treat',
@@ -64,6 +68,7 @@ export const ABBREVIATIONS: Record<string, string> = {
   LS: 'least squares',
   MedDRA: 'Medical Dictionary for Regulatory Activities',
   MMSE: 'Mini-Mental State Examination',
+  NINCDS: 'National Institute of Neurological and Communicative Disorders and Stroke',
   PT: 'preferred term',
   SAE: 'serious adverse event',
   SAP: 'statistical analysis plan',
@@ -75,7 +80,7 @@ export const ABBREVIATIONS: Record<string, string> = {
   TTS: 'transdermal therapeutic system',
 };
 // Tokens that look like abbreviations but are not: roman numerals, study codes and arm labels.
-const NOT_ABBREVIATIONS = new Set(['II', 'III', 'IV', 'CDISCPILOT', 'LZZT', 'TRT', 'PBO', 'DIFF', 'MILD', 'MODERATE', 'SEVERE', 'FATAL', 'Y', 'N', 'NPI', 'LY']);
+const NOT_ABBREVIATIONS = new Set(['II', 'III', 'IV', 'CDISCPILOT', 'LZZT', 'TRT', 'PBO', 'DIFF', 'MILD', 'MODERATE', 'SEVERE', 'FATAL', 'Y', 'N', 'NPI', 'LY', 'NONE', 'ID']);
 
 export function textOf(s: Sentence): string {
   return s.parts.map((p) => ('text' in p ? p.text : p.value)).join('');

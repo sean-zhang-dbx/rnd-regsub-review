@@ -22,7 +22,8 @@ import sys
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+HERE = Path(globals().get('__file__', '/Workspace/Users/sean.zhang@databricks.com/rnd_csr_pod_files/scripts/tlf_build.py')).parent  # no __file__ in a job
+sys.path.insert(0, str(HERE))
 import tlf_defs as D  # noqa: E402
 
 CATALOG, SCHEMA = "sean_zhang_catalog", "rnd_csr_pod"
@@ -427,7 +428,7 @@ def teae_insert_statement(rule, overwrite=False):
 
 
 def write_redeliver_sql():
-    p = Path(__file__).parent.parent / "config" / "redeliver_14_5_01.sql"
+    p = HERE.parent / "config" / "redeliver_14_5_01.sql"
     p.write_text(
         "-- Table 14-5.01 re-delivered by Biostatistics: version 2.\n"
         "-- Version 1 counted every adverse event record (TRTEMFL ignored, a demo scenario).\n"
@@ -490,7 +491,10 @@ def main(rule):
     build_1406(q)
     build_ae(q, rule)
     write_formats(q)
-    write_redeliver_sql()
+    try:
+        write_redeliver_sql()
+    except OSError as e:  # read-only workspace files inside a job; the file is committed
+        print('redeliver sql not written:', e)
     # record the Delta version of the first complete state of 14-5.01 for scripts/reset_demo.py
     q(f"CREATE TABLE IF NOT EXISTS {FQ}.demo_state (state_key STRING, state_value STRING) COMMENT 'Opening state of the demo, used by scripts/reset_demo.py'")
     if rule == "v1":

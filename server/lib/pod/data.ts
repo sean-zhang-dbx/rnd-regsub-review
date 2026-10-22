@@ -275,7 +275,7 @@ export async function searchPassages(query: string, n = 4): Promise<Passage[]> {
     }
     if (!best) continue;
     const quote = PLAIN(best.content as string);
-    if (found.some((f) => f.element_id === Number(best!.element_id))) continue;
+    if (found.some((f) => f.element_id === Number(best.element_id))) continue;
     found.push({
       doc_title: best.doc_title as string,
       doc_part: best.doc_part as string,

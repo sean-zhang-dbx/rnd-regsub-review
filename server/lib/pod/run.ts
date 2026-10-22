@@ -1171,7 +1171,7 @@ export async function latestDoneRunId(): Promise<string | null> {
 export async function loadStoredEvents(runId: string): Promise<PodEvent[] | null> {
   const r = await sqlRows(`SELECT status, events_json FROM ${FQ}.csr_runs WHERE run_id = :r`, [{ name: 'r', value: runId }]);
   if (!r[0] || !r[0].events_json) return null;
-  return JSON.parse(r[0].events_json as string) as PodEvent[];
+  return JSON.parse(r[0].events_json) as PodEvent[];
 }
 
 async function redelivery(sections: CsrSection[]) {

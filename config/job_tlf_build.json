@@ -1,0 +1,21 @@
+{
+  "name": "CSR Pod: TLF build",
+  "tags": { "sz_domain": "rnd", "sz_project": "csr_pod", "asset_class": "app" },
+  "max_concurrent_runs": 1,
+  "environments": [
+    {
+      "environment_key": "tlf",
+      "spec": { "environment_version": "3", "dependencies": ["pandas", "numpy", "scipy", "statsmodels"] }
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "tlf_build",
+      "environment_key": "tlf",
+      "spark_python_task": {
+        "python_file": "/Workspace/Users/sean.zhang@databricks.com/rnd_csr_pod_files/scripts/tlf_build.py",
+        "parameters": ["--teae-rule", "v1"]
+      }
+    }
+  ]
+}
