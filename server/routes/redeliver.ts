@@ -48,7 +48,7 @@ export function registerRedeliver(app: Application) {
       const doc = await loadDocument(baseRun);
       const affected = (doc?.redelivery ?? [])
         .filter((r) => r.table === TABLE)
-        .map((r) => ({ section: r.section, sentence_idx: r.sentence_idx, slot: r.slot, old_value: r.old_value, new_value: r.new_value }));
+        .map((r) => ({ section: r.section, sentence_idx: r.sentence_idx - 1, slot: r.slot, old_value: r.old_value, new_value: r.new_value }));
       const sections = [...new Set(affected.map((a) => a.section))];
       const run_id = sections.length ? startRun(sections) : null;
       res.json({ old_version, new_version, old_delta_version, new_delta_version, changed_cells: Number(diff[0]?.changed ?? 0), affected, run_id });

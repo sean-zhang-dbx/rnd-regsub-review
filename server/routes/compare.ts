@@ -80,7 +80,8 @@ export function registerCompare(app: Application) {
         drafted: sec.sentences,
         submitted: { pages, text: await submittedText(section) },
         ticks: ticks.map((t) => ({
-          sentence_idx: t.sentence_idx,
+          // The engine numbers sentences from 1; the contract indexes `drafted` from 0.
+          sentence_idx: t.sentence_idx - 1,
           slot: t.slot,
           drafted_value: t.drafted_value,
           tlf: t.tlf,

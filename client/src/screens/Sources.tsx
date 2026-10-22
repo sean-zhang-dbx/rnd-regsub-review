@@ -133,7 +133,7 @@ function Docs({ d, index }: { d: SourcesData['docs']; index: SourcesData['index'
         <XRayMarker id="sources_search" className="top-2.5" />
         <span className="num">{index.name}</span>
         <span className="ml-3 text-[13px] text-muted-foreground">
-          <span className="num">{n(index.chunks)}</span> passages from the protocol and the SAP
+          <span className="num">{n(index.chunks)}</span> passages indexed. The pod searches only the protocol and the SAP
         </span>
       </div>
     </Panel>
