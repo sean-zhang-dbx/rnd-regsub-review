@@ -163,6 +163,7 @@ flowchart LR
 - `POST /api/redeliver` affected items gain `label` (for example "Skin and subcutaneous tissue disorders, Placebo, n"); `sentence_idx` is 0-based. `old_version` and `new_version` are releases (1 and 2); `old_delta_version` and `new_delta_version` are the Delta versions.
 - New `GET /api/redeliver/latest`: the last re-delivery result in the `POST /api/redeliver` shape plus `run_status`, or `null` after a reset (`scripts/reset_demo.py` clears it).
 - `POST /api/csr/signoff`: a second `approved` from the same department for the same run is a no-op (200, no new row).
+- Review round 2: `/api/compare` ticks gain `printed_box: { x0, y0, x1, y1 } | null`, the exact box of the printed token on the page image, as fractions of the image width and height (0 to 1), from the PDF text layer (PyMuPDF word positions, rotated to the image orientation). When `printed_box` is null the client draws no cell box. The grid fields stay for reference.
 - Latency: `/api/compare` and `/api/sources` answer in under 1 s when warm (cached per run and table version, warmed at server start); page images are served with long-lived cache headers.
 
 **Engine changes from `rnd_regsub_review` (backend):**
