@@ -85,7 +85,7 @@ export function registerScorecard(app: Application) {
           figures_total: rows.reduce((a, r) => a + r.figures_total, 0),
           figures_matched: rows.reduce((a, r) => a + r.figures_matched, 0),
           typed_figures: 0,
-          redraft: run.base_run_id ? { run_id: runId, sections: redraftSections, wall_ms: run.wall_ms === null ? null : Number(run.wall_ms) } : null,
+          redraft: run.base_run_id ? { run_id: runId, sections: redraftSections, wall_ms: run.wall_ms === null ? null : Number(run.wall_ms), figures_total: rows.filter((r) => redraftSections.includes(r.section)).reduce((a, r) => a + r.figures_total, 0) } : null,
         },
         rows,
       });

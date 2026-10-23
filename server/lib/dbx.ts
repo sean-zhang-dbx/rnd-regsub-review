@@ -69,7 +69,7 @@ export async function sqlRows(
   statement: string,
   params: SqlParam[] = [],
 ): Promise<Record<string, string | null>[]> {
-  const warehouse_id = await getWarehouseId();
+  const warehouse_id = process.env.DATABRICKS_WAREHOUSE_ID || (await getWarehouseId()); // the env is set by the app resource; scripts outside the app set it themselves
   let r = await dbxFetch<StatementResponse>('/api/2.0/sql/statements', {
     body: {
       warehouse_id,

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import type { Application, Request, Response } from 'express';
 import { FQ, recordTeaeRelease, releaseOf, sqlRows, tableVersion, teaeReleases } from '../lib/dbx';
 import { teaeStateNow } from '../lib/cache';
-import { columnLabel, columnUnit, rowLabels } from '../lib/labels';
+import { columnLabel, columnUnit, rowLabels, rowPhrase } from '../lib/labels';
 import { clearTlfCache } from '../lib/pod/data';
 import { activeRunId, latestDoneRunId, loadDocument, runStatus, startRun } from '../lib/pod/run';
 import { warmAll } from '../lib/warm';
@@ -85,7 +85,7 @@ export function registerRedeliver(app: Application) {
             ?.sentences[r.sentence_idx - 1]?.parts.find((p) => 'slot' in p && p.slot === r.slot);
           const bound = part && 'slot' in part ? part : null;
           const label = bound
-            ? [labels.get(bound.row_key) ?? bound.row_key, columnLabel(bound.column_name), columnUnit(bound.column_name)].filter(Boolean).join(', ')
+            ? [rowPhrase(labels.get(bound.row_key) ?? bound.row_key), columnLabel(bound.column_name), columnUnit(bound.column_name)].filter(Boolean).join(', ')
             : r.slot;
           return { section: r.section, sentence_idx: r.sentence_idx - 1, slot: r.slot, label, old_value: r.old_value, new_value: r.new_value };
         });

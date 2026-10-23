@@ -244,13 +244,13 @@ def build_cells(q):
             continue
         seen.add(k)
         dedup.append(c)
-    q(f"""CREATE OR REPLACE TABLE {FQ}.submitted_tlf_cells (tlf STRING, row_key STRING, column_name STRING, printed_value STRING, page INT, element_id INT, row_idx INT, row_count INT, col_idx INT, col_count INT)
+    q(f"""CREATE OR REPLACE TABLE {FQ}.submitted_tlf_cells (tlf STRING, row_key STRING, column_name STRING, printed_value STRING, page INT, element_id INT, row_idx INT, row_count INT, col_idx INT, col_count INT, box_x0 DOUBLE, box_y0 DOUBLE, box_x1 DOUBLE, box_y1 DOUBLE)
         COMMENT 'ANSWER KEY. Printed numbers of the in-scope section 14 tables of the submitted CDISCPILOT01 CSR, as printed, mapped to our table (tlf), row_key and column, with the cell position in the printed table element (0-based row_idx and col_idx, row_count and col_count of the table, colspan and rowspan applied). The pod never reads this table. {dbx.SOURCE_NOTE}'""")
     vals = [f"({lit(a)},{lit(b)},{lit(c)},{lit(d)},{e},{f},{g},{h},{i},{j})" for a, b, c, d, e, f, g, h, i, j in dedup]
     for i in range(0, len(vals), 200):
-        q(f"INSERT INTO {FQ}.submitted_tlf_cells VALUES " + ",".join(vals[i:i + 200]))
+        q(f"INSERT INTO {FQ}.submitted_tlf_cells (tlf, row_key, column_name, printed_value, page, element_id, row_idx, row_count, col_idx, col_count) VALUES " + ",".join(vals[i:i + 200]))
     q(f"ALTER TABLE {FQ}.submitted_tlf_cells SET TAGS ({dbx.TAGS})")
-    print("submitted_tlf_cells", len(dedup))
+    print("submitted_tlf_cells", len(dedup), "(boxes are empty: run scripts/locate_printed_cells.py next)")
     for t in D.TABLES:
         print("  ", t, sum(1 for c in dedup if c[0] == t))
     print("unmatched printed rows:", len(unmatched))
