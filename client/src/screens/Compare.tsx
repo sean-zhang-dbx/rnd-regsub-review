@@ -20,7 +20,8 @@ const keyOf = (t: { sentence_idx: number; slot: string }) => `${t.sentence_idx}:
 
 /** The reading of one figure from the tick's own labels, without repeats. */
 function reading(t: Tick): string {
-  const row = t.row_label || rowWords(t.row_key);
+  // TLF row labels use "Group: statistic" (for example "Baseline: mean"); the callout already ends the label with a colon.
+  const row = (t.row_label || rowWords(t.row_key)).replace(/: /g, ' ');
   const parts = [tlfLabel(t.tlf), t.column_label, row].filter((p, i, all): p is string => !!p && all.indexOf(p) === i);
   return `${parts.join(', ')}: drafted ${t.drafted_value}, printed ${t.printed_value}`;
 }
