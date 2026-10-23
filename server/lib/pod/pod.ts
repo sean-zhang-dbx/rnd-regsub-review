@@ -104,7 +104,7 @@ export const MEMBERS: PodMember[] = [
   {
     id: 'signoff',
     kind: 'gate',
-    title: 'Departmental sign-off',
+    title: 'Departmental sign\u2011off',
     note: 'Nothing is released until the responsible people sign.',
     calls: ['Medical Writing', 'Biostatistics', 'Clinical Safety', 'Regulatory Affairs'],
   },

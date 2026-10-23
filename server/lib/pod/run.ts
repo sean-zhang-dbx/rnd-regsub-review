@@ -492,7 +492,7 @@ async function execute(st: RunState) {
     await Promise.all([Promise.all(wave(1).map(authorSection)), narrativeJob()]);
     await Promise.all(wave(2).map(authorSection));
     await Promise.all(wave(3).map(authorSection));
-    if (draftedRegs.length) agentEv('author', 'done', `${authorDone} sections drafted${rejected ? `, ${rejected} save${rejected === 1 ? '' : 's'} rejected and fixed` : ''}`, { done: authorDone, total: draftedRegs.length });
+    if (draftedRegs.length) agentEv('author', 'done', `${authorDone} ${authorDone === 1 ? 'section' : 'sections'} drafted${rejected ? `, ${rejected} save${rejected === 1 ? '' : 's'} rejected and fixed` : ''}`, { done: authorDone, total: draftedRegs.length });
     if (qcTotal) agentEv('qc', 'done', `${qcDone} sections checked and scored`, { done: qcDone, total: qcTotal });
 
     // ---------------------------------------------------------------- Assemble

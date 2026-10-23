@@ -130,7 +130,8 @@ function PageView({ page, active, label }: { page: ComparePage; active: Tick | n
     const mid = box.y + box.h / 2;
     const half = Math.min(line * 1.6, mid, page.height - mid);
     const sx = Math.max(0, Math.min(el.x0, box.x) - padX);
-    strip = { x: sx, y: mid - half, w: Math.min(page.width, box.x + box.w + padX * 3) - sx, h: half * 2 };
+    /* Full table width, so text after the box on the same line (for example "(0.82)") is not cut off. */
+    strip = { x: sx, y: mid - half, w: Math.min(page.width, Math.max(el.x1, box.x + box.w) + padX) - sx, h: half * 2 };
   }
   return (
     <div className="space-y-2">

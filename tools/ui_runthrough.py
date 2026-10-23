@@ -208,6 +208,11 @@ def run() -> None:
             expect(page.get_by_text(re.compile(r"\d+ differ"))).to_have_count(0, timeout=360_000)
             print(f"     redraft finished in {time.time() - t0:.0f} s")
             expect(row).to_be_visible()
+            show_all = page.get_by_role("button", name=re.compile(r"Show all \d+ changed figures"))
+            if show_all.count():
+                show_all.click()
+                expect(page.get_by_role("button", name="Show fewer")).to_be_visible()
+                page.get_by_role("button", name="Show fewer").click()
             shot(page, "5b-redelivery-done")
 
         check("re-delivery: banner copy, button disabled while active, 12.2 turns quiet", redeliver)
@@ -225,7 +230,9 @@ def run() -> None:
                 expect(item(d)).to_contain_text("signed against")
             expect(release).to_be_enabled(timeout=30_000)
             release.click()
-            expect(item("Regulatory Affairs")).to_contain_text("Approved", timeout=30_000)
+            expect(item("Regulatory Affairs")).to_contain_text("Released", timeout=30_000)
+            for d in DEPARTMENTS + ["Regulatory Affairs"]:
+                assert item(d).get_by_role("button", name=re.compile("^(Sign|Release)$")).count() == 0, f"{d} still shows its sign button"
             v = item("Biostatistics").inner_text()
             assert "Table 14-5.01 v2" in v, f"Biostatistics did not sign against Table 14-5.01 v2: {v}"
             href = page.get_by_role("link", name="Export for Word").get_attribute("href")

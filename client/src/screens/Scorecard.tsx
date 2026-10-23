@@ -38,7 +38,7 @@ export function ScoreLine({ r, to }: { r: ScoreRow; to?: string }) {
         {r.figures_total > 0 ? (
           <>
             <span className="relative h-1.5 w-28 shrink-0 overflow-hidden rounded-full bg-differs/30" aria-hidden="true">
-              <span className="absolute inset-y-0 left-0 bg-foreground/45" style={{ width: `${pct}%` }} />
+              <span className="absolute inset-y-0 left-0 bg-match/55" style={{ width: `${pct}%` }} />
               {differs ? <span className="absolute inset-y-0 right-0 bg-differs" style={{ width: `${100 - pct}%` }} /> : null}
             </span>
             <span className={cn('num text-[14px]', differs && 'font-medium text-differs')}>

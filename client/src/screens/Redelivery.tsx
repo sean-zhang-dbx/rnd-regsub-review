@@ -33,6 +33,7 @@ export function Redelivery() {
   const [result, setResult] = useState<RedeliveryData | null>(null);
   const attachedAt = useRef(0);
   const [starting, setStarting] = useState(false);
+  const [allCells, setAllCells] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<RunLive>(EMPTY_LIVE);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -158,7 +159,7 @@ export function Redelivery() {
           <div className="grid grid-cols-[minmax(0,1fr)_280px] gap-8 border-t border-border p-6">
             <div>
               <h2 className="mb-2 text-[13px] font-medium text-muted-foreground">Sentences that quote changed cells</h2>
-              <div className="max-h-[220px] overflow-y-auto" data-testid="changed-cells">
+              <div data-testid="changed-cells">
               <table className="w-full text-[14px]">
                 <thead>
                   <tr className="text-left text-[13px] text-muted-foreground">
@@ -170,7 +171,8 @@ export function Redelivery() {
                   </tr>
                 </thead>
                 <tbody>
-                  {result.affected.map((a) => (
+                  {/* Three rows by default, so the sign-off stays above the fold after the redraft. */}
+                  {(allCells ? result.affected : result.affected.slice(0, 3)).map((a) => (
                     <tr key={`${a.section}-${a.sentence_idx}-${a.slot}`} className="border-t border-border/70">
                       <td className="num py-1.5">{a.section}</td>
                       <td className="num py-1.5">{a.sentence_idx + 1}</td>
@@ -181,6 +183,11 @@ export function Redelivery() {
                   ))}
                 </tbody>
               </table>
+              {result.affected.length > 3 ? (
+                <button type="button" className="mt-2 text-[13px] font-medium text-primary underline underline-offset-4" onClick={() => setAllCells((v) => !v)}>
+                  {allCells ? 'Show fewer' : `Show all ${result.affected.length} changed figures`}
+                </button>
+              ) : null}
               </div>
             </div>
             <div>

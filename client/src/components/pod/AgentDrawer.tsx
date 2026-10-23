@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { cn } from '@/lib/utils';
 import type { Check, CsrDocument, PodMember, SourceRef } from '../../data/types';
 import { shortDoc, stateFor, toolsFor } from './model';
+import { plural } from '../../lib/format';
 import type { RunLive, ToolEntry } from './model';
 
 /* The agent drawer: its skill, its tools, the calls it made, and the passages it chose. Light surface (the app, not the X-ray). */
@@ -129,7 +130,14 @@ function DocumentChecks({ checks }: { checks: Check[] }) {
 }
 
 export function AgentDrawer({ member, live, doc, onClose }: { member: PodMember | null; live: RunLive; doc: CsrDocument | null; onClose: () => void }) {
-  const tools = member ? toolsFor(member.id, live, doc, member.acts) : [];
+  const checks = doc?.document_checks ?? [];
+  /* finalise_document stores the assembler's own one-line summary, written at run time and cut at 200 characters; show the
+     summary of the document checks as they stand instead, so the line cannot disagree with the list below it. */
+  const tools = (member ? toolsFor(member.id, live, doc, member.acts) : []).map((t) =>
+    t.tool === 'finalise_document' && checks.length && !live.runId
+      ? { ...t, result_summary: `${checks.filter((c) => c.ok).length} of ${checks.length} document checks passed; ${plural(checks.filter((c) => !c.ok).length, 'finding', 'findings')} for the writer.` }
+      : t,
+  );
   const state = member ? stateFor(member.id, live, doc) : undefined;
   const passages: { section: string; ref: Extract<SourceRef, { kind: 'passage' }> }[] =
     member && (member.id === 'author' || member.id === 'planner')

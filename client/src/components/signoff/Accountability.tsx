@@ -82,7 +82,7 @@ export function Accountability({
                   </p>
                 ) : s ? (
                   <p className={cn('mt-0.5 text-[13px]', approved ? 'text-match' : 'text-differs')}>
-                    {approved ? 'Approved' : 'Changes requested'} {formatSignedAt(s.signed_at)}
+                    {approved ? (d.department === REG ? 'Released' : 'Approved') : 'Changes requested'} {formatSignedAt(s.signed_at)}
                     {v ? `, signed against ${v}` : ''}
                     {s.note ? `. ${s.note}` : ''}
                   </p>
@@ -92,14 +92,24 @@ export function Accountability({
                   <p className="mt-0.5 text-[13px] text-muted-foreground">Waiting for {d.signer}</p>
                 )}
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" className="rounded-control" disabled={!runId || blocked || signing?.dept === d.department || approved} onClick={() => void act(d.department, 'approved')}>
-                  {d.department === REG ? 'Release' : 'Sign'}
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-control" disabled={!runId || signing?.dept === d.department} onClick={() => void act(d.department, 'changes_requested')}>
-                  Request changes
-                </Button>
-              </div>
+              {approved ? (
+                /* A signed department shows its result, not a disabled button. */
+                <p className="flex items-center gap-1.5 text-[14px] font-medium text-match">
+                  <svg viewBox="0 0 18 18" className="size-[16px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 9.5l3 3 7-7" />
+                  </svg>
+                  {d.department === REG ? 'Released' : 'Signed'}
+                </p>
+              ) : (
+                <div className="flex gap-2">
+                  <Button size="sm" className="rounded-control" disabled={!runId || blocked || signing?.dept === d.department} onClick={() => void act(d.department, 'approved')}>
+                    {d.department === REG ? 'Release' : 'Sign'}
+                  </Button>
+                  <Button size="sm" variant="outline" className="rounded-control" disabled={!runId || signing?.dept === d.department} onClick={() => void act(d.department, 'changes_requested')}>
+                    Request changes
+                  </Button>
+                </div>
+              )}
             </li>
           );
         })}

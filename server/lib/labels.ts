@@ -32,7 +32,13 @@ export function rowPhrase(label: string): string {
     t = /\bversus\b/.test(rest) ? `p value ${rest}` : `${rest.charAt(0).toUpperCase()}${rest.slice(1)} p value`;
   }
   if (t.startsWith('95% CI')) t = t.replace(/\blimit\b/, 'bound');
-  return t.replace(/\bversus\b/g, 'vs');
+  t = t.replace(/\bversus\b/g, 'vs');
+  /* MedDRA terms arrive in title case ("Skin And Subcutaneous Tissue Disorders"); show them in sentence case. */
+  const words = t.split(' ');
+  if (words.length > 1 && words.every((w) => /^[A-Z][a-z]+[,]?$/.test(w) || /^(And|Of|Or|In|The)$/.test(w))) {
+    t = words.map((w, i) => (i === 0 ? w : w.toLowerCase())).join(' ');
+  }
+  return t;
 }
 
 /** What the column holds, for a re-delivery label: 'n' for counts, '%' for percentages, '' for the rest. */
