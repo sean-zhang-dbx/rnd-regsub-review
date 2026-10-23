@@ -44,7 +44,7 @@ export function Pod() {
   return (
     <div className="w-full max-w-[1760px]">
       <div className="flex items-end gap-4">
-        <h1 className="flex-1 text-[26px] leading-tight font-semibold tracking-[-0.01em]">Five agents drafted this CSR. Open one to see its tool calls and the passages it chose.</h1>
+        <h1 className="flex-1 text-[26px] leading-tight font-semibold tracking-[-0.01em]">Open an agent to see the tool calls it made and the passages it chose for this draft.</h1>
         <Button className="rounded-control" disabled={running || !latest.data} onClick={replay}>
           {running ? 'Replaying' : 'Replay the run'}
         </Button>
@@ -53,7 +53,7 @@ export function Pod() {
       {live.status === 'error' ? <p role="alert" className="mt-2 text-[13px] text-differs">{live.error ?? 'The run stopped with an error.'}</p> : null}
       <Panel className="mt-6 p-5">
         <XRayMarker id="pod" />
-        <XRayMarker id="pod_agents" className="right-10" />
+        <XRayMarker id="pod_agents" className="right-[124px]" />
         {pod.loading || latest.loading ? (
           <LoadingBlock rows={6} />
         ) : pod.error || !pod.data ? (

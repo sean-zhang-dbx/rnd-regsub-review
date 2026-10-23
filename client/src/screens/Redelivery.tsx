@@ -126,7 +126,6 @@ export function Redelivery() {
   const differing = sc.data?.rows.filter((r) => r.status === 'differs') ?? [];
   const affectedSections = new Set(result?.affected.map((a) => a.section));
   const shown = sc.data?.rows.filter((r) => r.status === 'differs' || affectedSections.has(r.section)) ?? [];
-  const sentences = result ? new Set(result.affected.map((a) => `${a.section}:${a.sentence_idx}`)).size : 0;
   const authorState = live.agents.author?.status;
   const qcState = live.agents.qc?.status;
   const step = (s?: string): 'waiting' | 'running' | 'done' => (s === 'done' ? 'done' : s === 'running' ? 'running' : 'waiting');
@@ -137,20 +136,25 @@ export function Redelivery() {
         <XRayMarker id="redelivery" />
         <div className="p-6 pr-12">
           {result ? (
-            <p role="status" className="max-w-[900px] text-[22px] leading-snug font-semibold tracking-[-0.01em]">
-              Biostatistics re-delivered {TABLE} (version {result.new_version}: treatment-emergent events only).{' '}
-              <span className="num">{sentences}</span> {sentences === 1 ? 'sentence quotes' : 'sentences quote'} changed cells. Demo scenario: the data is unchanged; version {result.old_version} used an incorrect derivation.
-            </p>
+            <div role="status" className="max-w-[900px]">
+              <p className="text-[22px] leading-snug font-semibold tracking-[-0.01em]">
+                Biostatistics re-delivered {TABLE} as version {result.new_version}, which counts treatment-emergent events only, and the pod redrafts the
+                sentences in {[...affectedSections].join(', ')} that quote changed cells.
+              </p>
+              <p className="mt-2 text-[13px] text-muted-foreground">
+                Demo scenario: version {result.old_version} of this table was built with a deliberately incorrect derivation rule. The CDISC source data was not modified.
+              </p>
+            </div>
           ) : (
             <h1 className="max-w-[900px] text-[22px] leading-snug font-semibold tracking-[-0.01em]">
-              {differing.length > 0 ? `${TABLE} version 1 counted all adverse events. The draft of ${differing[0].section} quotes it.` : 'No section differs from the submitted CSR.'}
+              {differing.length > 0 ? `Section ${differing[0].section} quotes version 1 of ${TABLE}, which counted all adverse events, including those that began before treatment.` : 'The drafted sections agree with the submitted CSR.'}
             </h1>
           )}
           <div className="mt-4 flex items-center gap-4">
             <Button className="rounded-control" disabled={busy || !!result || differing.length === 0} onClick={() => void redeliver()}>
               {starting ? 'Starting' : busy ? 'A run is active' : result ? `${TABLE} re-delivered` : `Biostatistics re-delivers ${TABLE}`}
             </Button>
-            {busy && !starting ? <p className="text-[13px] text-muted-foreground">The button is off until the run ends.</p> : null}
+            {busy && !starting ? <p className="text-[13px] text-muted-foreground">The button is available again when the redraft finishes.</p> : null}
           </div>
           {error ? <p role="alert" className="mt-3 text-[14px] text-differs">{error}</p> : null}
         </div>

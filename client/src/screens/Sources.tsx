@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { EmptyBlock, ErrorBlock, LoadingBlock, Panel } from '../components/States';
 import { getSources } from '../data/api';
@@ -78,9 +79,6 @@ function Tlfs({ d }: { d: SourcesData['tlfs'] }) {
               <span className="num text-[13px] whitespace-nowrap">{tlfLabel(t.table)}</span>
               <span className="min-w-0">
                 <span className="num block truncate text-[13px]">{t.table}</span>
-                <span className="block truncate text-[12px] text-muted-foreground">
-                  from <span className="num">{t.upstreams.join(', ')}</span>
-                </span>
               </span>
               <span className="text-right text-[12px] whitespace-nowrap text-muted-foreground">
                 version <span className="num">{t.version}</span>
@@ -91,6 +89,70 @@ function Tlfs({ d }: { d: SourcesData['tlfs'] }) {
           ))}
         </ul>
       )}
+    </Panel>
+  );
+}
+
+/* Lineage as Unity Catalog records it (system.access.table_lineage): the volume the ADaM files were staged in, the ADaM
+   tables, and the certified tables built from them. Hover a node to follow its edges. */
+function Lineage({ d }: { d: NonNullable<SourcesData['lineage']> }) {
+  const [hover, setHover] = useState<string | null>(null);
+  const vols = [...new Set(d.edges.filter((e) => e.src_type === 'volume').map((e) => e.src))].sort();
+  const adams = [...new Set(d.edges.flatMap((e) => (e.src_type === 'volume' ? [e.tgt] : [e.src])))].sort();
+  const tlfs = [...new Set(d.edges.filter((e) => e.src_type === 'table').map((e) => e.tgt))].sort();
+  if (!adams.length || !tlfs.length) return null;
+  const W = 820;
+  const rowH = 38;
+  const H = Math.max(tlfs.length, adams.length) * rowH + 16;
+  const col = { vol: { x: 8, w: 150 }, adam: { x: 238, w: 170 }, tlf: { x: 488, w: 324 } };
+  const y = (i: number, count: number) => 8 + (H - 16) * ((i + 0.5) / count);
+  const pos = new Map<string, { x: number; w: number; y: number }>();
+  vols.forEach((v, i) => pos.set(`v:${v}`, { ...col.vol, y: y(i, vols.length) }));
+  adams.forEach((a, i) => pos.set(`t:${a}`, { ...col.adam, y: y(i, adams.length) }));
+  tlfs.forEach((t, i) => pos.set(`t:${t}`, { ...col.tlf, y: y(i, tlfs.length) }));
+  const edges = d.edges.map((e) => ({ from: `${e.src_type === 'volume' ? 'v' : 't'}:${e.src}`, to: `t:${e.tgt}` }));
+  const lit = (id: string) => !hover || hover === id || edges.some((e) => (e.from === hover && e.to === id) || (e.to === hover && e.from === id));
+  const node = (id: string, label: string, sub?: string) => {
+    const p = pos.get(id)!;
+    return (
+      <g key={id} onMouseEnter={() => setHover(id)} onMouseLeave={() => setHover(null)} className="cursor-default" opacity={lit(id) ? 1 : 0.35}>
+        <rect x={p.x} y={p.y - 14} width={p.w} height={28} rx={4} className={cn('fill-card stroke-border', hover === id && 'stroke-primary')} strokeWidth={1} />
+        <text x={p.x + 10} y={p.y + 4.5} className="fill-foreground font-mono text-[12px]">
+          {label}
+          {sub ? <tspan className="fill-muted-foreground font-sans">{`  ${sub}`}</tspan> : null}
+        </text>
+      </g>
+    );
+  };
+  return (
+    <Panel>
+      <PanelTitle note="Recorded by Unity Catalog in system.access.table_lineage">Lineage</PanelTitle>
+      <div className="p-4">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Lineage from the volume to the ADaM tables to the certified tables">
+          {edges.map((e) => {
+            const a = pos.get(e.from);
+            const b = pos.get(e.to);
+            if (!a || !b) return null;
+            const x1 = a.x + a.w;
+            const x2 = b.x;
+            const dx = (x2 - x1) / 2;
+            const on = hover && (e.from === hover || e.to === hover);
+            return (
+              <path
+                key={`${e.from}-${e.to}`}
+                d={`M ${x1} ${a.y} C ${x1 + dx} ${a.y}, ${x2 - dx} ${b.y}, ${x2} ${b.y}`}
+                fill="none"
+                className={on ? 'stroke-primary' : 'stroke-border'}
+                strokeWidth={on ? 1.6 : 1.1}
+                opacity={!hover || on ? 1 : 0.35}
+              />
+            );
+          })}
+          {vols.map((v) => node(`v:${v}`, v, 'volume'))}
+          {adams.map((a) => node(`t:${a}`, a))}
+          {tlfs.map((t) => node(`t:${t}`, tlfLabel(t), t))}
+        </svg>
+      </div>
     </Panel>
   );
 }
@@ -144,7 +206,7 @@ export function Sources() {
   const s = useAsync(getSources);
   return (
     <div className="w-full max-w-[1760px]">
-      <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.01em]">The submitted report is the answer key. The pod cannot read it.</h1>
+      <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.01em]">The pod drafts from the analysis data, the certified tables, the protocol and the SAP. The submitted report is kept out of its reach and is used only to score the draft.</h1>
       <div className="mt-6">
         {s.loading ? (
           <LoadingBlock rows={8} />
@@ -156,7 +218,10 @@ export function Sources() {
               <Adam d={s.data.adam} />
               <Tlfs d={s.data.tlfs} />
             </div>
-            <Docs d={s.data.docs} index={s.data.index} />
+            <div className="space-y-5">
+              <Docs d={s.data.docs} index={s.data.index} />
+              {s.data.lineage?.edges.length ? <Lineage d={s.data.lineage} /> : null}
+            </div>
           </div>
         )}
       </div>

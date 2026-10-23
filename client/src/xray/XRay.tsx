@@ -50,13 +50,17 @@ export function XRayMarker({ id, className }: { id: string; className?: string }
       aria-label={`Show the Databricks object behind ${entry.area}`}
       title={entry.area}
       className={cn(
-        'absolute top-2 right-2 z-20 flex size-[22px] items-center justify-center rounded-full border border-primary/60 bg-card text-primary transition-colors hover:bg-primary hover:text-primary-foreground',
+        'absolute top-2 right-2 z-20 flex h-[22px] items-center gap-1 rounded-full border border-primary/60 bg-card px-2 text-[11px] font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground',
         className,
       )}
     >
-      <svg viewBox="0 0 12 12" className="size-3" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" strokeLinecap="round" />
+      {/* A labelled tag with a stacked-layers glyph: a bare round mark reads as a close button. */}
+      <svg viewBox="0 0 12 12" className="size-3" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
+        <path d="M6 1.5l4.5 2.25L6 6 1.5 3.75z" />
+        <path d="M1.5 6.25L6 8.5l4.5-2.25" />
+        <path d="M1.5 8.5L6 10.75l4.5-2.25" />
       </svg>
+      In Databricks
     </button>
   );
 }

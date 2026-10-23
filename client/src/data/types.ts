@@ -131,6 +131,8 @@ export type Scorecard = {
 export type Sources = {
   adam: { table: string; rows: number; columns: number; checksum?: string | null; xpt_sha256?: string | null; checksum_ok: boolean }[];
   tlfs: { table: string; tlf: string; version: number; certified: boolean; upstreams: string[] }[];
+  /** Edges from system.access.table_lineage: volume to ADaM table, ADaM table to TLF table. */
+  lineage?: { edges: { src: string; src_type: 'volume' | 'table'; tgt: string }[] };
   docs: { file: string; pages: number; parts: { doc_part: string; page_from: number; page_to: number; elements: number; searchable: boolean }[] };
   index: { name: string; chunks: number };
 };

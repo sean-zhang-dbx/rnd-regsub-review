@@ -51,7 +51,7 @@ export function Accountability({
       <XRayMarker id="signoff" />
       <header className="flex items-baseline gap-4 border-b border-border px-5 py-3 pr-12">
         <h2 className="text-[18px] font-semibold">Sign-off</h2>
-        <p className="text-[13px] text-muted-foreground">Nothing is released until the responsible people sign.</p>
+        <p className="text-[13px] text-muted-foreground">Regulatory Affairs can release the draft after Medical Writing, Biostatistics and Clinical Safety have signed it.</p>
         {exportHref ? (
           <a href={exportHref} className="ml-auto text-[13px] font-medium text-primary underline underline-offset-4">
             Export for Word

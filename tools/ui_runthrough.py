@@ -77,13 +77,13 @@ def run() -> None:
 
         # Opening: Scorecard
         page.goto(BASE + "/")
-        headline = page.get_by_text(re.compile(r"from an empty ICH E3 template\. 0 figures typed by a model\."))
+        headline = page.get_by_text(re.compile(r"drafted this report from an empty ICH E3 template in .+, with each figure filled from a certified table"))
 
         def scorecard():
             expect(headline).to_be_visible(timeout=60_000)
             text = page.locator("main").inner_text()
-            m = re.search(r"(\d+) of (\d+)\s+figures match the submitted CSR", text)
-            assert m, "headline has no 'n of m figures match the submitted CSR'"
+            m = re.search(r"Figures that match the submitted CSR:\s+(\d+) of (\d+)", text)
+            assert m, "no 'Figures that match the submitted CSR: n of m' line"
             loud = page.get_by_role("link").filter(has_text=re.compile(r"differ"))
             assert loud.count() == 1, f"{loud.count()} loud rows, expected 1"
             expect(loud).to_contain_text("12.2")
@@ -107,7 +107,8 @@ def run() -> None:
         # Beat 1: Sources
         def sources():
             rail(page, "Sources")
-            expect(page.get_by_role("heading", name="The submitted report is the answer key. The pod cannot read it.")).to_be_visible(timeout=60_000)
+            expect(page.get_by_role("heading", name=re.compile(r"The submitted report is kept out of its reach"))).to_be_visible(timeout=60_000)
+            expect(page.get_by_role("img", name=re.compile("Lineage from the volume"))).to_be_visible()
             expect(page.get_by_text("adam_adsl", exact=True).first).to_be_visible(timeout=60_000)
             expect(page.get_by_text("doc_elements_index", exact=False)).to_be_visible(timeout=60_000)
             text = page.locator("main").inner_text()
@@ -189,7 +190,7 @@ def run() -> None:
             rail(page, "Scorecard")
             page.get_by_role("link").filter(has_text=re.compile(r"differ")).click()
             expect(page).to_have_url(re.compile(r"/redelivery"))
-            expect(page.get_by_role("heading", name=re.compile(r"Table 14-5\.01 version 1 counted all adverse events"))).to_be_visible(timeout=60_000)
+            expect(page.get_by_role("heading", name=re.compile(r"quotes version 1 of Table 14-5\.01, which counted all adverse events"))).to_be_visible(timeout=60_000)
             page.keyboard.press("x")
             xray_markers(page, "redelivery")
             page.keyboard.press("x")
@@ -197,9 +198,8 @@ def run() -> None:
             banner = page.get_by_role("status").filter(has_text="re-delivered")
             expect(banner).to_be_visible(timeout=120_000)
             b = banner.inner_text()
-            assert "version 2: treatment-emergent events only" in b, f"banner: {b}"
-            assert "version 1 used an incorrect derivation" in b, f"banner: {b}"
-            assert "Demo scenario: the data is unchanged" in b, f"banner: {b}"
+            assert "as version 2, which counts treatment-emergent events only" in b, f"banner: {b}"
+            assert "Demo scenario: version 1 of this table was built with a deliberately incorrect derivation rule" in b, f"banner: {b}"
             expect(page.get_by_role("button", name=re.compile("A run is active|re-delivered"))).to_be_disabled()
             shot(page, "5a-redelivery-running")
             t0 = time.time()

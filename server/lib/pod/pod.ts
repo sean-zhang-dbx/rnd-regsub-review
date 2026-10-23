@@ -26,7 +26,7 @@ export const DEPARTMENTS = [
     department: 'Biostatistics',
     signer: 'Tom Okoye',
     role: 'Lead Statistician',
-    scope: 'Every figure bound to a certified TLF cell, and the tables in section 14: sections 10, 11.1, 11.2, 11.4.1 and 11.4.2',
+    scope: 'Study subjects, efficacy and the section 14 tables: sections 10, 11.1, 11.2, 11.4.1 and 11.4.2',
     sections: ['10', '11.1', '11.2', '11.4.1', '11.4.2', '14'],
   },
   {
@@ -55,7 +55,7 @@ export const MEMBERS: PodMember[] = [
     id: 'context',
     kind: 'source',
     title: 'Certified context',
-    note: 'Certified TLF tables in Unity Catalog, the protocol and SAP parsed by ai_parse_document and indexed in AI Search, and the section registry. The submitted report is locked away from the pod.',
+    note: 'The certified tables, the parsed protocol and SAP, and the section registry.',
     calls: ['Unity Catalog', 'AI Search'],
   },
   {
@@ -105,7 +105,7 @@ export const MEMBERS: PodMember[] = [
     id: 'signoff',
     kind: 'gate',
     title: 'Departmental sign\u2011off',
-    note: 'Nothing is released until the responsible people sign.',
+    note: 'Each department signs the sections it owns before Regulatory Affairs releases the draft.',
     calls: ['Medical Writing', 'Biostatistics', 'Clinical Safety', 'Regulatory Affairs'],
   },
 ];

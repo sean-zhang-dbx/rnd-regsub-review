@@ -76,8 +76,8 @@ function Card({ m, phase, live, doc, selected, onPick }: { m: PodMember; phase: 
         <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground">{m.note}</p>
       ) : null}
       {rej.rejected > 0 ? (
-        <p className="mt-2 text-[12px] font-medium text-differs">
-          {rej.rejected} {rej.rejected === 1 ? 'save' : 'saves'} turned back{rej.fixed >= rej.rejected ? ' and fixed' : ''}
+        <p className="mt-2 text-[12px] text-muted-foreground">
+          {rej.fixed >= rej.rejected ? 'Saves rejected by the figure check were corrected before the run ended.' : 'The figure check rejected a save that was not corrected.'}
         </p>
       ) : null}
       <Status live={state} />

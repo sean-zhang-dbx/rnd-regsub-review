@@ -22,7 +22,7 @@ const STATIC_UPSTREAMS: Record<string, string[]> = {
 };
 
 async function buildStatic() {
-  const [adam, tlfRows, parts, chunks, pages, lineage, certTags] = await Promise.all([
+  const [adam, tlfRows, parts, chunks, pages, lineage, certTags, fileLineage] = await Promise.all([
     Promise.all(
       ADAM.map(async (table) => {
         const [n, cols, props] = await Promise.all([
@@ -48,6 +48,12 @@ async function buildStatic() {
     ).catch(() => []),
     sqlRows(
       `SELECT table_name, tag_value FROM ${CATALOG}.information_schema.table_tags WHERE schema_name = '${SCHEMA}' AND tag_name = 'system.certification_status'`,
+    ).catch(() => []),
+    // Files in a volume that the ADaM tables were loaded from, as recorded by Unity Catalog lineage.
+    sqlRows(
+      `SELECT DISTINCT regexp_extract(source_path, '/Volumes/[^/]+/[^/]+/([^/]+)/', 1) AS src, target_table_name AS tgt FROM system.access.table_lineage
+       WHERE target_table_catalog = '${CATALOG}' AND target_table_schema = '${SCHEMA}' AND source_type = 'PATH' AND target_table_name LIKE 'adam\\_%'
+         AND source_path LIKE '/Volumes/${CATALOG}/${SCHEMA}/%'`,
     ).catch(() => []),
   ]);
   const certified = new Set(certTags.filter((t) => t.tag_value === 'certified').map((t) => t.table_name as string));
@@ -77,6 +83,14 @@ async function buildStatic() {
         // csr_body and csr_tlf are the answer key: parsed, never indexed, locked for the pod.
         searchable: !String(p.doc_part).startsWith('csr_') && ['protocol', 'sap'].includes(String(p.doc_part)),
       })),
+    },
+    lineage: {
+      edges: [
+        ...fileLineage.filter((l) => l.src).map((l) => ({ src: l.src as string, src_type: 'volume' as const, tgt: l.tgt as string })),
+        ...lineage
+          .filter((l) => !(l.tgt as string).includes('check') && (l.tgt as string).startsWith('tlf_14_'))
+          .map((l) => ({ src: l.src as string, src_type: 'table' as const, tgt: l.tgt as string })),
+      ],
     },
     index: { name: INDEX_NAME, chunks: Number(chunks[0]?.n ?? 0) },
   };

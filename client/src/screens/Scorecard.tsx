@@ -86,15 +86,21 @@ export function Scorecard() {
       ) : (
         <>
           <h1 className="max-w-[1020px] text-[30px] leading-[1.25] font-semibold tracking-[-0.01em] text-balance">
-            Drafted in {formatDuration(d.headline.wall_ms)} from an empty ICH E3 template. {d.headline.typed_figures} figures typed by a model.{' '}
-            <span className="num text-[28px] font-medium">{d.headline.figures_matched}</span> of <span className="num text-[28px] font-medium">{d.headline.figures_total}</span>{' '}
-            figures match the submitted CSR.
-            {d.headline.redraft ? (
-              <span className="text-muted-foreground"> {d.headline.redraft.sections.join(', ')} redrafted in {formatDuration(d.headline.redraft.wall_ms)}
-                {d.headline.redraft.figures_total ? `, now ${d.headline.redraft.figures_total} figures` : ''}.
-              </span>
-            ) : null}
+            The CSR Pod drafted this report from an empty ICH E3 template in {formatDuration(d.headline.wall_ms)}, with each figure filled from a certified table.
           </h1>
+          <p className="mt-3 text-[16px] text-muted-foreground">
+            Figures that match the submitted CSR:{' '}
+            <span className="num font-medium text-foreground">
+              {d.headline.figures_matched} of {d.headline.figures_total}
+            </span>
+            {d.headline.redraft ? (
+              <>
+                . {d.headline.redraft.sections.length === 1 ? `Section ${d.headline.redraft.sections[0]} was` : `Sections ${d.headline.redraft.sections.join(', ')} were`} redrafted in{' '}
+                {formatDuration(d.headline.redraft.wall_ms)} after Biostatistics re-delivered Table 14-5.01
+              </>
+            ) : null}
+            .
+          </p>
           <Panel className="mt-7">
             <XRayMarker id="scorecard" />
             <ScoreHead />

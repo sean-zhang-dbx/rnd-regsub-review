@@ -29,7 +29,7 @@ for stmt in [
     print("ok:", stmt)
 # EXECUTE on the model service (an AI Gateway securable): set through the permissions API
 r = subprocess.run(
-    ["databricks", "grants", "update", "service", f"{fq}.csr_author", "--json", f'{{"changes":[{{"principal":"{sp}","add":["EXECUTE"]}}]}}', "--profile", dbx.PROFILE],
+    ["databricks", "grants", "update", "model_service", f"{fq}.csr_author", "--json", f'{{"changes":[{{"principal":"{sp}","add":["EXECUTE"]}}]}}', "--profile", dbx.PROFILE],
     capture_output=True, text=True,
 )
 print("EXECUTE on model service:", (r.stdout or r.stderr).strip()[:300])
