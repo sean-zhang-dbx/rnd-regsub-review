@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@databricks/appkit-ui/react';
 import { cn } from '@/lib/utils';
-import type { CsrDocument, PodMember, SourceRef } from '../../data/types';
+import type { Check, CsrDocument, PodMember, SourceRef } from '../../data/types';
 import { shortDoc, stateFor, toolsFor } from './model';
 import type { RunLive, ToolEntry } from './model';
 
@@ -94,6 +94,40 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+/** The document checks of the assembler: what is still open for the writer first, what passed below. Both stay visible. */
+function DocumentChecks({ checks }: { checks: Check[] }) {
+  const open = checks.filter((c) => !c.ok);
+  const passed = checks.filter((c) => c.ok);
+  return (
+    <>
+      {open.length ? (
+        <Block title="Found for the writer">
+          <ul className="space-y-1.5">
+            {open.map((c) => (
+              <li key={c.id} className="rounded-control border border-l-[3px] border-border border-l-primary bg-card px-3 py-2">
+                <p className="text-[14px] font-medium">{c.label}</p>
+                {c.detail ? <p className="num mt-0.5 text-[13px] text-muted-foreground">{c.detail}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </Block>
+      ) : null}
+      {passed.length ? (
+        <Block title="Passed">
+          <ul className="space-y-1">
+            {passed.map((c) => (
+              <li key={c.id} className="flex items-baseline gap-2 text-[14px]">
+                <span className="min-w-0 flex-1">{c.label}</span>
+                {c.detail ? <span className="num shrink-0 text-[12px] text-muted-foreground">{c.detail}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </Block>
+      ) : null}
+    </>
+  );
+}
+
 export function AgentDrawer({ member, live, doc, onClose }: { member: PodMember | null; live: RunLive; doc: CsrDocument | null; onClose: () => void }) {
   const tools = member ? toolsFor(member.id, live, doc, member.acts) : [];
   const state = member ? stateFor(member.id, live, doc) : undefined;
@@ -124,6 +158,7 @@ export function AgentDrawer({ member, live, doc, onClose }: { member: PodMember 
                   <ToolList tools={tools} />
                 </Block>
               ) : null}
+              {member.id === 'assembler' && doc?.document_checks?.length ? <DocumentChecks checks={doc.document_checks} /> : null}
               {passages.length ? (
                 <Block title="Passages it chose">
                   <ul className="space-y-2">

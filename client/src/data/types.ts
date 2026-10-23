@@ -122,7 +122,7 @@ export type Scorecard = {
     figures_matched: number;
     typed_figures: number;
     /* Set when the latest done run is a redraft of some sections (contract additions after review round 1). */
-    redraft?: { run_id: string; sections: string[]; wall_ms: number | null } | null;
+    redraft?: { run_id: string; sections: string[]; wall_ms: number | null; figures_total?: number | null } | null;
   };
   rows: ScoreRow[];
 };
@@ -157,6 +157,8 @@ export type Tick = {
   printed_row_count?: number | null;
   printed_col_idx?: number | null;
   printed_col_count?: number | null;
+  /* Review round 2: the printed token on the page image, as fractions (0 to 1) of the image width and height. Null or absent: draw no cell box. */
+  printed_box?: { x0: number; y0: number; x1: number; y1: number } | null;
 };
 export type Compare = {
   run_id?: string;

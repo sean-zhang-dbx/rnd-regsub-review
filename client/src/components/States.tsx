@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { Button, Empty, EmptyDescription, EmptyHeader, EmptyTitle, Skeleton } from '@databricks/appkit-ui/react';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +41,10 @@ export function EmptyBlock({ title, children, action }: { title: string; childre
 }
 
 /** A panel: white surface, 1px border, no shadow. The marker sits in its top right corner. */
-export function Panel({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={cn('relative rounded-panel border border-border bg-card', className)}>{children}</section>;
+export function Panel({ children, className, ...rest }: { children: ReactNode; className?: string } & Omit<HTMLAttributes<HTMLElement>, 'className' | 'children'> & { 'data-draft-panel'?: string }) {
+  return (
+    <section className={cn('relative rounded-panel border border-border bg-card', className)} {...rest}>
+      {children}
+    </section>
+  );
 }

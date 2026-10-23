@@ -90,7 +90,9 @@ export function Scorecard() {
             <span className="num text-[28px] font-medium">{d.headline.figures_matched}</span> of <span className="num text-[28px] font-medium">{d.headline.figures_total}</span>{' '}
             figures match the submitted CSR.
             {d.headline.redraft ? (
-              <span className="text-muted-foreground"> {d.headline.redraft.sections.join(', ')} redrafted in {formatDuration(d.headline.redraft.wall_ms)}.</span>
+              <span className="text-muted-foreground"> {d.headline.redraft.sections.join(', ')} redrafted in {formatDuration(d.headline.redraft.wall_ms)}
+                {d.headline.redraft.figures_total ? `, now ${d.headline.redraft.figures_total} figures` : ''}.
+              </span>
             ) : null}
           </h1>
           <Panel className="mt-7">
