@@ -12,3 +12,7 @@ env:
     value: sean_zhang_catalog.rnd_csr_pod.csr_author
   - name: MLFLOW_EXPERIMENT_ID
     value: "1287687295923748"
+  # The Apps runtime sets an OTLP endpoint, which makes AppKit register its own global tracer; that collides with
+  # mlflow-tracing and drops the pod traces (seen in rnd_regsub_review), so keep AppKit telemetry off.
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: ''

@@ -21,7 +21,7 @@ for stmt in [
     f"GRANT USE CATALOG ON CATALOG {dbx.CATALOG} TO `{sp}`",
     f"GRANT USE SCHEMA ON SCHEMA {fq} TO `{sp}`",
     f"GRANT SELECT ON SCHEMA {fq} TO `{sp}`",
-    *[f"GRANT MODIFY ON TABLE {fq}.{t} TO `{sp}`" for t in ("csr_runs", "csr_sections", "csr_figure_citations", "csr_signoffs", "csr_scores", "tlf_14_5_01_teae")],
+    *[f"GRANT MODIFY ON TABLE {fq}.{t} TO `{sp}`" for t in ("csr_runs", "csr_sections", "csr_figure_citations", "csr_signoffs", "csr_scores", "tlf_14_5_01_teae", "demo_state")],
     f"GRANT READ VOLUME ON VOLUME {fq}.source_docs TO `{sp}`",
     f"GRANT READ VOLUME ON VOLUME {fq}.parsed_pages TO `{sp}`",
 ]:

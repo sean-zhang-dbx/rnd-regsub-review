@@ -1,6 +1,11 @@
 bundle:
   name: rnd-csr-pod
 
+sync:
+  exclude:
+    - docs/screenshots/**
+    - data_raw/**
+
 variables:
   sql_warehouse_id:
     description: SQL Warehouse ID
@@ -42,6 +47,10 @@ resources:
           serving_endpoint:
             name: ${var.serving_endpoint_name}
             permission: CAN_QUERY
+        - name: mlflow-experiment
+          experiment:
+            experiment_id: ${var.mlflow_experiment_id}
+            permission: CAN_EDIT
 
 targets:
   default:
@@ -52,3 +61,4 @@ targets:
     variables:
       sql_warehouse_id: 16ad82bead3f55b5
       serving_endpoint_name: databricks-gpt-5-5
+      mlflow_experiment_id: "1287687295923748"
