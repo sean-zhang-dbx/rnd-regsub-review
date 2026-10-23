@@ -41,7 +41,13 @@ export interface Scorecard {
     figures_matched: number;
     typed_figures: number;
     /** Set when the shown run is a redraft (it has a base run): the redraft run, its sections and its own wall time. */
-    redraft: { run_id: string; sections: string[]; wall_ms: number | null } | null;
+    redraft: {
+      run_id: string;
+      sections: string[];
+      wall_ms: number | null;
+      /** Figures in the redrafted sections, so the screen can explain why the total changes after a re-delivery. */
+      figures_total: number;
+    } | null;
   };
   rows: ScorecardRow[];
 }
@@ -91,15 +97,17 @@ export interface Tick {
   printed_value: string;
   printed_page: number;
   printed_element_id: number;
-  /** Printed row label (the row label of the TLF table, for example "Baseline: mean"). */
+  /** Plain printed row label (for example "Baseline: mean", "Dose response p value", "p value vs placebo"). */
   row_label: string;
-  /** Arm name of the column (for example "Placebo"), or "p value". */
-  column_label: string;
+  /** Arm name of the column (for example "Placebo"); null when the column is not an arm (for example a p value): row_label then says everything. */
+  column_label: string | null;
   /** Position of the printed cell inside its table element, 0-based, from the parsed table HTML (colspan and rowspan applied); null when unknown. */
   printed_row_idx: number | null;
   printed_row_count: number | null;
   printed_col_idx: number | null;
   printed_col_count: number | null;
+  /** Exact box of the printed number on the page image, as fractions of its width and height (0 to 1), from the PDF text layer; null when not found (the client draws no cell box). */
+  printed_box: { x0: number; y0: number; x1: number; y1: number } | null;
   match: boolean;
 }
 

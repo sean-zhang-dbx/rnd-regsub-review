@@ -62,3 +62,9 @@ Confirmed from the headings of the parsed document (`ai_parse_document` version 
 | other | 466 to 492 | 225 | p466 SAS output "Ad hoc Template 1" to p492 "Appendix 14" (analysis output carrying results is deliberately outside the SAP part) | no |
 
 The index holds 966 chunks of protocol, protocol_appendix, sap, references, appendix_index and other pages; csr_body and csr_tlf are not chunked. Retrieval filter: `doc_part IN ('protocol', 'sap')`.
+
+## Round 3 (23 Oct 2026)
+| Type | Name | Id | URL | Date |
+|---|---|---|---|---|
+| Table columns | `sean_zhang_catalog.rnd_csr_pod.submitted_tlf_cells` (added `box_x0`, `box_y0`, `box_x1`, `box_y1`) | n/a | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/submitted_tlf_cells | 2026-10-23 |
+| Stored value | `csr_runs.document_checks_json` of `csr-20261022151451-54d7fc` (table-reference check recomputed) | n/a | n/a | 2026-10-23 |

@@ -1,7 +1,7 @@
 import type { Application, Request, Response } from 'express';
 import { VOLUME_PAGES, FQ, dbxFetchRaw, releaseOf, sqlRows } from '../lib/dbx';
 import { imageGet, imagePut, memo, teaeState } from '../lib/cache';
-import { columnLabel, rowLabels } from '../lib/labels';
+import { columnLabel, rowLabels, rowPhrase } from '../lib/labels';
 import { latestDoneRunId, loadDocument } from '../lib/pod/run';
 import type { CsrDocument } from '../lib/pod/run';
 import { loadScores, submittedText, tickSection } from '../lib/pod/score';
@@ -85,12 +85,13 @@ async function buildCompare(runId: string, section: string, doc: CsrDocument, re
       printed_value: t.printed_value,
       printed_page: t.printed_page,
       printed_element_id: t.printed_element_id,
-      row_label: labels.get(t.tlf)?.get(t.row_key) ?? t.row_key,
+      row_label: rowPhrase(labels.get(t.tlf)?.get(t.row_key) ?? t.row_key),
       column_label: columnLabel(t.column_name),
       printed_row_idx: t.printed_row_idx,
       printed_row_count: t.printed_row_count,
       printed_col_idx: t.printed_col_idx,
       printed_col_count: t.printed_col_count,
+      printed_box: t.printed_box,
       match: t.match,
     })),
     wording: {

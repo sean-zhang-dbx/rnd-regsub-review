@@ -24,6 +24,15 @@ export interface PrintedCell {
   row_count: number | null;
   col_idx: number | null;
   col_count: number | null;
+  /** Exact box of the printed number as fractions of the page image (from the PDF text layer); null when not found. */
+  box: PrintedBox | null;
+}
+
+export interface PrintedBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 }
 
 let printedCache: Promise<Map<string, PrintedCell>> | undefined;
@@ -35,7 +44,7 @@ export function clearPrintedCache() {
 export const cellKey = (table: string, rowKey: string, column: string) => `${table}|${rowKey}|${column}`;
 
 export function printedCells(): Promise<Map<string, PrintedCell>> {
-  printedCache ??= sqlRows(`SELECT tlf, row_key, column_name, printed_value, page, element_id, row_idx, row_count, col_idx, col_count FROM ${FQ}.submitted_tlf_cells`).then(
+  printedCache ??= sqlRows(`SELECT tlf, row_key, column_name, printed_value, page, element_id, row_idx, row_count, col_idx, col_count, box_x0, box_y0, box_x1, box_y1 FROM ${FQ}.submitted_tlf_cells`).then(
     (rows) =>
       new Map(
         rows.map((r) => [
@@ -48,6 +57,10 @@ export function printedCells(): Promise<Map<string, PrintedCell>> {
             row_count: r.row_count === null ? null : Number(r.row_count),
             col_idx: r.col_idx === null ? null : Number(r.col_idx),
             col_count: r.col_count === null ? null : Number(r.col_count),
+            box:
+              r.box_x0 === null || r.box_y0 === null || r.box_x1 === null || r.box_y1 === null
+                ? null
+                : { x0: Number(r.box_x0), y0: Number(r.box_y0), x1: Number(r.box_x1), y1: Number(r.box_y1) },
           },
         ]),
       ),
@@ -82,6 +95,7 @@ export interface Tick {
   printed_row_count: number | null;
   printed_col_idx: number | null;
   printed_col_count: number | null;
+  printed_box: PrintedBox | null;
   match: boolean;
 }
 
@@ -114,6 +128,7 @@ export async function tickSection(sec: CsrSection): Promise<{ ticks: Tick[]; unv
         printed_row_count: pc.row_count,
         printed_col_idx: pc.col_idx,
         printed_col_count: pc.col_count,
+        printed_box: pc.box,
         match: matchesPrinted(p.value, pc.printed_value),
       });
     }

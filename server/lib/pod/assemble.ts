@@ -234,7 +234,12 @@ export function documentChecks(sections: CsrSection[], registry: RegistrySection
   const unbound = sections.filter((s) => s.sentences.some((x) => x.parts.some((p) => 'text' in p && /\{\w+\}/.test(p.text)))).map((s) => s.section);
 
   const refs = new Set<string>();
-  for (const s of sections) for (const x of s.sentences) for (const m of textOf(x).match(/Table 14\.\d+\.\d+/g) ?? []) refs.add(m.replace('Table ', ''));
+  // Table references are written "Table 14-3.01". Count them in the whole assembled document: the written
+  // sentences and the assembled parts (the tables of section 14 carry their own titles).
+  for (const s of sections) {
+    const text = [...s.sentences.map(textOf), (s.html ?? '').replace(/<[^>]+>/g, ' ')].join(' ');
+    for (const m of text.match(/Table 14-\d\.\d+/g) ?? []) refs.add(m.replace('Table ', ''));
+  }
   const missingRefs = [...refs].filter((r) => !tlfNumbers.has(r));
 
   const { unknown } = abbreviationsUsed(drafted);

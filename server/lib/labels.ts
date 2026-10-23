@@ -12,10 +12,27 @@ export function rowLabels(table: string): Promise<Map<string, string>> {
 
 const ARM: Record<string, string> = { pbo: 'Placebo', low: 'Xanomeline Low Dose', high: 'Xanomeline High Dose', total: 'Total' };
 
-/** Arm name of a column ('pbo_n' is Placebo). Columns that are not an arm ('p_value') get a plain name. */
-export function columnLabel(column: string): string {
-  if (column === 'p_value') return 'p value';
-  return ARM[column.split('_')[0]] ?? column;
+/**
+ * Arm name of a column ('pbo_n' is Placebo). null for a column that is not an arm ('p_value'): the row label then
+ * carries the whole description, so the two labels never repeat each other.
+ */
+export function columnLabel(column: string): string | null {
+  return ARM[column.split('_')[0]] ?? null;
+}
+
+/**
+ * Plain phrase for a printed row: "p value, dose response" reads "Dose response p value", "p value, xanomeline versus
+ * placebo" reads "p value vs placebo", "95% CI lower limit versus placebo" reads "95% CI lower bound vs placebo".
+ */
+export function rowPhrase(label: string): string {
+  let t = label;
+  const p = /^p value, (.*)$/.exec(t);
+  if (p) {
+    const rest = p[1].replace(/^xanomeline /, '');
+    t = /\bversus\b/.test(rest) ? `p value ${rest}` : `${rest.charAt(0).toUpperCase()}${rest.slice(1)} p value`;
+  }
+  if (t.startsWith('95% CI')) t = t.replace(/\blimit\b/, 'bound');
+  return t.replace(/\bversus\b/g, 'vs');
 }
 
 /** What the column holds, for a re-delivery label: 'n' for counts, '%' for percentages, '' for the rest. */
