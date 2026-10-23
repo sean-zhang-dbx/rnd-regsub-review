@@ -1,6 +1,6 @@
 /* Sentences and their parts have no ids; the lists are fixed per render, so index keys are correct. */
 /* eslint-disable react/no-array-index-key */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { EmptyBlock, ErrorBlock, LoadingBlock, Panel } from '../components/States';
@@ -8,7 +8,7 @@ import { getCompare, pageImageUrl } from '../data/api';
 import type { Compare as CompareData, ComparePage, Tick } from '../data/types';
 import { useScorecard } from '../hooks/scorecard';
 import { useAsync } from '../hooks/useAsync';
-import { armLabel, rowWords, tlfLabel } from '../lib/format';
+import { rowWords, tlfLabel } from '../lib/format';
 import { XRayMarker } from '../xray/XRay';
 
 /*
@@ -18,8 +18,11 @@ import { XRayMarker } from '../xray/XRay';
 
 const keyOf = (t: { sentence_idx: number; slot: string }) => `${t.sentence_idx}:${t.slot}`;
 
+/** The reading of one figure from the tick's own labels, without repeats. */
 function reading(t: Tick): string {
-  return `${tlfLabel(t.tlf)}, ${t.column_label || armLabel(t.column_name)}, ${t.row_label || rowWords(t.row_key)}: drafted ${t.drafted_value}, printed ${t.printed_value}`;
+  const row = t.row_label || rowWords(t.row_key);
+  const parts = [tlfLabel(t.tlf), t.column_label, row].filter((p, i, all): p is string => !!p && all.indexOf(p) === i);
+  return `${parts.join(', ')}: drafted ${t.drafted_value}, printed ${t.printed_value}`;
 }
 
 function TickMark({ match }: { match: boolean }) {
@@ -65,35 +68,21 @@ function useReveal(total: number, resetKey: string) {
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
-/**
- * Line weights of the rows of a parsed table, in print lines: the header row is taller (wrapped arm names) and the
- * printed p-value rows carry a blank line above them. Equal weights when the HTML is missing or does not match the grid.
- */
-function rowLines(html: string, rowCount: number): { lines: number; lead: number }[] {
-  const equal = Array.from({ length: rowCount }, () => ({ lines: 1, lead: 0 }));
-  if (!/<table/i.test(html)) return equal;
-  const rows = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('tr')];
-  if (rows.length !== rowCount) return equal;
-  return rows.map((r, i) => {
-    const first = r.querySelector('th,td')?.textContent?.trim() ?? '';
-    if (i === 0 && r.querySelector('th')) return { lines: 3, lead: 2 };
-    if (/^p-value/i.test(first)) return { lines: 2, lead: 1 };
-    return { lines: 1, lead: 0 };
-  });
-}
-
-/**
- * The submitted page. At rest it shows whole. While a figure is hovered it crops to the table element that holds
- * the printed cell, scaled to the panel width, and boxes the cell (or the whole element when the grid position is unknown).
- */
 type Rect = { x: number; y: number; w: number; h: number };
 
 /** A window onto the page image: shows `crop` scaled to the frame width, and optionally a box around `box`. One <img>, so hovering never reloads it. */
-function Frame({ page, src, label, crop, box, testid }: { page: ComparePage; src: string; label: string; crop: Rect; box: Rect | null; testid: string }) {
+function Frame({ page, src, label, crop, box, outline, testid }: { page: ComparePage; src: string; label: string; crop: Rect; box: Rect | null; outline?: Rect | null; testid: string }) {
   return (
-    <div className="relative overflow-hidden rounded-control border border-border bg-card" style={{ aspectRatio: `${crop.w} / ${crop.h}` }} data-testid={testid}>
+    <div className="relative overflow-hidden rounded-control bg-card ring-1 ring-border" style={{ aspectRatio: `${crop.w} / ${crop.h}` }} data-testid={testid}>
       <div className="absolute" style={{ width: `${(page.width / crop.w) * 100}%`, left: `${-(crop.x / crop.w) * 100}%`, top: `${-(crop.y / crop.h) * 100}%` }}>
         <img src={src} alt={label} className="block w-full" draggable={false} />
+        {outline ? (
+          <div
+            className="pointer-events-none absolute rounded-[2px] border border-primary/30"
+            style={{ left: `${clamp01(outline.x / page.width) * 100}%`, top: `${clamp01(outline.y / page.height) * 100}%`, width: `${(outline.w / page.width) * 100}%`, height: `${(outline.h / page.height) * 100}%` }}
+            data-testid="element-outline"
+          />
+        ) : null}
         {box ? (
           <div
             className="pointer-events-none absolute rounded-[2px] border-2 border-primary bg-primary/10"
@@ -108,8 +97,9 @@ function Frame({ page, src, label, crop, box, testid }: { page: ComparePage; src
 
 /**
  * The submitted page. At rest it shows whole. While a figure is hovered it crops to the table element that holds the
- * printed cell, scaled to the panel width, and boxes the cell (the whole element when the grid position is unknown).
- * A second strip magnifies the row of that cell so the printed number can be read from the back of the room.
+ * printed cell, scaled to the panel width. The cell box comes from `printed_box` (the printed token, from the PDF text
+ * layer); without it only a faint outline of the table element is drawn, never an estimate. A second strip magnifies the
+ * line of the box with one line of context above and below.
  */
 function PageView({ page, active, label }: { page: ComparePage; active: Tick | null; label: string }) {
   const src = pageImageUrl(page.image_path);
@@ -128,32 +118,41 @@ function PageView({ page, active, label }: { page: ComparePage; active: Tick | n
   const x0 = Math.max(0, el.x0 - padX);
   const y0 = Math.max(0, el.y0 - padY);
   const crop: Rect = { x: x0, y: y0, w: Math.min(page.width, el.x1 + padX) - x0, h: Math.min(page.height, el.y1 + padY) - y0 };
-  const { printed_row_idx: ri, printed_row_count: rn, printed_col_idx: ci, printed_col_count: cn } = active;
-  let box: Rect = { x: el.x0, y: el.y0, w: el.x1 - el.x0, h: el.y1 - el.y0 };
+  const outline: Rect = { x: el.x0, y: el.y0, w: el.x1 - el.x0, h: el.y1 - el.y0 };
+  const pb = active.printed_box;
+  let box: Rect | null = null;
   let strip: Rect | null = null;
-  if (ri != null && rn && ci != null && cn) {
-    const w = rowLines(el.content, rn);
-    const total = w.reduce((a, r) => a + r.lines, 0);
-    const before = w.slice(0, ri).reduce((a, r) => a + r.lines, 0) + (w[ri]?.lead ?? 0);
-    const own = (w[ri]?.lines ?? 1) - (w[ri]?.lead ?? 0);
-    const unit = (el.y1 - el.y0) / total;
-    box = { x: el.x0 + ((el.x1 - el.x0) * ci) / cn, y: el.y0 + unit * before, w: (el.x1 - el.x0) / cn, h: unit * own };
-    const sy = Math.max(0, box.y - unit * 1.6);
-    const sx = Math.max(0, el.x0 - padX);
-    strip = { x: sx, y: sy, w: Math.min(page.width, box.x + box.w + padX * 3) - sx, h: Math.min(page.height, box.y + box.h + unit * 1.6) - sy };
+  if (pb && pb.x1 > pb.x0 && pb.y1 > pb.y0) {
+    box = { x: pb.x0 * page.width, y: pb.y0 * page.height, w: (pb.x1 - pb.x0) * page.width, h: (pb.y1 - pb.y0) * page.height };
+    /* The box's line plus one line of context above and below, centred on the box, so the frame (which takes the crop's own aspect ratio) never clips it. */
+    const line = Math.max(box.h, page.height * 0.008);
+    const mid = box.y + box.h / 2;
+    const half = Math.min(line * 1.6, mid, page.height - mid);
+    const sx = Math.max(0, Math.min(el.x0, box.x) - padX);
+    strip = { x: sx, y: mid - half, w: Math.min(page.width, box.x + box.w + padX * 3) - sx, h: half * 2 };
   }
   return (
     <div className="space-y-2">
-      <Frame page={page} src={src} label={label} crop={crop} box={box} testid="page-zoom" />
-      {strip ? <Frame page={page} src={src} label={`${label}, the row of the printed cell`} crop={strip} box={box} testid="page-strip" /> : null}
+      <Frame page={page} src={src} label={label} crop={crop} box={box} outline={outline} testid="page-zoom" />
+      {strip ? <Frame page={page} src={src} label={`${label}, the line of the printed cell`} crop={strip} box={box} testid="page-strip" /> : null}
     </div>
   );
 }
 
 /** The reading of one figure, next to the figure it belongs to. */
 function Callout({ t }: { t: Tick }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  /* Keep the callout inside the draft panel, so it never covers the page column on the right. */
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const panel = el?.closest('[data-draft-panel]');
+    if (!el || !panel) return;
+    const over = el.getBoundingClientRect().right - (panel.getBoundingClientRect().right - 8);
+    const room = el.getBoundingClientRect().left - (panel.getBoundingClientRect().left + 8);
+    el.style.transform = over > 0 ? `translateX(${-Math.min(over, Math.max(0, room))}px)` : '';
+  }, [t]);
   return (
-    <span role="tooltip" data-testid="callout" className={cn('num pointer-events-none absolute top-full left-0 z-20 mt-1 w-max max-w-[360px] rounded-control border bg-card px-2.5 py-1.5 text-[13px] leading-snug font-normal whitespace-normal shadow-page', t.match ? 'border-border' : 'border-differs/50 text-differs')}>
+    <span ref={ref} role="tooltip" data-testid="callout" className={cn('num pointer-events-none absolute top-full left-0 z-20 mt-1 w-max max-w-[360px] rounded-control border bg-card px-2.5 py-1.5 text-[13px] leading-snug font-normal whitespace-normal shadow-page', t.match ? 'border-border' : 'border-differs/50 text-differs')}>
       {reading(t)}
     </span>
   );
@@ -193,9 +192,16 @@ function Body({ data, title }: { data: CompareData; title: string }) {
           </span>
         )}
       </h1>
+      <button
+        type="button"
+        onClick={() => document.getElementById('wording')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        className="mt-1 text-[14px] font-medium text-primary underline underline-offset-4"
+      >
+        Wording
+      </button>
 
-      <div className="mt-5 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-start gap-5">
-        <Panel className="shadow-page">
+      <div className="mt-4 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-start gap-5">
+        <Panel className="shadow-page" data-draft-panel="">
           <XRayMarker id="compare" />
           <header className="border-b border-border px-6 py-3 pr-12">
             <p className="text-[13px] text-muted-foreground">Drafted by the CSR Pod</p>
@@ -263,7 +269,7 @@ function Body({ data, title }: { data: CompareData; title: string }) {
         </div>
       </div>
 
-      <Panel className="mt-5">
+      <Panel className="mt-5 scroll-mt-4" id="wording">
         <header className="flex items-baseline gap-4 border-b border-border px-6 py-3">
           <h2 className="text-[17px] font-semibold">Wording</h2>
           <p className="num text-[15px]">Coverage {data.wording.coverage_score ?? "not scored"}{data.wording.coverage_score === null ? "" : " of 5"}</p>

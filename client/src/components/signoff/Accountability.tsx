@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@databricks/appkit-ui/react';
 import { cn } from '@/lib/utils';
 import type { CsrSignoff, PodDef, SignoffState } from '../../data/types';
@@ -22,19 +22,26 @@ export function Accountability({
   exportHref?: string;
   onSign: (department: string, decision: 'approved' | 'changes_requested') => Promise<void>;
 }) {
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState<{ dept: string; decision: 'approved' | 'changes_requested'; count: number } | null>(null);
+  /* The row says "Signing" from the click until the refreshed sign-offs arrive (or 8 s pass), not only while the POST is in flight. */
+  const count = state?.signoffs.length ?? 0;
+  const signing = busy && count <= busy.count ? busy : null;
+  useEffect(() => {
+    if (!busy) return;
+    const t = setTimeout(() => setBusy(null), 8000);
+    return () => clearTimeout(t);
+  }, [busy]);
   const [err, setErr] = useState<string | null>(null);
   const latest = (dept: string): CsrSignoff | undefined => state?.signoffs.filter((s) => s.department === dept).sort((a, b) => a.signed_at.localeCompare(b.signed_at)).at(-1);
   const pending = pod.departments.filter((d) => d.department !== REG && latest(d.department)?.decision !== 'approved').length;
 
   async function act(dept: string, decision: 'approved' | 'changes_requested') {
-    setBusy(dept);
+    setBusy({ dept, decision, count });
     setErr(null);
     try {
       await onSign(dept, decision);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'The sign-off was not saved.');
-    } finally {
       setBusy(null);
     }
   }
@@ -69,7 +76,11 @@ export function Accountability({
                 <p className="text-[13px] text-muted-foreground">
                   {d.department}, {d.signer}, {d.role}
                 </p>
-                {s ? (
+                {signing?.dept === d.department ? (
+                  <p role="status" className="mt-0.5 text-[13px] text-muted-foreground">
+                    {signing.decision === 'approved' ? 'Signing' : 'Saving the request'}
+                  </p>
+                ) : s ? (
                   <p className={cn('mt-0.5 text-[13px]', approved ? 'text-match' : 'text-differs')}>
                     {approved ? 'Approved' : 'Changes requested'} {formatSignedAt(s.signed_at)}
                     {v ? `, signed against ${v}` : ''}
@@ -82,10 +93,10 @@ export function Accountability({
                 )}
               </div>
               <div className="flex gap-2">
-                <Button size="sm" className="rounded-control" disabled={!runId || blocked || busy === d.department || approved} onClick={() => void act(d.department, 'approved')}>
+                <Button size="sm" className="rounded-control" disabled={!runId || blocked || signing?.dept === d.department || approved} onClick={() => void act(d.department, 'approved')}>
                   {d.department === REG ? 'Release' : 'Sign'}
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-control" disabled={!runId || busy === d.department} onClick={() => void act(d.department, 'changes_requested')}>
+                <Button size="sm" variant="outline" className="rounded-control" disabled={!runId || signing?.dept === d.department} onClick={() => void act(d.department, 'changes_requested')}>
                   Request changes
                 </Button>
               </div>
