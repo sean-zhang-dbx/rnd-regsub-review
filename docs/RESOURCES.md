@@ -19,6 +19,7 @@ All tables are in `sean_zhang_catalog.rnd_csr_pod`; each table URL is `https://f
 | Table | `csr_author_payload` (inference table of the model service) | | https://fevm-sean-zhang.cloud.databricks.com/explore/data/sean_zhang_catalog/rnd_csr_pod/csr_author_payload | 2026-10-22 |
 | MLflow experiment | `/Users/sean.zhang@databricks.com/rnd_csr_pod` | 1287687295923748 | https://fevm-sean-zhang.cloud.databricks.com/ml/experiments/1287687295923748 | 2026-10-22 |
 | Lakeflow Job | "CSR Pod: TLF build" (serverless, runs `tlf_build.py --teae-rule v1`; script copy in workspace folder `/Users/sean.zhang@databricks.com/rnd_csr_pod_files/scripts`) | 1105979386503028 | https://fevm-sean-zhang.cloud.databricks.com/jobs/1105979386503028 | 2026-10-22 |
+| Databricks App | `rnd-csr-pod` (service principal `app-3qhbxn rnd-csr-pod`, client id 4d765391-7acd-4a85-9b11-015351699f2f) | | https://rnd-csr-pod-7474654216647582.aws.databricksapps.com | 2026-10-23 |
 | Workspace folder | `/Users/sean.zhang@databricks.com/rnd_csr_pod_files/scripts` (`tlf_build.py`, `tlf_defs.py` for the job) | | | 2026-10-22 |
 
 Deviations recorded: the tag `source=cdisc_pilot01` is not set because the workspace tag policy for key `source` allows only `genie-finance` and `genie-dataeng`; every table comment ends with the CDISC source line instead.

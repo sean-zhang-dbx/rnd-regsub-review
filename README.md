@@ -82,5 +82,5 @@ Note: on a machine where the global pnpm is a 12.0 release candidate, AppKit's s
 
 ```bash
 databricks bundle deploy -p fe-vm-sean-zhang && databricks bundle run app -p fe-vm-sean-zhang
-uv run --python 3.12 --with databricks-sql-connector python scripts/grant_app_sp.py
+uv run --python 3.12 --with databricks-sql-connector python scripts/grant_app_sp.py <app-service-principal-client-id>
 ```
